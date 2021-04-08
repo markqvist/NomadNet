@@ -1,11 +1,13 @@
 import setuptools
 
+exec(open("nomadnet/_version.py", "r").read())
+
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="nomadnet",
-    version="0.0.1",
+    version=__version__,
     author="Mark Qvist",
     author_email="mark@unsigned.io",
     description="Communicate freely",
