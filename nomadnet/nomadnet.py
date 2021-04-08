@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 
-import argparse
-
 from ._version import __version__
-from .NomadNetworkApp import NomadNetworkApp
+
+import argparse
+import nomadnet
+
 
 def program_setup(configdir, rnsconfigdir):
-    app = NomadNetworkApp(configdir = configdir, rnsconfigdir = rnsconfigdir)
-    input()
-    app.quit()
+    app = nomadnet.NomadNetworkApp(configdir = configdir, rnsconfigdir = rnsconfigdir)
 
 def main():
     try:

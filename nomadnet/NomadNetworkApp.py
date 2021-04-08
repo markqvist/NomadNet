@@ -1,7 +1,10 @@
 import os
-import RNS
 import atexit
 
+import RNS
+import nomadnet
+
+from ._version import __version__
 from .vendor.configobj import ConfigObj
 
 class NomadNetworkApp:
@@ -9,13 +12,16 @@ class NomadNetworkApp:
 
     configdir = os.path.expanduser("~")+"/.nomadnetwork"
 
-    def exit_handler():
+    def exit_handler(self):
         RNS.log("Nomad Network Client exit handler executing...")
 
     def __init__(self, configdir = None, rnsconfigdir = None):
+        self.version       = __version__
         self.enable_client = False
         self.enable_node   = False
         self.identity      = None
+
+        self.uimode        = None
 
         if configdir == None:
             self.configdir = NomadNetworkApp.configdir
@@ -47,7 +53,7 @@ class NomadNetworkApp:
             except Exception as e:
                 RNS.log("Could not parse the configuration at "+self.configpath, RNS.LOG_ERROR)
                 RNS.log("Check your configuration file for errors!", RNS.LOG_ERROR)
-                RNS.panic()
+                nomadnet.panic()
         else:
             RNS.log("Could not load config file, creating default configuration file...")
             self.createDefaultConfig()
@@ -62,11 +68,11 @@ class NomadNetworkApp:
                     RNS.log("Loaded Primary Identity %s from %s" % (str(self.identity), self.identitypath))
                 else:
                     RNS.log("Could not load the Primary Identity from "+self.identitypath, RNS.LOG_ERROR)
-                    RNS.panic()
+                    nomadnet.panic()
             except Exception as e:
                 RNS.log("Could not load the Primary Identity from "+self.identitypath, RNS.LOG_ERROR)
                 RNS.log("The contained exception was: %s" % (str(e)), RNS.LOG_ERROR)
-                RNS.panic()
+                nomadnet.panic()
         else:
             try:
                 RNS.log("No Primary Identity file found, creating new...")
@@ -79,10 +85,10 @@ class NomadNetworkApp:
                 RNS.panic()
 
         self.applyConfig()
-
         self.rns = RNS.Reticulum(configdir = rnsconfigdir)
-
         atexit.register(self.exit_handler)
+
+        self.ui = nomadnet.ui.spawn(self.uimode)
 
 
     def createDefaultConfig(self):
@@ -113,6 +119,19 @@ class NomadNetworkApp:
                 if option == "enable_client":
                     value = self.config["client"].as_bool(option)
                     self.enable_client = value
+
+                if option == "user_interface":
+                    value = value.lower()
+                    if value == "none":
+                        self.uimode = nomadnet.ui.UI_NONE
+                    if value == "menu":
+                        self.uimode = nomadnet.ui.UI_MENU
+                    if value == "text":
+                        self.uimode = nomadnet.ui.UI_TEXT
+                    if value == "graphical":
+                        self.uimode = nomadnet.ui.UI_GRAPHICAL
+                    if value == "web":
+                        self.uimode = nomadnet.ui.UI_WEB
 
         if "node" in self.config:
             for option in self.config["node"]:
@@ -155,6 +174,7 @@ loglevel = 4
 [client]
 
 enable_client = Yes
+user_interface = text
 
 [node]
 
