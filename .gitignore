@@ -4,4 +4,4 @@ testutils
 TODO
 build
 dist
-rns*.egg-info
+nomadnet*.egg-info
