@@ -32,8 +32,9 @@ class NomadNetworkApp:
             NomadNetworkApp._shared_instance = self
 
         self.configpath    = self.configdir+"/config"
+        self.logfilepath   = self.configdir+"/logfile"
         self.storagepath   = self.configdir+"/storage"
-        self.identitypath   = self.configdir+"/storage/identity"
+        self.identitypath  = self.configdir+"/storage/identity"
         self.cachepath     = self.configdir+"/storage/cache"
         self.resourcepath  = self.configdir+"/storage/resources"
 
@@ -49,6 +50,12 @@ class NomadNetworkApp:
         if os.path.isfile(self.configpath):
             try:
                 self.config = ConfigObj(self.configpath)
+                try:
+                    self.applyConfig()
+                except Exception as e:
+                    RNS.log("The configuration file is invalid. The contained exception was: "+str(e), RNS.LOG_ERROR)
+                    nomadnet.panic()
+
                 RNS.log("Configuration loaded from "+self.configpath)
             except Exception as e:
                 RNS.log("Could not parse the configuration at "+self.configpath, RNS.LOG_ERROR)
@@ -57,9 +64,7 @@ class NomadNetworkApp:
         else:
             RNS.log("Could not load config file, creating default configuration file...")
             self.createDefaultConfig()
-            RNS.log("Default config file created. Make any necessary changes in "+self.configdir+"/config and start Nomad Network Client again.")
-            RNS.log("Exiting now!")
-            exit(1)
+
 
         if os.path.isfile(self.identitypath):
             try:
@@ -82,9 +87,9 @@ class NomadNetworkApp:
             except Exception as e:
                 RNS.log("Could not create and save a new Primary Identity", RNS.LOG_ERROR)
                 RNS.log("The contained exception was: %s" % (str(e)), RNS.LOG_ERROR)
-                RNS.panic()
+                nomadnet.panic()
 
-        self.applyConfig()
+
         self.rns = RNS.Reticulum(configdir = rnsconfigdir)
         atexit.register(self.exit_handler)
 
@@ -111,6 +116,14 @@ class NomadNetworkApp:
                         RNS.loglevel = 0
                     if RNS.loglevel > 7:
                         RNS.loglevel = 7
+                if option == "destination":
+                    if value.lower() == "file":
+                        RNS.logdest = RNS.LOG_FILE
+                        if "logfile" in self.config["logging"]:
+                            self.logfilepath = self.config["logging"]["logfile"]
+                        RNS.logfile = self.logfilepath
+                    else:
+                        RNS.logdest = RNS.LOG_STDOUT
 
         if "client" in self.config:
             for option in self.config["client"]:
@@ -128,6 +141,39 @@ class NomadNetworkApp:
                         self.uimode = nomadnet.ui.UI_MENU
                     if value == "text":
                         self.uimode = nomadnet.ui.UI_TEXT
+                        if "textui" in self.config:
+                            if not "intro_time" in self.config["textui"]:
+                                self.config["textui"]["intro_time"] = 1
+                            else:
+                                self.config["textui"]["intro_time"] = self.config["textui"].as_int("intro_time")
+
+                            if not "colormode" in self.config["textui"]:
+                                self.config["textui"]["colormode"] = nomadnet.ui.COLORMODE_16
+                            else:
+                                if self.config["textui"]["colormode"].lower() == "monochrome":
+                                    self.config["textui"]["colormode"] = nomadnet.ui.COLORMODE_MONO
+                                elif self.config["textui"]["colormode"].lower() == "16":
+                                    self.config["textui"]["colormode"] = nomadnet.ui.COLORMODE_16
+                                elif self.config["textui"]["colormode"].lower() == "88":
+                                    self.config["textui"]["colormode"] = nomadnet.ui.COLORMODE_88
+                                elif self.config["textui"]["colormode"].lower() == "256":
+                                    self.config["textui"]["colormode"] = nomadnet.ui.COLORMODE_256
+                                elif self.config["textui"]["colormode"].lower() == "24bit":
+                                    self.config["textui"]["colormode"] = nomadnet.ui.COLORMODE_TRUE
+                                else:
+                                    raise ValueError("The selected Text UI color mode is invalid")
+
+                            if not "theme" in self.config["textui"]:
+                                self.config["textui"]["theme"] = nomadnet.ui.THEME_DARK
+                            else:
+                                if self.config["textui"]["theme"].lower() == "dark":
+                                    self.config["textui"]["theme"] = nomadnet.ui.THEME_DARK
+                                elif self.config["textui"]["theme"].lower() == "light":
+                                    self.config["textui"]["theme"] = nomadnet.ui.THEME_LIGHT
+                                else:
+                                    raise ValueError("The selected Text UI theme is invalid")
+                        else:
+                            raise KeyError("Text UI selected in configuration file, but no [textui] section found")
                     if value == "graphical":
                         self.uimode = nomadnet.ui.UI_GRAPHICAL
                     if value == "web":
@@ -170,11 +216,30 @@ __default_nomadnet_config__ = '''# This is the default Nomad Network config file
 #   7: Extreme logging
 
 loglevel = 4
+destination = file
 
 [client]
 
 enable_client = Yes
 user_interface = text
+
+[textui]
+
+intro_time = 1
+
+# Specify the number of colors to use
+# valid colormodes are:
+# monochrome, 16, 88, 256 and 24bit
+#
+# The default is a conservative 88 colors,
+# but 256 colors can probably be used on
+# most terminals. Some terminals
+
+# colormode = monochrome
+# colormode = 16
+colormode = 88
+# colormode = 256
+# colormode = 24bit
 
 [node]
 

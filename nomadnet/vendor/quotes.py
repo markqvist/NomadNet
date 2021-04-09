@@ -1,0 +1,1 @@
+quotes = [("I want the wisdom that wise men revere. I want more.", "Faithless")]
