@@ -29,12 +29,14 @@ THEME_LIGHT    = 0x02
 
 THEMES = {
     THEME_DARK: [
-        # Style name    # 16-color style                        # Monochrome style          # 88, 256 and true-color style
-        ('heading',     'light gray,underline', 'default',      'underline',                'g93,underline', 'default'),
-        ('menubar',     'black', 'light gray',                  'standout',                 '#111', '#bbb'),
-        ('shortcutbar', 'black', 'light gray',                  'standout',                 '#111', '#bbb'),
-        ('body_text',   'white', 'default',                     'default',                  '#0a0', 'default'),
-        ('buttons',     'light green,bold', 'default',          'default',                  '#00a533', 'default')
+        # Style name                  # 16-color style                        # Monochrome style          # 88, 256 and true-color style
+        ('heading',                     'light gray,underline', 'default',      'underline',                'g93,underline', 'default'),
+        ('menubar',                     'black', 'light gray',                  'standout',                 '#111', '#bbb'),
+        ('shortcutbar',                 'black', 'light gray',                  'standout',                 '#111', '#bbb'),
+        ('body_text',                   'white', 'default',                     'default',                  '#0a0', 'default'),
+        ('buttons',                     'light green,bold', 'default',          'default',                  '#00a533', 'default'),
+        ('msg_editor',                  'black', 'light cyan',                  'standout',                 '#111', '#0bb'),
+        ("list_focus",                  "black", "light cyan",                  "standout",                 "#111", "#0bb"),
     ]
 }
 

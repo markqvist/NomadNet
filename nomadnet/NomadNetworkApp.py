@@ -135,6 +135,8 @@ class NomadNetworkApp:
         # RNS.log("\t| Message signature      : "+signature_string)
         # RNS.log("\t+---------------------------------------------------------------")
 
+    def conversations(self):
+        return nomadnet.Conversation.conversation_list(self)
 
     def createDefaultConfig(self):
         self.config = ConfigObj(__default_nomadnet_config__)
