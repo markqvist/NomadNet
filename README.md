@@ -1,7 +1,7 @@
 Nomad Network
 ==========
 
-General introduction to Nomad Network
+Communicate Freely
 
 Nomad Network is built using Reticulum, see [unsigned.io/projects/reticulum](https://unsigned.io/projects/reticulum/).
 
