@@ -10,6 +10,7 @@ from ._version import __version__
 from .vendor.configobj import ConfigObj
 
 class NomadNetworkApp:
+    time_format      = "%Y-%m-%d %H:%M:%S"
     _shared_instance = None
 
     configdir = os.path.expanduser("~")+"/.nomadnetwork"
@@ -193,25 +194,25 @@ class NomadNetworkApp:
                                 self.config["textui"]["colormode"] = nomadnet.ui.COLORMODE_16
                             else:
                                 if self.config["textui"]["colormode"].lower() == "monochrome":
-                                    self.config["textui"]["colormode"] = nomadnet.ui.COLORMODE_MONO
+                                    self.config["textui"]["colormode"] = nomadnet.ui.TextUI.COLORMODE_MONO
                                 elif self.config["textui"]["colormode"].lower() == "16":
-                                    self.config["textui"]["colormode"] = nomadnet.ui.COLORMODE_16
+                                    self.config["textui"]["colormode"] = nomadnet.ui.TextUI.COLORMODE_16
                                 elif self.config["textui"]["colormode"].lower() == "88":
-                                    self.config["textui"]["colormode"] = nomadnet.ui.COLORMODE_88
+                                    self.config["textui"]["colormode"] = nomadnet.ui.TextUI.COLORMODE_88
                                 elif self.config["textui"]["colormode"].lower() == "256":
-                                    self.config["textui"]["colormode"] = nomadnet.ui.COLORMODE_256
+                                    self.config["textui"]["colormode"] = nomadnet.ui.TextUI.COLORMODE_256
                                 elif self.config["textui"]["colormode"].lower() == "24bit":
-                                    self.config["textui"]["colormode"] = nomadnet.ui.COLORMODE_TRUE
+                                    self.config["textui"]["colormode"] = nomadnet.ui.TextUI.COLORMODE_TRUE
                                 else:
                                     raise ValueError("The selected Text UI color mode is invalid")
 
                             if not "theme" in self.config["textui"]:
-                                self.config["textui"]["theme"] = nomadnet.ui.THEME_DARK
+                                self.config["textui"]["theme"] = nomadnet.ui.TextUI.THEME_DARK
                             else:
                                 if self.config["textui"]["theme"].lower() == "dark":
-                                    self.config["textui"]["theme"] = nomadnet.ui.THEME_DARK
+                                    self.config["textui"]["theme"] = nomadnet.ui.TextUI.THEME_DARK
                                 elif self.config["textui"]["theme"].lower() == "light":
-                                    self.config["textui"]["theme"] = nomadnet.ui.THEME_LIGHT
+                                    self.config["textui"]["theme"] = nomadnet.ui.TextUI.THEME_LIGHT
                                 else:
                                     raise ValueError("The selected Text UI theme is invalid")
                         else:

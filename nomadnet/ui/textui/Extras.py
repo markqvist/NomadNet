@@ -1,5 +1,3 @@
-from nomadnet.ui import *
-
 class IntroDisplay():
     def __init__(self, app):
         import urwid
