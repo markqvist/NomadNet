@@ -1,13 +1,14 @@
 Nomad Network
 ==========
 
-Communicate Freely
+Communicate Freely.
 
 Nomad Network is built using Reticulum, see [unsigned.io/projects/reticulum](https://unsigned.io/projects/reticulum/).
 
 ## Notable Features
  - List of notable features
  - More features
+ - This list should be written
 
 ## Dependencies:
  - Python 3
