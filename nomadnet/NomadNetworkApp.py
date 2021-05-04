@@ -1,7 +1,9 @@
 import os
+import time
 import atexit
 
 import RNS
+import LXMF
 import nomadnet
 
 from ._version import __version__
@@ -31,12 +33,13 @@ class NomadNetworkApp:
         if NomadNetworkApp._shared_instance == None:
             NomadNetworkApp._shared_instance = self
 
-        self.configpath    = self.configdir+"/config"
-        self.logfilepath   = self.configdir+"/logfile"
-        self.storagepath   = self.configdir+"/storage"
-        self.identitypath  = self.configdir+"/storage/identity"
-        self.cachepath     = self.configdir+"/storage/cache"
-        self.resourcepath  = self.configdir+"/storage/resources"
+        self.configpath        = self.configdir+"/config"
+        self.logfilepath       = self.configdir+"/logfile"
+        self.storagepath       = self.configdir+"/storage"
+        self.identitypath      = self.configdir+"/storage/identity"
+        self.cachepath         = self.configdir+"/storage/cache"
+        self.resourcepath      = self.configdir+"/storage/resources"
+        self.conversationpath  = self.configdir+"/storage/conversations"
 
         if not os.path.isdir(self.storagepath):
             os.makedirs(self.storagepath)
@@ -46,6 +49,9 @@ class NomadNetworkApp:
 
         if not os.path.isdir(self.resourcepath):
             os.makedirs(self.resourcepath)
+
+        if not os.path.isdir(self.conversationpath):
+            os.makedirs(self.conversationpath)
 
         if os.path.isfile(self.configpath):
             try:
@@ -93,7 +99,41 @@ class NomadNetworkApp:
         self.rns = RNS.Reticulum(configdir = rnsconfigdir)
         atexit.register(self.exit_handler)
 
+        self.message_router = LXMF.LXMRouter()
+        self.message_router.register_delivery_callback(self.lxmf_delivery)
+
+        self.lxmf_destination = self.message_router.register_delivery_identity(self.identity)
+        RNS.log("LXMF Router ready to receive on: "+RNS.prettyhexrep(self.lxmf_destination.hash))
+
         self.ui = nomadnet.ui.spawn(self.uimode)
+
+
+    def lxmf_delivery(self, message):
+        time_string = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(message.timestamp))
+        signature_string = "Signature is invalid, reason undetermined"
+        if message.signature_validated:
+            signature_string = "Validated"
+        else:
+            if message.unverified_reason == LXMF.LXMessage.SIGNATURE_INVALID:
+                signature_string = "Invalid signature"
+            if message.unverified_reason == LXMF.LXMessage.SOURCE_UNKNOWN:
+                signature_string = "Cannot verify, source is unknown"
+
+        nomadnet.Conversation.ingest(message, self)
+
+        # RNS.log("\t+--- LXMF Delivery ---------------------------------------------")
+        # RNS.log("\t| Message ID             : "+RNS.prettyhexrep(message.hash))
+        # RNS.log("\t| Source hash            : "+RNS.prettyhexrep(message.source_hash))
+        # RNS.log("\t| Source instance        : "+str(message.get_source()))
+        # RNS.log("\t| Destination hash       : "+RNS.prettyhexrep(message.destination_hash))
+        # RNS.log("\t| Destination instance   : "+str(message.get_destination()))
+        # RNS.log("\t| Transport Encryption   : "+str(message.transport_encryption))
+        # RNS.log("\t| Timestamp              : "+time_string)
+        # RNS.log("\t| Title                  : "+message.title_as_string())
+        # RNS.log("\t| Content                : "+message.content_as_string())
+        # RNS.log("\t| Fields                 : "+str(message.fields))
+        # RNS.log("\t| Message signature      : "+signature_string)
+        # RNS.log("\t+---------------------------------------------------------------")
 
 
     def createDefaultConfig(self):

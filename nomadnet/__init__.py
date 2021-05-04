@@ -2,6 +2,7 @@ import os
 import glob
 
 from .NomadNetworkApp import NomadNetworkApp
+from .Conversation import Conversation
 from .ui import *
 
 
