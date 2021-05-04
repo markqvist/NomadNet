@@ -10,7 +10,7 @@ setuptools.setup(
     version=__version__,
     author="Mark Qvist",
     author_email="mark@unsigned.io",
-    description="Communicate freely",
+    description="Communicate Freely",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/markqvist/nomadnet",
@@ -23,6 +23,6 @@ setuptools.setup(
     entry_points= {
         'console_scripts': ['nomadnet=nomadnet:main']
     },
-    install_requires=['rns', 'lxmf', 'urwid@2.1.2'],
+    install_requires=['rns', 'lxmf', 'urwid==2.1.2'],
     python_requires='>=3.5',
 )
