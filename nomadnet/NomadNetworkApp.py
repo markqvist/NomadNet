@@ -106,7 +106,7 @@ class NomadNetworkApp:
         self.lxmf_destination = self.message_router.register_delivery_identity(self.identity)
         RNS.log("LXMF Router ready to receive on: "+RNS.prettyhexrep(self.lxmf_destination.hash))
 
-        self.ui = nomadnet.ui.spawn(self.uimode)
+        nomadnet.ui.spawn(self.uimode)
 
 
     def lxmf_delivery(self, message):

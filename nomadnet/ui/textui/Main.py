@@ -1,13 +1,14 @@
 import RNS
+import time
 
 from .Network import *
 from .Conversations import *
 from .Directory import *
 from .Map import *
+import urwid
 
 class SubDisplays():
     def __init__(self, app):
-        import urwid
         self.app = app
         self.network_display = NetworkDisplay(self.app)
         self.conversations_display = ConversationsDisplay(self.app)
@@ -19,17 +20,65 @@ class SubDisplays():
     def active(self):
         return self.active_display
 
+class MenuButton(urwid.Button):
+    button_left = urwid.Text('[')
+    button_right = urwid.Text(']')
+
+class MainFrame(urwid.Frame):
+    FOCUS_CHECK_TIMEOUT = 0.25
+
+    def __init__(self, body, header=None, footer=None, delegate=None):
+        self.delegate = delegate
+        self.current_focus = None
+        super().__init__(body, header, footer)
+
+    def keypress_focus_check(self, deferred=False):
+        current_focus = self.delegate.widget.get_focus_widgets()[-1]
+
+        if deferred:
+            if current_focus != self.current_focus:
+                self.focus_changed()
+        else:
+            def deferred_focus_check(loop, user_data):
+                self.keypress_focus_check(deferred=True)
+            self.delegate.app.ui.loop.set_alarm_in(MainFrame.FOCUS_CHECK_TIMEOUT, deferred_focus_check)
+
+        self.current_focus = current_focus
+
+    def focus_changed(self):
+        current_focus = self.delegate.widget.get_focus_widgets()[-1]
+        current_focus_path = self.delegate.widget.get_focus_path()
+        RNS.log("Focus changed to: "+str(current_focus_path))
+
+        if len(current_focus_path) > 1:
+            if current_focus_path[0] == "body":
+                self.delegate.update_active_shortcuts()
+
+    def mouse_event(self, size, event, button, col, row, focus):
+        current_focus = self.delegate.widget.get_focus_widgets()[-1]
+        if current_focus != self.current_focus:
+            self.focus_changed()
+
+        self.current_focus = current_focus
+        return super(MainFrame, self).mouse_event(size, event, button, col, row, focus)
+
+    def keypress(self, size, key):
+        self.keypress_focus_check()
+        
+        if key == "ctrl q":
+            raise urwid.ExitMainLoop
+
+        return super(MainFrame, self).keypress(size, key)
 
 class MainDisplay():
     def __init__(self, ui, app):
-        import urwid
         self.ui = ui
         self.app = app
 
         self.menu_display = MenuDisplay(self.app, self)
         self.sub_displays = SubDisplays(self.app)
 
-        self.frame = urwid.Frame(self.sub_displays.active().widget, header=self.menu_display.widget, footer=self.sub_displays.active().shortcuts().widget)
+        self.frame = MainFrame(self.sub_displays.active().widget, header=self.menu_display.widget, footer=self.sub_displays.active().shortcuts().widget, delegate=self)
         self.widget = self.frame
 
     def show_network(self, user_data):
@@ -50,17 +99,15 @@ class MainDisplay():
 
     def update_active_sub_display(self):
         self.frame.contents["body"] = (self.sub_displays.active().widget, None)
+        self.update_active_shortcuts()
+
+    def update_active_shortcuts(self):
         self.frame.contents["footer"] = (self.sub_displays.active().shortcuts().widget, None)
+
 
 
 class MenuDisplay():
     def __init__(self, app, handler):
-        import urwid
-
-        class MenuButton(urwid.Button):
-            button_left = urwid.Text('[')
-            button_right = urwid.Text(']')
-
         self.app = app
 
         menu_text            = ("pack", urwid.Text(" \U00002638"))

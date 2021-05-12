@@ -33,6 +33,7 @@ class TextUI:
 
     def __init__(self):
         self.app = NomadNetworkApp.get_shared_instance()
+        self.app.ui = self
         self.loop = None
 
         if importlib.util.find_spec("urwid") != None:
