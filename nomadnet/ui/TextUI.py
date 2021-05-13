@@ -21,11 +21,19 @@ THEMES = {
         ('menubar',                     'black', 'light gray',                  'standout',                 '#111', '#bbb'),
         ('shortcutbar',                 'black', 'light gray',                  'standout',                 '#111', '#bbb'),
         ('body_text',                   'white', 'default',                     'default',                  '#0a0', 'default'),
+        ('error_text',                  'dark red', 'default',                  'default',                  'dark red', 'default'),
         ('buttons',                     'light green,bold', 'default',          'default',                  '#00a533', 'default'),
         ('msg_editor',                  'black', 'light cyan',                  'standout',                 '#111', '#0bb'),
-        ("msg_header_ok",               'black', 'light green',                 'standout',                 'black', '#6b2',),
-        ("msg_header_caution",          'black', 'yellow',                      'standout',                 'black', '#fd3',),
-        ("list_focus",                  "black", "light cyan",                  "standout",                 "#111", "#0bb"),
+        ("msg_header_ok",               'black', 'light green',                 'standout',                 '#111', '#6b2'),
+        ("msg_header_caution",          'black', 'yellow',                      'standout',                 '#111', '#fd3'),
+        ("msg_header_sent",             'black', 'light gray',                  'standout',                 '#111', '#ddd'),
+        ("msg_header_delivered",        'black', 'light blue',                  'standout',                 '#111', '#28b'),
+        ("msg_warning_untrusted",       'black', 'dark red',                    'standout',            'black', 'dark red'),
+        ("list_focus",                  "black", "light gray",                  "standout",                 "#111", "#bbb"),
+        ("list_off_focus",              "black", "dark gray",                   "standout",                 "#111", "dark gray"),
+        ("list_trusted",                "light green", "default",               "default",                  "#6b2", "default"),
+        ("list_unknown",                "dark gray", "default",                 "default",                  "light gray", "default"),
+        ("list_untrusted",              "dark red", "default",                  "default",                  "dark red", "default"),
     ]
 }
 

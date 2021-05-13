@@ -48,11 +48,14 @@ class MainFrame(urwid.Frame):
     def focus_changed(self):
         current_focus = self.delegate.widget.get_focus_widgets()[-1]
         current_focus_path = self.delegate.widget.get_focus_path()
-        RNS.log("Focus changed to: "+str(current_focus_path))
-
+        
         if len(current_focus_path) > 1:
             if current_focus_path[0] == "body":
                 self.delegate.update_active_shortcuts()
+
+        if self.delegate.sub_displays.active() == self.delegate.sub_displays.conversations_display:
+            # Needed to refresh indicativelistbox styles on mouse focus change
+            self.delegate.sub_displays.conversations_display.focus_change_event()
 
     def mouse_event(self, size, event, button, col, row, focus):
         current_focus = self.delegate.widget.get_focus_widgets()[-1]
