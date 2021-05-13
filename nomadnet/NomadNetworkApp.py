@@ -16,7 +16,10 @@ class NomadNetworkApp:
     configdir = os.path.expanduser("~")+"/.nomadnetwork"
 
     def exit_handler(self):
-        RNS.log("Nomad Network Client exit handler executing...")
+        RNS.log("Nomad Network Client exit handler executing...", RNS.LOG_VERBOSE)
+        RNS.log("Saving directory...", RNS.LOG_VERBOSE)
+        self.directory.save_to_disk()
+        RNS.log("Nomad Network Client exiting now", RNS.LOG_VERBOSE)
 
     def __init__(self, configdir = None, rnsconfigdir = None):
         self.version       = __version__
@@ -34,6 +37,8 @@ class NomadNetworkApp:
         if NomadNetworkApp._shared_instance == None:
             NomadNetworkApp._shared_instance = self
 
+        self.rns = RNS.Reticulum(configdir = rnsconfigdir)
+
         self.configpath        = self.configdir+"/config"
         self.logfilepath       = self.configdir+"/logfile"
         self.storagepath       = self.configdir+"/storage"
@@ -41,6 +46,7 @@ class NomadNetworkApp:
         self.cachepath         = self.configdir+"/storage/cache"
         self.resourcepath      = self.configdir+"/storage/resources"
         self.conversationpath  = self.configdir+"/storage/conversations"
+        self.directorypath     = self.configdir+"/storage/directory"
 
         if not os.path.isdir(self.storagepath):
             os.makedirs(self.storagepath)
@@ -97,7 +103,6 @@ class NomadNetworkApp:
                 nomadnet.panic()
 
 
-        self.rns = RNS.Reticulum(configdir = rnsconfigdir)
         atexit.register(self.exit_handler)
 
         self.message_router = LXMF.LXMRouter()
@@ -105,6 +110,8 @@ class NomadNetworkApp:
 
         self.lxmf_destination = self.message_router.register_delivery_identity(self.identity)
         RNS.log("LXMF Router ready to receive on: "+RNS.prettyhexrep(self.lxmf_destination.hash))
+
+        self.directory = nomadnet.Directory.Directory(self)
 
         nomadnet.ui.spawn(self.uimode)
 
@@ -121,20 +128,6 @@ class NomadNetworkApp:
                 signature_string = "Cannot verify, source is unknown"
 
         nomadnet.Conversation.ingest(message, self)
-
-        # RNS.log("\t+--- LXMF Delivery ---------------------------------------------")
-        # RNS.log("\t| Message ID             : "+RNS.prettyhexrep(message.hash))
-        # RNS.log("\t| Source hash            : "+RNS.prettyhexrep(message.source_hash))
-        # RNS.log("\t| Source instance        : "+str(message.get_source()))
-        # RNS.log("\t| Destination hash       : "+RNS.prettyhexrep(message.destination_hash))
-        # RNS.log("\t| Destination instance   : "+str(message.get_destination()))
-        # RNS.log("\t| Transport Encryption   : "+str(message.transport_encryption))
-        # RNS.log("\t| Timestamp              : "+time_string)
-        # RNS.log("\t| Title                  : "+message.title_as_string())
-        # RNS.log("\t| Content                : "+message.content_as_string())
-        # RNS.log("\t| Fields                 : "+str(message.fields))
-        # RNS.log("\t| Message signature      : "+signature_string)
-        # RNS.log("\t+---------------------------------------------------------------")
 
     def conversations(self):
         return nomadnet.Conversation.conversation_list(self)
