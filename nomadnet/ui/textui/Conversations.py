@@ -59,7 +59,8 @@ class ConversationsDisplay():
         if not self.dialog_open:
             ilb_position = self.ilb.get_selected_position()
             self.update_conversation_list()
-            self.ilb.select_item(ilb_position)
+            if ilb_position != None:
+                self.ilb.select_item(ilb_position)
 
     def update_listbox(self):
         
@@ -183,7 +184,8 @@ class ConversationsDisplay():
         self.update_listbox()
         options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
         self.columns_widget.contents[0] = (self.listbox, options)
-        self.ilb.select_item(ilb_position)
+        if ilb_position != None:
+            self.ilb.select_item(ilb_position)
         nomadnet.NomadNetworkApp.get_shared_instance().ui.loop.draw_screen()
 
 

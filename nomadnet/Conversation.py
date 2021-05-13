@@ -45,16 +45,21 @@ class Conversation:
 
                     if display_name == None and app_data:
                         display_name = app_data.decode("utf-8")
+
+                    if display_name == None:
+                        sort_name = ""
+                    else:
+                        sort_name = display_name
                     
                     trust_level      = app.directory.trust_level(source_hash, display_name)
                     
-                    entry = (source_hash_text, display_name, trust_level)
+                    entry = (source_hash_text, display_name, trust_level, sort_name)
                     conversations.append(entry)
 
                 except Exception as e:
                     RNS.log("Error while loading conversation "+str(dirname)+", skipping it. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
-        conversations.sort(key=lambda e: (-e[2], e[1], e[0]), reverse=False)
+        conversations.sort(key=lambda e: (-e[2], e[3], e[0]), reverse=False)
 
         return conversations
 
