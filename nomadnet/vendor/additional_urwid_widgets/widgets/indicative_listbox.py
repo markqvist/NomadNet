@@ -183,6 +183,9 @@ class IndicativeListBox(urwid.WidgetWrap):
         # Store the last focus to do/undo the off focus highlighting only if the focus has really changed and not if the
         # widget is re-rendered because the terminal size has changed or similar.
         self._last_focus_state = focus
+
+        self.top_is_visible = top_is_visible
+        self.bottom_is_visible = bottom_is_visible
         
         return super().render(size, focus=focus)
     
