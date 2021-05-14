@@ -137,7 +137,7 @@ class Conversation:
         if self.send_destination:
             dest = self.send_destination
             source = self.app.lxmf_destination
-            lxm = LXMF.LXMessage(dest, source, content, desired_method=LXMF.LXMessage.DIRECT)
+            lxm = LXMF.LXMessage(dest, source, content, title=title, desired_method=LXMF.LXMessage.DIRECT)
             lxm.register_delivery_callback(self.message_notification)
             lxm.register_failed_callback(self.message_notification)
             self.app.message_router.handle_outbound(lxm)

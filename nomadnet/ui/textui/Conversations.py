@@ -18,7 +18,7 @@ class ConversationDisplayShortcuts():
     def __init__(self, app):
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("[C-d] Send  [C-k] Clear  [C-t] Add Title  [C-w] Close Conversation  [C-p] Purge Failed"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-d] Send  [C-k] Clear  [C-t] Toggle Editor  [C-w] Close Conversation  [C-p] Purge Failed"), "shortcutbar")
 
 class ConversationsArea(urwid.LineBox):
     def keypress(self, size, key):
@@ -407,19 +407,43 @@ class ConversationWidget(urwid.WidgetWrap):
 
                 self.conversation.register_changed_callback(self.conversation_changed)
 
-                msg_editor  = MessageEdit(caption="\u270E", edit_text="", multiline=True)
+                #title_editor  = MessageEdit(caption="\u270E", edit_text="", multiline=False)
+                title_editor  = MessageEdit(caption="", edit_text="", multiline=False)
+                title_editor.delegate = self
+
+                #msg_editor  = MessageEdit(caption="\u270E", edit_text="", multiline=True)
+                msg_editor  = MessageEdit(caption="", edit_text="", multiline=True)
                 msg_editor.delegate = self
 
                 header = None
                 if self.conversation.trust_level == DirectoryEntry.UNTRUSTED:
                     header = urwid.AttrMap(urwid.Padding(urwid.Text("\u26A0 Warning: Conversation with untrusted peer \u26A0", align="center")), "msg_warning_untrusted")
 
-                self.editor = msg_editor
+                self.minimal_editor = urwid.AttrMap(msg_editor, "msg_editor")
+
+                title_columns = urwid.Columns([
+                    (8, urwid.Text("Title")),
+                    urwid.AttrMap(title_editor, "msg_editor"),
+                ])
+
+                content_columns = urwid.Columns([
+                    (8, urwid.Text("Content")),
+                    urwid.AttrMap(msg_editor, "msg_editor")
+                ])
+
+                self.full_editor = urwid.Pile([
+                    title_columns,
+                    content_columns
+                ])
+
+                self.content_editor = msg_editor
+                self.title_editor = title_editor
+                self.full_editor_active = False
 
                 self.frame = urwid.Frame(
                     self.messagelist,
                     header=header,
-                    footer=urwid.AttrMap(msg_editor, "msg_editor")
+                    footer=self.minimal_editor
                 )
 
                 self.display_widget = urwid.LineBox(
@@ -428,12 +452,22 @@ class ConversationWidget(urwid.WidgetWrap):
                 
                 urwid.WidgetWrap.__init__(self, self.display_widget)
 
+    def toggle_editor(self):
+        if self.full_editor_active:
+            self.frame.contents["footer"] = (self.minimal_editor, None)
+            self.full_editor_active = False
+        else:
+            self.frame.contents["footer"] = (self.full_editor, None)
+            self.full_editor_active = True
+
     def keypress(self, size, key):
         if key == "ctrl w":
             self.close()
         elif key == "ctrl p":
             self.conversation.purge_failed()
             self.conversation_changed(None)
+        elif key == "ctrl t":
+            self.toggle_editor()
         else:
             return super(ConversationWidget, self).keypress(size, key)
 
@@ -467,12 +501,14 @@ class ConversationWidget(urwid.WidgetWrap):
 
 
     def clear_editor(self):
-        self.editor.set_edit_text("")
+        self.content_editor.set_edit_text("")
+        self.title_editor.set_edit_text("")
 
     def send_message(self):
-        content = self.editor.get_edit_text()
+        content = self.content_editor.get_edit_text()
+        title = self.title_editor.get_edit_text()
         if not content == "":
-            self.conversation.send(content)
+            self.conversation.send(content, title)
             self.clear_editor()
 
     def close(self):
