@@ -10,6 +10,13 @@ class Conversation:
     created_callback = None
 
     @staticmethod
+    def query_for_peer(source_hash):
+        try:
+            RNS.Transport.requestPath(bytes.fromhex(source_hash))
+        except Exception as e:
+            RNS.log("Error while querying network for peer identity. The contained exception was: "+str(e), RNS.LOG_ERROR)
+
+    @staticmethod
     def ingest(lxmessage, app, originator = False, delegate = None):
         if originator:
             source_hash = lxmessage.destination_hash
@@ -147,7 +154,7 @@ class Conversation:
 
             return True
         else:
-            RNS.log("Path to destination is not known, cannot create LXMF Message.", RNS.LOG_VERBOSE)
+            RNS.log("Destination is not known, cannot create LXMF Message.", RNS.LOG_VERBOSE)
             return False
 
     def message_notification(self, message):

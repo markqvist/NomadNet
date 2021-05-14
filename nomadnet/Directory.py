@@ -82,6 +82,18 @@ class Directory:
         else:
             return None
 
+    def is_known(self, source_hash):
+        try:
+            self.source_identity = RNS.Identity.recall(source_hash)
+
+            if self.source_identity:
+                return True
+            else:
+                return False
+
+        except Exception as e:
+            return False
+
 
 class DirectoryEntry:
     WARNING   = 0x00

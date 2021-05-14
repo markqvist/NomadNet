@@ -13,7 +13,7 @@ class ConversationListDisplayShortcuts():
     def __init__(self, app):
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("[Enter] Open  [C-e] Directory Entry  [C-x] Delete  [C-n] New"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[Enter] Open  [C-e] Edit Peer  [C-x] Delete  [C-n] New"), "shortcutbar")
 
 class ConversationDisplayShortcuts():
     def __init__(self, app):
@@ -35,6 +35,13 @@ class ConversationsArea(urwid.LineBox):
             self.delegate.app.ui.main_display.frame.set_focus("header")
         else:
             return super(ConversationsArea, self).keypress(size, key)
+
+class DialogLineBox(urwid.LineBox):
+    def keypress(self, size, key):
+        if key == "esc":
+            self.delegate.update_conversation_list()
+        else:
+            return super(DialogLineBox, self).keypress(size, key)
 
 class ConversationsDisplay():
     list_width = 0.33
@@ -98,12 +105,13 @@ class ConversationsDisplay():
             nomadnet.Conversation.delete_conversation(source_hash, self.app)
             self.update_conversation_list()
 
-        dialog = urwid.LineBox(
+        dialog = DialogLineBox(
             urwid.Pile([
                 urwid.Text("Delete conversation with\n"+self.app.directory.simplest_display_str(bytes.fromhex(source_hash))+"\n", align="center"),
                 urwid.Columns([("weight", 0.45, urwid.Button("Yes", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("No", on_press=dismiss_dialog))])
             ]), title="?"
         )
+        dialog.delegate = self
         bottom = self.listbox
 
         overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
@@ -115,6 +123,8 @@ class ConversationsDisplay():
         self.dialog_open = True
         source_hash_text = self.ilb.get_selected_item().source_hash
         display_name = self.ilb.get_selected_item().display_name
+        if display_name == None:
+            display_name = ""
 
         e_id = urwid.Edit(caption="ID   : ",edit_text=source_hash_text)
         t_id = urwid.Text("ID   : "+source_hash_text)
@@ -175,19 +185,34 @@ class ConversationsDisplay():
                     dialog_pile.contents.append((urwid.Text(""), options))
                     dialog_pile.contents.append((urwid.Text(("error_text", "Could not save entry. Check your input."), align="center"), options))
 
+        source_is_known = self.app.directory.is_known(bytes.fromhex(source_hash_text))
+        if source_is_known:
+            known_section = urwid.Divider("\u2504")
+        else:
+            def query_action(sender, user_data):
+                nomadnet.Conversation.query_for_peer(user_data)
+                options = dialog_pile.options(height_type="pack")
+                dialog_pile.contents = [
+                    (urwid.Text("Query sent"), options),
+                    (urwid.Button("OK", on_press=dismiss_dialog), options)
+                ]
+            query_button = urwid.Button("Query network for keys", on_press=query_action, user_data=source_hash_text)
+            known_section = urwid.Pile([urwid.Divider("\u2504"), urwid.Text("\u2139\n", align="center"), urwid.Text("The identity of this peer is not known, and you cannot currently communicate.\n", align="center"), query_button, urwid.Divider("\u2504")])
+
         dialog_pile = urwid.Pile([
             selected_id_widget,
             e_name,
-            urwid.Text(""),
+            urwid.Divider("\u2504"),
             r_untrusted,
             r_unknown,
             r_trusted,
-            urwid.Text(""),
+            known_section,
             urwid.Columns([("weight", 0.45, urwid.Button("Save", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Back", on_press=dismiss_dialog))])
         ])
         dialog_pile.error_display = False
 
-        dialog = urwid.LineBox(dialog_pile, title="Edit Contact")
+        dialog = DialogLineBox(dialog_pile, title="Edit Peer")
+        dialog.delegate = self
         bottom = self.listbox
 
         overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
@@ -255,7 +280,8 @@ class ConversationsDisplay():
         ])
         dialog_pile.error_display = False
 
-        dialog = urwid.LineBox(dialog_pile, title="New Conversation")
+        dialog = DialogLineBox(dialog_pile, title="New Conversation")
+        dialog.delegate = self
         bottom = self.listbox
 
         overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
@@ -294,11 +320,15 @@ class ConversationsDisplay():
             conversation_widget = ConversationsDisplay.cached_conversation_widgets[source_hash]
             if source_hash != None:
                 conversation_widget.update_message_widgets(replace=True)
+
+            conversation_widget.check_editor_allowed()
             return conversation_widget
         else:
             widget = ConversationWidget(source_hash)
             widget.delegate = self
             ConversationsDisplay.cached_conversation_widgets[source_hash] = widget
+
+            widget.check_editor_allowed()
             return widget
 
     def close_conversation(self, conversation):
@@ -333,7 +363,7 @@ class ConversationsDisplay():
             focus_style   = "list_focus_untrusted"
 
         display_text = symbol
-        if display_name != None:
+        if display_name != None and display_name != "":
             display_text += " "+display_name
 
         if trust_level != DirectoryEntry.TRUSTED:
@@ -419,6 +449,7 @@ class ConversationFrame(urwid.Frame):
 class ConversationWidget(urwid.WidgetWrap):
     def __init__(self, source_hash):
         if source_hash == None:
+            self.frame = None
             display_widget = urwid.LineBox(urwid.Filler(urwid.Text("No conversation selected"), "top"))
             urwid.WidgetWrap.__init__(self, display_widget)
         else:
@@ -492,6 +523,15 @@ class ConversationWidget(urwid.WidgetWrap):
             self.frame.contents["footer"] = (self.full_editor, None)
             self.full_editor_active = True
 
+    def check_editor_allowed(self):
+        if self.frame:
+            allowed = nomadnet.NomadNetworkApp.get_shared_instance().directory.is_known(bytes.fromhex(self.source_hash))
+            if allowed:
+                self.frame.contents["footer"] = (self.minimal_editor, None)
+            else:
+                warning = urwid.AttrMap(urwid.Padding(urwid.Text("\u2139 You cannot currently communicate with this peer, since it's identity keys are unknown", align="center")), "msg_header_caution")
+                self.frame.contents["footer"] = (warning, None)
+
     def toggle_focus_area(self):
         name = ""
         try:
@@ -554,8 +594,10 @@ class ConversationWidget(urwid.WidgetWrap):
         content = self.content_editor.get_edit_text()
         title = self.title_editor.get_edit_text()
         if not content == "":
-            self.conversation.send(content, title)
-            self.clear_editor()
+            if self.conversation.send(content, title):
+                self.clear_editor()
+            else:
+                pass
 
     def close(self):
         self.delegate.close_conversation(self)
@@ -569,9 +611,9 @@ class LXMessageWidget(urwid.WidgetWrap):
         message_time = datetime.fromtimestamp(self.timestamp)
         encryption_string = ""
         if message.get_transport_encrypted():
-            encryption_string = " [\U0001F512"+message.get_transport_encryption()+"]"
+            encryption_string = " [\U0001F512"+str(message.get_transport_encryption())+"]"
         else:
-            encryption_string = " [\U0001F513"+message.get_transport_encryption()+"]"
+            encryption_string = " [\U0001F513"+str(message.get_transport_encryption())+"]"
         
         title_string = message_time.strftime(time_format)+encryption_string
 
