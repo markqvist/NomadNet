@@ -109,6 +109,14 @@ class NomadNetworkApp:
         self.message_router.register_delivery_callback(self.lxmf_delivery)
 
         self.lxmf_destination = self.message_router.register_delivery_identity(self.identity)
+
+        RNS.Identity.remember(
+            packet_hash=None,
+            destination_hash=self.lxmf_destination.hash,
+            public_key=self.identity.pub_bytes,
+            app_data=None
+        )
+
         RNS.log("LXMF Router ready to receive on: "+RNS.prettyhexrep(self.lxmf_destination.hash))
 
         self.directory = nomadnet.Directory.Directory(self)
