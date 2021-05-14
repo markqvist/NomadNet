@@ -15,7 +15,7 @@ class SubDisplays():
         self.directory_display = DirectoryDisplay(self.app)
         self.map_display = MapDisplay(self.app)
 
-        self.active_display = self.network_display
+        self.active_display = self.conversations_display
 
     def active(self):
         return self.active_display
@@ -119,7 +119,8 @@ class MenuDisplay():
         button_directory     = (13, MenuButton("Directory", on_press=handler.show_directory))
         button_map           = (7, MenuButton("Map", on_press=handler.show_map))
 
-        buttons = [menu_text, button_network, button_conversations, button_directory, button_map]
+        # buttons = [menu_text, button_conversations, button_node, button_directory, button_map]
+        buttons = [menu_text, button_conversations, button_network]
         columns = urwid.Columns(buttons, dividechars=1)
 
         self.widget = urwid.AttrMap(columns, "menubar")

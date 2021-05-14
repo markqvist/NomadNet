@@ -12,18 +12,18 @@ class ConversationListDisplayShortcuts():
     def __init__(self, app):
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("[Enter] Open   [C-a] Add to directory   [C-x] Delete   [C-n] New"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[Enter] Open  [C-e] Directory Entry  [C-x] Delete  [C-n] New"), "shortcutbar")
 
 class ConversationDisplayShortcuts():
     def __init__(self, app):
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("[C-d] Send   [C-k] Clear   [C-t] Add Title   [C-w] Close Conversation"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-d] Send  [C-k] Clear  [C-t] Add Title  [C-w] Close Conversation  [C-p] Purge Failed"), "shortcutbar")
 
 class ConversationsArea(urwid.LineBox):
     def keypress(self, size, key):
-        if key == "ctrl a":
-            self.delegate.add_selected_to_directory()
+        if key == "ctrl e":
+            self.delegate.edit_selected_in_directory()
         elif key == "ctrl x":
             self.delegate.delete_selected_conversation()
         elif key == "ctrl n":
@@ -109,18 +109,43 @@ class ConversationsDisplay():
         options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
         self.columns_widget.contents[0] = (overlay, options)
 
-    def add_selected_to_directory(self):
+    def edit_selected_in_directory(self):
         self.dialog_open = True
-        source_hash = self.ilb.get_selected_item().source_hash
+        source_hash_text = self.ilb.get_selected_item().source_hash
         display_name = self.ilb.get_selected_item().display_name
 
-        e_id = urwid.Edit(caption="ID   : ",edit_text=source_hash)
+        e_id = urwid.Edit(caption="ID   : ",edit_text=source_hash_text)
+        t_id = urwid.Text("ID   : "+source_hash_text)
         e_name = urwid.Edit(caption="Name : ",edit_text=display_name)
 
+        selected_id_widget = t_id
+
+        untrusted_selected = False
+        unknown_selected   = True
+        trusted_selected   = False
+
+        try:
+            if self.app.directory.find(bytes.fromhex(source_hash_text)):
+                trust_level = self.app.directory.trust_level(bytes.fromhex(source_hash_text))
+                if trust_level == DirectoryEntry.UNTRUSTED:
+                    untrusted_selected = True
+                    unknown_selected   = False
+                    trusted_selected   = False
+                elif trust_level == DirectoryEntry.UNKNOWN:
+                    untrusted_selected = False
+                    unknown_selected   = True
+                    trusted_selected   = False
+                elif trust_level == DirectoryEntry.TRUSTED:
+                    untrusted_selected = False
+                    unknown_selected   = False
+                    trusted_selected   = True
+        except Exception as e:
+            RNS.log("EXC: "+str(e))
+
         trust_button_group = []
-        r_untrusted = urwid.RadioButton(trust_button_group, "Untrusted")
-        r_unknown   = urwid.RadioButton(trust_button_group, "Unknown", state=True)
-        r_trusted   = urwid.RadioButton(trust_button_group, "Trusted")
+        r_untrusted = urwid.RadioButton(trust_button_group, "Untrusted", state=untrusted_selected)
+        r_unknown   = urwid.RadioButton(trust_button_group, "Unknown", state=unknown_selected)
+        r_trusted   = urwid.RadioButton(trust_button_group, "Trusted", state=trusted_selected)
 
         def dismiss_dialog(sender):
             self.update_conversation_list()
@@ -149,18 +174,18 @@ class ConversationsDisplay():
                     dialog_pile.contents.append((urwid.Text(("error_text", "Could not save entry. Check your input."), align="center"), options))
 
         dialog_pile = urwid.Pile([
-            e_id,
+            selected_id_widget,
             e_name,
             urwid.Text(""),
             r_untrusted,
             r_unknown,
             r_trusted,
             urwid.Text(""),
-            urwid.Columns([("weight", 0.45, urwid.Button("Add", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Cancel", on_press=dismiss_dialog))])
+            urwid.Columns([("weight", 0.45, urwid.Button("Save", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Cancel", on_press=dismiss_dialog))])
         ])
         dialog_pile.error_display = False
 
-        dialog = urwid.LineBox(dialog_pile, title="Add to Directory")
+        dialog = urwid.LineBox(dialog_pile, title="Edit Directory Entry")
         bottom = self.listbox
 
         overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
@@ -169,7 +194,72 @@ class ConversationsDisplay():
         self.columns_widget.contents[0] = (overlay, options)
 
     def new_conversation(self):
-        pass
+        self.dialog_open = True
+        source_hash = ""
+        display_name = ""
+
+        e_id = urwid.Edit(caption="ID   : ",edit_text=source_hash)
+        e_name = urwid.Edit(caption="Name : ",edit_text=display_name)
+
+        trust_button_group = []
+        r_untrusted = urwid.RadioButton(trust_button_group, "Untrusted")
+        r_unknown   = urwid.RadioButton(trust_button_group, "Unknown", state=True)
+        r_trusted   = urwid.RadioButton(trust_button_group, "Trusted")
+
+        def dismiss_dialog(sender):
+            self.update_conversation_list()
+            self.dialog_open = False
+
+        def confirmed(sender):
+            try:
+                existing_conversations = nomadnet.Conversation.conversation_list(self.app)
+                
+                display_name = e_name.get_edit_text()
+                source_hash_text = e_id.get_edit_text()
+                source_hash = bytes.fromhex(source_hash_text)
+                trust_level = DirectoryEntry.UNTRUSTED
+                if r_unknown.state == True:
+                    trust_level = DirectoryEntry.UNKNOWN
+                elif r_trusted.state == True:
+                    trust_level = DirectoryEntry.TRUSTED
+
+                if not source_hash in [c[0] for c in existing_conversations]:
+                    entry = DirectoryEntry(source_hash, display_name, trust_level)
+                    self.app.directory.remember(entry)
+
+                    new_conversation = nomadnet.Conversation(source_hash_text, nomadnet.NomadNetworkApp.get_shared_instance(), initiator=True)
+                    self.update_conversation_list()
+
+                self.display_conversation(source_hash_text)
+                self.dialog_open = False
+
+            except Exception as e:
+                RNS.log("Could not start conversation. The contained exception was: "+str(e), RNS.LOG_VERBOSE)
+                if not dialog_pile.error_display:
+                    dialog_pile.error_display = True
+                    options = dialog_pile.options(height_type="pack")
+                    dialog_pile.contents.append((urwid.Text(""), options))
+                    dialog_pile.contents.append((urwid.Text(("error_text", "Could not start conversation. Check your input."), align="center"), options))
+
+        dialog_pile = urwid.Pile([
+            e_id,
+            e_name,
+            urwid.Text(""),
+            r_untrusted,
+            r_unknown,
+            r_trusted,
+            urwid.Text(""),
+            urwid.Columns([("weight", 0.45, urwid.Button("Start", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Cancel", on_press=dismiss_dialog))])
+        ])
+        dialog_pile.error_display = False
+
+        dialog = urwid.LineBox(dialog_pile, title="New Conversation")
+        bottom = self.listbox
+
+        overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+
+        options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
+        self.columns_widget.contents[0] = (overlay, options)
 
     def delete_conversation(self, source_hash):
         if source_hash in ConversationsDisplay.cached_conversation_widgets:
@@ -220,20 +310,25 @@ class ConversationsDisplay():
         source_hash  = conversation[0]
 
         if trust_level == DirectoryEntry.UNTRUSTED:
-            symbol = "x"
-            style  = "list_untrusted"
+            symbol        = "\u2715"
+            style         = "list_untrusted"
+            focus_style   = "list_focus_untrusted"
         elif trust_level == DirectoryEntry.UNKNOWN:
-            symbol = "?"
-            style  = "list_unknown"
+            symbol        = "?"
+            style         = "list_unknown"
+            focus_style   = "list_focus"
         elif trust_level == DirectoryEntry.TRUSTED:
-            symbol = "\u2713"
-            style  = "list_trusted"
+            symbol        = "\u2713"
+            style         = "list_trusted"
+            focus_style   = "list_focus_trusted"
         elif trust_level == DirectoryEntry.WARNING:
-            symbol = "\u26A0"
-            style  = "list_warning"
+            symbol        = "\u26A0"
+            style         = "list_warning"
+            focus_style   = "list_focus"
         else:
-            symbol = "\u26A0"
-            style  = "list_warning"
+            symbol        = "\u26A0"
+            style         = "list_untrusted"
+            focus_style   = "list_focus_untrusted"
 
         display_text = symbol
         if display_name != None:
@@ -244,7 +339,7 @@ class ConversationsDisplay():
 
         widget = ListEntry(display_text)
         urwid.connect_signal(widget, "click", self.display_conversation, conversation[0])
-        display_widget = urwid.AttrMap(widget, style, "list_focus")
+        display_widget = urwid.AttrMap(widget, style, focus_style)
         display_widget.source_hash = source_hash
         display_widget.display_name = display_name
 
@@ -290,8 +385,6 @@ class MessageEdit(urwid.Edit):
             self.delegate.send_message()
         elif key == "ctrl k":
             self.delegate.clear_editor()
-        elif key == "ctrl w":
-            self.delegate.close()
         else:
             return super(MessageEdit, self).keypress(size, key)
 
@@ -334,6 +427,15 @@ class ConversationWidget(urwid.WidgetWrap):
                 )
                 
                 urwid.WidgetWrap.__init__(self, self.display_widget)
+
+    def keypress(self, size, key):
+        if key == "ctrl w":
+            self.close()
+        elif key == "ctrl p":
+            self.conversation.purge_failed()
+            self.conversation_changed(None)
+        else:
+            return super(ConversationWidget, self).keypress(size, key)
 
     def conversation_changed(self, conversation):
         self.update_message_widgets(replace = True)
@@ -389,6 +491,9 @@ class LXMessageWidget(urwid.WidgetWrap):
             if message.lxm.state == LXMF.LXMessage.DELIVERED:
                 header_style = "msg_header_delivered"
                 title_string = "\u2713 " + title_string
+            elif message.lxm.state == LXMF.LXMessage.FAILED:
+                header_style = "msg_header_failed"
+                title_string = "\u2715 " + title_string
             else:
                 header_style = "msg_header_sent"
                 title_string = "\u2192 " + title_string

@@ -2,6 +2,7 @@ import os
 import RNS
 import LXMF
 import shutil
+import nomadnet
 from nomadnet.Directory import DirectoryEntry
 
 class Conversation:
@@ -77,7 +78,7 @@ class Conversation:
         except Exception as e:
             RNS.log("Could not remove conversation at "+str(conversation_path)+". The contained exception was: "+str(e), RNS.LOG_ERROR)
 
-    def __init__(self, source_hash, app):
+    def __init__(self, source_hash, app, initiator=False):
         self.app                = app
         self.source_hash        = source_hash
         self.send_destination   = None
@@ -96,6 +97,12 @@ class Conversation:
             self.source_known = True
             self.send_destination = RNS.Destination(self.source_identity, RNS.Destination.OUT, RNS.Destination.SINGLE, "lxmf", "delivery")
 
+        if initiator:
+            if not os.path.isdir(self.messages_path):
+                os.makedirs(self.messages_path)
+                if Conversation.created_callback != None:
+                    Conversation.created_callback()
+
         self.scan_storage()
 
         self.trust_level = app.directory.trust_level(bytes.fromhex(self.source_hash))
@@ -113,6 +120,38 @@ class Conversation:
         if self.__changed_callback != None:
             self.__changed_callback(self)
 
+    def purge_failed(self):
+        purged_messages = []
+        for conversation_message in self.messages:
+            if conversation_message.get_state() == LXMF.LXMessage.FAILED:
+                purged_messages.append(conversation_message)
+                conversation_message.purge()
+
+        for purged_message in purged_messages:
+            self.messages.remove(purged_message)
+
+    def register_changed_callback(self, callback):
+        self.__changed_callback = callback
+
+    def send(self, content="", title=""):
+        if self.send_destination:
+            dest = self.send_destination
+            source = self.app.lxmf_destination
+            lxm = LXMF.LXMessage(dest, source, content, desired_method=LXMF.LXMessage.DIRECT)
+            lxm.register_delivery_callback(self.message_notification)
+            lxm.register_failed_callback(self.message_notification)
+            self.app.message_router.handle_outbound(lxm)
+
+            message_path = Conversation.ingest(lxm, self.app, originator=True)
+            self.messages.append(ConversationMessage(message_path))
+
+            return True
+        else:
+            RNS.log("Path to destination is not known, cannot create LXMF Message.", RNS.LOG_VERBOSE)
+            return False
+
+    def message_notification(self, message):
+        message_path = Conversation.ingest(message, self.app, originator=True)
 
     def __str__(self):
         string = self.source_hash
@@ -123,28 +162,6 @@ class Conversation:
                 string += " | "+self.source.source_identity.app_data.decode("utf-8")
 
         return string
-
-    def register_changed_callback(self, callback):
-        self.__changed_callback = callback
-
-    def send(self, content="", title=""):
-        if self.send_destination:
-            dest = self.send_destination
-            source = self.app.lxmf_destination
-            lxm = LXMF.LXMessage(dest, source, content, desired_method=LXMF.LXMessage.DIRECT)
-            lxm.register_delivery_callback(self.message_delivered)
-            self.app.message_router.handle_outbound(lxm)
-
-            message_path = Conversation.ingest(lxm, self.app, originator=True)
-            self.messages.append(ConversationMessage(message_path))
-
-        else:
-            # TODO: Implement
-            # Alter UI so message cannot be sent until there is a path, or LXMF propagation is implemented
-            RNS.log("Destination unknown")
-
-    def message_delivered(self, message):
-        message_path = Conversation.ingest(message, self.app, originator=True)
 
 
 
@@ -160,12 +177,27 @@ class ConversationMessage:
             self.lxm = LXMF.LXMessage.unpack_from_file(open(self.file_path, "rb"))
             self.loaded = True
             self.timestamp = self.lxm.timestamp
+
+            if self.lxm.state > LXMF.LXMessage.DRAFT and self.lxm.state < LXMF.LXMessage.SENT:
+                found = False
+                for pending in nomadnet.NomadNetworkApp.get_shared_instance().message_router.pending_outbound:
+                    if pending.hash == self.lxm.hash:
+                        found = True
+
+                if not found:
+                    self.lxm.state = LXMF.LXMessage.FAILED
+
         except Exception as e:
             RNS.log("Error while loading LXMF message "+str(self.file_path)+" from disk. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
     def unload(self):
         self.loaded = False
         self.lxm    = None
+
+    def purge(self):
+        self.unload()
+        if os.path.isfile(self.file_path):
+            os.unlink(self.file_path)
 
     def get_timestamp(self):
         if not self.loaded:
@@ -190,6 +222,12 @@ class ConversationMessage:
             self.load()
 
         return self.lxm.hash
+
+    def get_state(self):
+        if not self.loaded:
+            self.load()
+
+        return self.lxm.state
 
     def signature_validated(self):
         if not self.loaded:

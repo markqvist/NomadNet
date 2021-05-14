@@ -28,12 +28,15 @@ THEMES = {
         ("msg_header_caution",          'black', 'yellow',                      'standout',                 '#111', '#fd3'),
         ("msg_header_sent",             'black', 'light gray',                  'standout',                 '#111', '#ddd'),
         ("msg_header_delivered",        'black', 'light blue',                  'standout',                 '#111', '#28b'),
-        ("msg_warning_untrusted",       'black', 'dark red',                    'standout',            'black', 'dark red'),
+        ("msg_header_failed",           'black', 'dark gray',                   'standout',                 'black', 'dark gray'),
+        ("msg_warning_untrusted",       'black', 'dark red',                    'standout',                 '#111', 'dark red'),
         ("list_focus",                  "black", "light gray",                  "standout",                 "#111", "#bbb"),
         ("list_off_focus",              "black", "dark gray",                   "standout",                 "#111", "dark gray"),
         ("list_trusted",                "light green", "default",               "default",                  "#6b2", "default"),
+        ("list_focus_trusted",          "black", "light gray",                  "standout",                 "#180", "#bbb"),
         ("list_unknown",                "dark gray", "default",                 "default",                  "light gray", "default"),
         ("list_untrusted",              "dark red", "default",                  "default",                  "dark red", "default"),
+        ("list_focus_untrusted",        "black", "light gray",                  "standout",                 "#810", "#bbb"),
     ]
 }
 
