@@ -107,7 +107,16 @@ class MainDisplay():
     def update_active_shortcuts(self):
         self.frame.contents["footer"] = (self.sub_displays.active().shortcuts().widget, None)
 
+    def quit(self, sender=None):
+        raise urwid.ExitMainLoop
 
+
+class MenuColumns(urwid.Columns):
+    def keypress(self, size, key):
+        if key == "tab" or key == "down":
+            self.handler.frame.set_focus("body")
+
+        return super(MenuColumns, self).keypress(size, key)
 
 class MenuDisplay():
     def __init__(self, app, handler):
@@ -118,9 +127,11 @@ class MenuDisplay():
         button_conversations = (17, MenuButton("Conversations", on_press=handler.show_conversations))
         button_directory     = (13, MenuButton("Directory", on_press=handler.show_directory))
         button_map           = (7, MenuButton("Map", on_press=handler.show_map))
+        button_quit          = (8, MenuButton("Quit", on_press=handler.quit))
 
         # buttons = [menu_text, button_conversations, button_node, button_directory, button_map]
-        buttons = [menu_text, button_conversations, button_network]
-        columns = urwid.Columns(buttons, dividechars=1)
+        buttons = [menu_text, button_conversations, button_network, button_quit]
+        columns = MenuColumns(buttons, dividechars=1)
+        columns.handler = handler
 
         self.widget = urwid.AttrMap(columns, "menubar")

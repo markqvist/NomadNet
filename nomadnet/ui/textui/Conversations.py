@@ -7,6 +7,7 @@ import urwid
 
 from datetime import datetime
 from nomadnet.Directory import DirectoryEntry
+from nomadnet.vendor.additional_urwid_widgets import IndicativeListBox
 
 class ConversationListDisplayShortcuts():
     def __init__(self, app):
@@ -18,7 +19,7 @@ class ConversationDisplayShortcuts():
     def __init__(self, app):
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("[C-d] Send  [C-k] Clear  [C-t] Toggle Editor  [C-w] Close Conversation  [C-p] Purge Failed"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-d] Send  [C-k] Clear  [C-w] Close  [C-t] Editor Type  [C-p] Purge"), "shortcutbar")
 
 class ConversationsArea(urwid.LineBox):
     def keypress(self, size, key):
@@ -28,6 +29,10 @@ class ConversationsArea(urwid.LineBox):
             self.delegate.delete_selected_conversation()
         elif key == "ctrl n":
             self.delegate.new_conversation()
+        elif key == "tab":
+            self.delegate.app.ui.main_display.frame.set_focus("header")
+        elif key == "up" and self.delegate.ilb.first_item_is_selected():
+            self.delegate.app.ui.main_display.frame.set_focus("header")
         else:
             return super(ConversationsArea, self).keypress(size, key)
 
@@ -63,9 +68,6 @@ class ConversationsDisplay():
                 self.ilb.select_item(ilb_position)
 
     def update_listbox(self):
-        
-        from nomadnet.vendor.additional_urwid_widgets import IndicativeListBox
-
         conversation_list_widgets = []
         for conversation in self.app.conversations():
             conversation_list_widgets.append(self.conversation_list_widget(conversation))
@@ -140,7 +142,7 @@ class ConversationsDisplay():
                     unknown_selected   = False
                     trusted_selected   = True
         except Exception as e:
-            RNS.log("EXC: "+str(e))
+            pass
 
         trust_button_group = []
         r_untrusted = urwid.RadioButton(trust_button_group, "Untrusted", state=untrusted_selected)
@@ -181,11 +183,11 @@ class ConversationsDisplay():
             r_unknown,
             r_trusted,
             urwid.Text(""),
-            urwid.Columns([("weight", 0.45, urwid.Button("Save", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Cancel", on_press=dismiss_dialog))])
+            urwid.Columns([("weight", 0.45, urwid.Button("Save", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Back", on_press=dismiss_dialog))])
         ])
         dialog_pile.error_display = False
 
-        dialog = urwid.LineBox(dialog_pile, title="Edit Directory Entry")
+        dialog = urwid.LineBox(dialog_pile, title="Edit Contact")
         bottom = self.listbox
 
         overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
@@ -249,7 +251,7 @@ class ConversationsDisplay():
             r_unknown,
             r_trusted,
             urwid.Text(""),
-            urwid.Columns([("weight", 0.45, urwid.Button("Start", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Cancel", on_press=dismiss_dialog))])
+            urwid.Columns([("weight", 0.45, urwid.Button("Start", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Back", on_press=dismiss_dialog))])
         ])
         dialog_pile.error_display = False
 
@@ -385,9 +387,34 @@ class MessageEdit(urwid.Edit):
             self.delegate.send_message()
         elif key == "ctrl k":
             self.delegate.clear_editor()
+        elif key == "up":
+            y = self.get_cursor_coords(size)[1]
+            if y == 0:
+                if self.delegate.full_editor_active and self.name == "title_editor":
+                    self.delegate.frame.set_focus("body")
+                elif not self.delegate.full_editor_active and self.name == "content_editor":
+                    self.delegate.frame.set_focus("body")
+                else:
+                    return super(MessageEdit, self).keypress(size, key)
+            else:
+                return super(MessageEdit, self).keypress(size, key)
         else:
             return super(MessageEdit, self).keypress(size, key)
 
+
+class ConversationFrame(urwid.Frame):
+    def keypress(self, size, key):
+        if self.get_focus() == "body":
+            if key == "up" and self.delegate.messagelist.top_is_visible:
+                nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.set_focus("header")
+            elif key == "down" and self.delegate.messagelist.bottom_is_visible:
+                self.set_focus("footer")
+            else:
+                return super(ConversationFrame, self).keypress(size, key)
+        elif key == "ctrl k":
+            self.delegate.clear_editor()
+        else:
+            return super(ConversationFrame, self).keypress(size, key)
 
 class ConversationWidget(urwid.WidgetWrap):
     def __init__(self, source_hash):
@@ -410,16 +437,19 @@ class ConversationWidget(urwid.WidgetWrap):
                 #title_editor  = MessageEdit(caption="\u270E", edit_text="", multiline=False)
                 title_editor  = MessageEdit(caption="", edit_text="", multiline=False)
                 title_editor.delegate = self
+                title_editor.name = "title_editor"
 
                 #msg_editor  = MessageEdit(caption="\u270E", edit_text="", multiline=True)
                 msg_editor  = MessageEdit(caption="", edit_text="", multiline=True)
                 msg_editor.delegate = self
+                msg_editor.name = "content_editor"
 
                 header = None
                 if self.conversation.trust_level == DirectoryEntry.UNTRUSTED:
                     header = urwid.AttrMap(urwid.Padding(urwid.Text("\u26A0 Warning: Conversation with untrusted peer \u26A0", align="center")), "msg_warning_untrusted")
 
                 self.minimal_editor = urwid.AttrMap(msg_editor, "msg_editor")
+                self.minimal_editor.name = "minimal_editor"
 
                 title_columns = urwid.Columns([
                     (8, urwid.Text("Title")),
@@ -435,16 +465,18 @@ class ConversationWidget(urwid.WidgetWrap):
                     title_columns,
                     content_columns
                 ])
+                self.full_editor.name = "full_editor"
 
                 self.content_editor = msg_editor
                 self.title_editor = title_editor
                 self.full_editor_active = False
 
-                self.frame = urwid.Frame(
+                self.frame = ConversationFrame(
                     self.messagelist,
                     header=header,
                     footer=self.minimal_editor
                 )
+                self.frame.delegate = self
 
                 self.display_widget = urwid.LineBox(
                     self.frame
@@ -460,8 +492,22 @@ class ConversationWidget(urwid.WidgetWrap):
             self.frame.contents["footer"] = (self.full_editor, None)
             self.full_editor_active = True
 
+    def toggle_focus_area(self):
+        name = ""
+        try:
+            name = self.frame.get_focus_widgets()[0].name
+        except Exception as e:
+            pass
+
+        if name == "messagelist":
+            self.frame.set_focus("footer")
+        elif name == "minimal_editor" or name == "full_editor":
+            self.frame.set_focus("body")
+
     def keypress(self, size, key):
-        if key == "ctrl w":
+        if key == "tab":
+            self.toggle_focus_area()
+        elif key == "ctrl w":
             self.close()
         elif key == "ctrl p":
             self.conversation.purge_failed()
@@ -492,7 +538,7 @@ class ConversationWidget(urwid.WidgetWrap):
 
         from nomadnet.vendor.additional_urwid_widgets import IndicativeListBox
         self.messagelist = IndicativeListBox(self.message_widgets, position = len(self.message_widgets)-1)
-
+        self.messagelist.name = "messagelist"
         if replace:
             self.frame.contents["body"] = (self.messagelist, None)
             nomadnet.NomadNetworkApp.get_shared_instance().ui.loop.draw_screen()
