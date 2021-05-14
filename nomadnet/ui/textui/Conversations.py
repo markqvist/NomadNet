@@ -567,7 +567,13 @@ class LXMessageWidget(urwid.WidgetWrap):
         self.timestamp = message.get_timestamp()
         time_format = app.time_format
         message_time = datetime.fromtimestamp(self.timestamp)
-        title_string = message_time.strftime(time_format)
+        encryption_string = ""
+        if message.get_transport_encrypted():
+            encryption_string = " [\U0001F512"+message.get_transport_encryption()+"]"
+        else:
+            encryption_string = " [\U0001F513"+message.get_transport_encryption()+"]"
+        
+        title_string = message_time.strftime(time_format)+encryption_string
 
         if app.lxmf_destination.hash == message.lxm.source_hash:
             if message.lxm.state == LXMF.LXMessage.DELIVERED:

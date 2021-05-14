@@ -229,6 +229,18 @@ class ConversationMessage:
 
         return self.lxm.state
 
+    def get_transport_encryption(self):
+        if not self.loaded:
+            self.load()
+
+        return self.lxm.transport_encryption
+
+    def get_transport_encrypted(self):
+        if not self.loaded:
+            self.load()
+
+        return self.lxm.transport_encrypted
+
     def signature_validated(self):
         if not self.loaded:
             self.load()
