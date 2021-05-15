@@ -190,7 +190,7 @@ class KnownNodes(urwid.WidgetWrap):
         else:
             self.no_content = True
             widget_style = "inactive_text"
-            self.display_widget = urwid.Pile([urwid.Text(("warning_text", "- \u2139 -\n"), align="center"), SelectText(("warning_text", "Currently, no nodes are known\n\n"), align="center")])
+            self.display_widget = urwid.Pile([urwid.Text(("warning_text", "- i -\n"), align="center"), SelectText(("warning_text", "Currently, no nodes are known\n\n"), align="center")])
 
         urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="Known Nodes"), widget_style))
 
@@ -271,7 +271,7 @@ class LocalPeer(urwid.WidgetWrap):
                 urwid.Pile([
                     urwid.Text("\nSaved", align="center"),
                     urwid.Button("OK", on_press=dismiss_dialog)
-                ]), title="\u2139"
+                ]), title="i"
             )
             dialog.delegate = self
             bottom = self
@@ -293,7 +293,7 @@ class LocalPeer(urwid.WidgetWrap):
                 urwid.Pile([
                     urwid.Text("\n\n\nAnnounce Sent\n\n", align="center"),
                     urwid.Button("OK", on_press=dismiss_dialog)
-                ]), title="\u2139"
+                ]), title="i"
             )
             dialog.delegate = self
             bottom = self
@@ -326,7 +326,7 @@ class LocalPeer(urwid.WidgetWrap):
                 self.t_last_announce,
                 announce_button,
                 urwid.Divider("\u2504"),
-                urwid.Columns([("weight", 0.45, urwid.Button("Save", on_press=save_query)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Node Settings", on_press=node_settings_query))])
+                urwid.Columns([("weight", 0.45, urwid.Button("Save", on_press=save_query)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Node Cfg", on_press=node_settings_query))])
             ]
         )
 
@@ -347,7 +347,7 @@ class NodeSettings(urwid.WidgetWrap):
 
         widget_style = "inactive_text"
         pile = urwid.Pile([
-            urwid.Text("- \u2139 -\n", align="center"),
+            urwid.Text("- i -\n", align="center"),
             urwid.Text("\nNode Hosting currently unavailable\n\n", align="center"),
             urwid.Padding(urwid.Button("Back", on_press=show_peer_info), "center", "pack")
         ])
