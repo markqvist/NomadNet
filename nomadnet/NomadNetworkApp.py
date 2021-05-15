@@ -6,6 +6,8 @@ import RNS
 import LXMF
 import nomadnet
 
+import RNS.vendor.umsgpack as msgpack
+
 from ._version import __version__
 from .vendor.configobj import ConfigObj
 
@@ -47,6 +49,7 @@ class NomadNetworkApp:
         self.resourcepath      = self.configdir+"/storage/resources"
         self.conversationpath  = self.configdir+"/storage/conversations"
         self.directorypath     = self.configdir+"/storage/directory"
+        self.peersettingspath  = self.configdir+"/storage/peersettings"
 
         if not os.path.isdir(self.storagepath):
             os.makedirs(self.storagepath)
@@ -102,13 +105,37 @@ class NomadNetworkApp:
                 RNS.log("The contained exception was: %s" % (str(e)), RNS.LOG_ERROR)
                 nomadnet.panic()
 
+        if os.path.isfile(self.peersettingspath):
+            try:
+                file = open(self.peersettingspath, "rb")
+                self.peer_settings = msgpack.unpackb(file.read())
+                file.close()
+            except Exception as e:
+                RNS.log("Could not load local peer settings from "+self.peersettingspath, RNS.LOG_ERROR)
+                RNS.log("The contained exception was: %s" % (str(e)), RNS.LOG_ERROR)
+                nomadnet.panic()
+        else:
+            try:
+                RNS.log("No peer settings file found, creating new...")
+                self.peer_settings = {
+                    "display_name": "",
+                    "announce_interval": None,
+                    "last_announce": None,
+                }
+                self.save_peer_settings()
+                RNS.log("Created new peer settings file")
+            except Exception as e:
+                RNS.log("Could not create and save a new peer settings file", RNS.LOG_ERROR)
+                RNS.log("The contained exception was: %s" % (str(e)), RNS.LOG_ERROR)
+                nomadnet.panic()
+
 
         atexit.register(self.exit_handler)
 
         self.message_router = LXMF.LXMRouter()
         self.message_router.register_delivery_callback(self.lxmf_delivery)
 
-        self.lxmf_destination = self.message_router.register_delivery_identity(self.identity)
+        self.lxmf_destination = self.message_router.register_delivery_identity(self.identity, display_name=self.peer_settings["display_name"])
 
         RNS.Identity.remember(
             packet_hash=None,
@@ -117,12 +144,32 @@ class NomadNetworkApp:
             app_data=None
         )
 
+        RNS.Transport.register_announce_handler(nomadnet.Conversation)
+
         RNS.log("LXMF Router ready to receive on: "+RNS.prettyhexrep(self.lxmf_destination.hash))
 
         self.directory = nomadnet.Directory.Directory(self)
 
         nomadnet.ui.spawn(self.uimode)
 
+    def set_display_name(self, display_name):
+        self.peer_settings["display_name"] = display_name
+        self.lxmf_destination.display_name = display_name
+        self.lxmf_destination.set_default_app_data(display_name.encode("utf-8"))
+        self.save_peer_settings()
+
+    def get_display_name(self):
+        return self.peer_settings["display_name"]
+
+    def announce_now(self):
+        self.lxmf_destination.announce()
+        self.peer_settings["last_announce"] = time.time()
+        self.save_peer_settings()
+
+    def save_peer_settings(self):
+        file = open(self.peersettingspath, "wb")
+        file.write(msgpack.packb(self.peer_settings))
+        file.close()
 
     def lxmf_delivery(self, message):
         time_string = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(message.timestamp))
@@ -190,6 +237,11 @@ class NomadNetworkApp:
                                 self.config["textui"]["intro_time"] = 1
                             else:
                                 self.config["textui"]["intro_time"] = self.config["textui"].as_int("intro_time")
+
+                            if not "animation_interval" in self.config["textui"]:
+                                self.config["textui"]["animation_interval"] = 1
+                            else:
+                                self.config["textui"]["animation_interval"] = self.config["textui"].as_int("animation_interval")
 
                             if not "colormode" in self.config["textui"]:
                                 self.config["textui"]["colormode"] = nomadnet.ui.COLORMODE_16

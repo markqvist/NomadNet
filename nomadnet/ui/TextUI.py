@@ -22,6 +22,8 @@ THEMES = {
         ('shortcutbar',                 'black', 'light gray',                  'standout',                 '#111', '#bbb'),
         ('body_text',                   'white', 'default',                     'default',                  '#0a0', 'default'),
         ('error_text',                  'dark red', 'default',                  'default',                  'dark red', 'default'),
+        ('warning_text',                'yellow', 'default',                    'default',                  '#ba4', 'default'),
+        ('inactive_text',               'dark gray', 'default',                 'default',                  'dark gray', 'default'),
         ('buttons',                     'light green,bold', 'default',          'default',                  '#00a533', 'default'),
         ('msg_editor',                  'black', 'light cyan',                  'standout',                 '#111', '#0bb'),
         ("msg_header_ok",               'black', 'light green',                 'standout',                 '#111', '#6b2'),

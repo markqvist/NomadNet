@@ -87,6 +87,7 @@ class MainDisplay():
     def show_network(self, user_data):
         self.sub_displays.active_display = self.sub_displays.network_display
         self.update_active_sub_display()
+        self.sub_displays.network_display.start()
 
     def show_conversations(self, user_data):
         self.sub_displays.active_display = self.sub_displays.conversations_display

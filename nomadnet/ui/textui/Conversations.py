@@ -13,7 +13,7 @@ class ConversationListDisplayShortcuts():
     def __init__(self, app):
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("[Enter] Open  [C-e] Edit Peer  [C-x] Delete  [C-n] New"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[Enter] Open  [C-e] Peer Info  [C-x] Delete  [C-n] New"), "shortcutbar")
 
 class ConversationDisplayShortcuts():
     def __init__(self, app):
@@ -50,6 +50,7 @@ class ConversationsDisplay():
     def __init__(self, app):
         self.app = app
         self.dialog_open = False
+        self.currently_displayed_conversation = None
 
         def disp_list_shortcuts(sender, arg1, arg2):
             self.shortcuts_display = self.list_shortcuts
@@ -57,7 +58,13 @@ class ConversationsDisplay():
 
         self.update_listbox()
 
-        self.columns_widget = urwid.Columns([("weight", ConversationsDisplay.list_width, self.listbox), ("weight", 1-ConversationsDisplay.list_width, self.make_conversation_widget(None))], dividechars=0, focus_column=0, box_columns=[0])
+        self.columns_widget = urwid.Columns(
+            [
+                ("weight", ConversationsDisplay.list_width, self.listbox),
+                ("weight", 1-ConversationsDisplay.list_width, self.make_conversation_widget(None))
+            ],
+            dividechars=0, focus_column=0, box_columns=[0]
+        )
 
         self.list_shortcuts = ConversationListDisplayShortcuts(self.app)
         self.editor_shortcuts = ConversationDisplayShortcuts(self.app)
@@ -126,8 +133,8 @@ class ConversationsDisplay():
         if display_name == None:
             display_name = ""
 
-        e_id = urwid.Edit(caption="ID   : ",edit_text=source_hash_text)
-        t_id = urwid.Text("ID   : "+source_hash_text)
+        e_id = urwid.Edit(caption="Addr : ",edit_text=source_hash_text)
+        t_id = urwid.Text("Addr : "+source_hash_text)
         e_name = urwid.Edit(caption="Name : ",edit_text=display_name)
 
         selected_id_widget = t_id
@@ -177,6 +184,7 @@ class ConversationsDisplay():
                 self.app.directory.remember(entry)
                 self.update_conversation_list()
                 self.dialog_open = False
+                self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
             except Exception as e:
                 RNS.log("Could not save directory entry. The contained exception was: "+str(e), RNS.LOG_VERBOSE)
                 if not dialog_pile.error_display:
@@ -190,6 +198,7 @@ class ConversationsDisplay():
             known_section = urwid.Divider("\u2504")
         else:
             def query_action(sender, user_data):
+                self.close_conversation_by_hash(user_data)
                 nomadnet.Conversation.query_for_peer(user_data)
                 options = dialog_pile.options(height_type="pack")
                 dialog_pile.contents = [
@@ -211,7 +220,7 @@ class ConversationsDisplay():
         ])
         dialog_pile.error_display = False
 
-        dialog = DialogLineBox(dialog_pile, title="Edit Peer")
+        dialog = DialogLineBox(dialog_pile, title="Peer Info")
         dialog.delegate = self
         bottom = self.listbox
 
@@ -225,7 +234,7 @@ class ConversationsDisplay():
         source_hash = ""
         display_name = ""
 
-        e_id = urwid.Edit(caption="ID   : ",edit_text=source_hash)
+        e_id = urwid.Edit(caption="Addr : ",edit_text=source_hash)
         e_name = urwid.Edit(caption="Name : ",edit_text=display_name)
 
         trust_button_group = []
@@ -276,7 +285,7 @@ class ConversationsDisplay():
             r_unknown,
             r_trusted,
             urwid.Text(""),
-            urwid.Columns([("weight", 0.45, urwid.Button("Start", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Back", on_press=dismiss_dialog))])
+            urwid.Columns([("weight", 0.45, urwid.Button("Create", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Back", on_press=dismiss_dialog))])
         ])
         dialog_pile.error_display = False
 
@@ -331,9 +340,19 @@ class ConversationsDisplay():
             widget.check_editor_allowed()
             return widget
 
+    def close_conversation_by_hash(self, conversation_hash):
+        if conversation_hash in ConversationsDisplay.cached_conversation_widgets:
+            ConversationsDisplay.cached_conversation_widgets.pop(conversation_hash)
+
+        if self.currently_displayed_conversation == conversation_hash:
+            self.display_conversation(sender=None, source_hash=None)
+
     def close_conversation(self, conversation):
-        ConversationsDisplay.cached_conversation_widgets.pop(conversation.source_hash)
-        self.display_conversation(sender=None, source_hash=None)
+        if conversation.source_hash in ConversationsDisplay.cached_conversation_widgets:
+            ConversationsDisplay.cached_conversation_widgets.pop(conversation.source_hash)
+
+        if self.currently_displayed_conversation == conversation.source_hash:
+            self.display_conversation(sender=None, source_hash=None)
 
 
     def conversation_list_widget(self, conversation):
@@ -450,7 +469,7 @@ class ConversationWidget(urwid.WidgetWrap):
     def __init__(self, source_hash):
         if source_hash == None:
             self.frame = None
-            display_widget = urwid.LineBox(urwid.Filler(urwid.Text("No conversation selected"), "top"))
+            display_widget = urwid.LineBox(urwid.Filler(urwid.Text("\n  No conversation selected"), "top"))
             urwid.WidgetWrap.__init__(self, display_widget)
         else:
             if source_hash in ConversationsDisplay.cached_conversation_widgets:
@@ -505,7 +524,8 @@ class ConversationWidget(urwid.WidgetWrap):
                 self.frame = ConversationFrame(
                     self.messagelist,
                     header=header,
-                    footer=self.minimal_editor
+                    footer=self.minimal_editor,
+                    focus_part="footer"
                 )
                 self.frame.delegate = self
 

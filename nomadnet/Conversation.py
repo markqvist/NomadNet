@@ -9,6 +9,29 @@ class Conversation:
     cached_conversations = {}
     created_callback = None
 
+    aspect_filter = "lxmf.delivery"
+    @staticmethod
+    def received_announce(destination_hash, announced_identity, app_data):
+        app = nomadnet.NomadNetworkApp.get_shared_instance()
+        destination_hash_text = RNS.hexrep(destination_hash, delimit=False)
+        # Check if the announced destination is in
+        # our list of conversations
+        if destination_hash_text in [e[0] for e in Conversation.conversation_list(app)]:
+            RNS.log("Announced LXMF destination is in our conversation list")
+            RNS.log("app_data = "+str(app_data))
+            if app.directory.find(destination_hash):
+                RNS.log("It is also in the directory")
+                if Conversation.created_callback != None:
+                    Conversation.created_callback()
+            else:
+                RNS.log("But it is not in the directory")
+                if Conversation.created_callback != None:
+                    Conversation.created_callback()
+
+        # Add the announce to the directory announce
+        # stream logger
+        app.directory.announce_received(destination_hash, app_data)
+
     @staticmethod
     def query_for_peer(source_hash):
         try:
