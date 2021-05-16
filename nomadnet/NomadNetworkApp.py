@@ -136,6 +136,7 @@ class NomadNetworkApp:
         self.message_router.register_delivery_callback(self.lxmf_delivery)
 
         self.lxmf_destination = self.message_router.register_delivery_identity(self.identity, display_name=self.peer_settings["display_name"])
+        self.lxmf_destination.set_default_app_data(self.get_display_name_bytes)
 
         RNS.Identity.remember(
             packet_hash=None,
@@ -155,11 +156,13 @@ class NomadNetworkApp:
     def set_display_name(self, display_name):
         self.peer_settings["display_name"] = display_name
         self.lxmf_destination.display_name = display_name
-        self.lxmf_destination.set_default_app_data(display_name.encode("utf-8"))
         self.save_peer_settings()
 
     def get_display_name(self):
         return self.peer_settings["display_name"]
+
+    def get_display_name_bytes(self):
+        return self.peer_settings["display_name"].encode("utf-8")
 
     def announce_now(self):
         self.lxmf_destination.announce()
