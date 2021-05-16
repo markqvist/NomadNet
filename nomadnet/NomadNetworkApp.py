@@ -98,7 +98,7 @@ class NomadNetworkApp:
             try:
                 RNS.log("No Primary Identity file found, creating new...")
                 self.identity = RNS.Identity()
-                self.identity.save(self.identitypath)
+                self.identity.to_file(self.identitypath)
                 RNS.log("Created new Primary Identity %s" % (str(self.identity)))
             except Exception as e:
                 RNS.log("Could not create and save a new Primary Identity", RNS.LOG_ERROR)

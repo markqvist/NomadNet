@@ -35,7 +35,7 @@ class Conversation:
     @staticmethod
     def query_for_peer(source_hash):
         try:
-            RNS.Transport.requestPath(bytes.fromhex(source_hash))
+            RNS.Transport.request_path(bytes.fromhex(source_hash))
         except Exception as e:
             RNS.log("Error while querying network for peer identity. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
