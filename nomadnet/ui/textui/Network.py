@@ -263,23 +263,24 @@ class LocalPeer(urwid.WidgetWrap):
         def save_query(sender):
             def dismiss_dialog(sender):
                 self.dialog_open = False
-                self.parent.left_pile.contents[2] = (LocalPeer(self.app, self.parent), options)
+                self.parent.left_pile.contents[3] = (LocalPeer(self.app, self.parent), options)
 
             self.app.set_display_name(e_name.get_edit_text())
 
             dialog = DialogLineBox(
                 urwid.Pile([
-                    urwid.Text("\nSaved", align="center"),
+                    urwid.Text("\n\n\nSaved\n\n", align="center"),
                     urwid.Button("OK", on_press=dismiss_dialog)
                 ]), title="i"
             )
             dialog.delegate = self
             bottom = self
 
-            overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=4, right=4)
-            options = self.parent.left_pile.options()
+            #overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=4, right=4)
+            overlay = dialog
+            options = self.parent.left_pile.options(height_type="pack", height_amount=None)
             self.dialog_open = True
-            self.parent.left_pile.contents[2] = (overlay, options)
+            self.parent.left_pile.contents[3] = (overlay, options)
 
         def announce_query(sender):
             def dismiss_dialog(sender):
