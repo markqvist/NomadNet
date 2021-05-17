@@ -17,14 +17,10 @@ class Conversation:
         # Check if the announced destination is in
         # our list of conversations
         if destination_hash_text in [e[0] for e in Conversation.conversation_list(app)]:
-            RNS.log("Announced LXMF destination is in our conversation list")
-            RNS.log("app_data = "+str(app_data))
             if app.directory.find(destination_hash):
-                RNS.log("It is also in the directory")
                 if Conversation.created_callback != None:
                     Conversation.created_callback()
             else:
-                RNS.log("But it is not in the directory")
                 if Conversation.created_callback != None:
                     Conversation.created_callback()
 

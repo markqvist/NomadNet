@@ -123,7 +123,6 @@ class AnnounceStream(urwid.WidgetWrap):
             self.widget_list.insert(0, nw)
 
         if len(new_widgets) > 0:
-            RNS.log("Inserted "+str(len(new_widgets))+" widgets")
             if self.ilb != None:
                 self.ilb.set_body(self.widget_list)
 
