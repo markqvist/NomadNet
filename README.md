@@ -3,6 +3,8 @@ Nomad Network
 
 Communicate Freely.
 
+![Screenshot](https://github.com/markqvist/NomadNet/raw/master/docs/screenshots/3.png)
+
 Nomad Network is built using Reticulum, see [unsigned.io/projects/reticulum](https://unsigned.io/projects/reticulum/).
 
 ## Notable Features
