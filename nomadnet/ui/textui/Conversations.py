@@ -31,7 +31,7 @@ class ConversationsArea(urwid.LineBox):
             self.delegate.new_conversation()
         elif key == "tab":
             self.delegate.app.ui.main_display.frame.set_focus("header")
-        elif key == "up" and self.delegate.ilb.first_item_is_selected():
+        elif key == "up" and (self.delegate.ilb.first_item_is_selected() or self.delegate.ilb.body_is_empty()):
             self.delegate.app.ui.main_display.frame.set_focus("header")
         else:
             return super(ConversationsArea, self).keypress(size, key)
