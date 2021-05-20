@@ -141,7 +141,7 @@ class NomadNetworkApp:
         RNS.Identity.remember(
             packet_hash=None,
             destination_hash=self.lxmf_destination.hash,
-            public_key=self.identity.pub_bytes,
+            public_key=self.identity.get_public_key(),
             app_data=None
         )
 
