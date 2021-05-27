@@ -330,9 +330,10 @@ intro_time = 1
 # valid colormodes are:
 # monochrome, 16, 88, 256 and 24bit
 #
-# The default is a conservative 88 colors,
+# The default is a conservative 16 colors,
 # but 256 colors can probably be used on
-# most terminals. Some terminals
+# most terminals. Some terminals support
+# 24 bit color.
 
 # colormode = monochrome
 colormode = 16
