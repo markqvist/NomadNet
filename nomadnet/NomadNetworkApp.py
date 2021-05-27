@@ -335,8 +335,8 @@ intro_time = 1
 # most terminals. Some terminals
 
 # colormode = monochrome
-# colormode = 16
-colormode = 88
+colormode = 16
+# colormode = 88
 # colormode = 256
 # colormode = 24bit
 
