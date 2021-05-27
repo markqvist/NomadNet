@@ -79,6 +79,10 @@ class TextUI:
 
         if intro_timeout > 0:
             self.loop.set_alarm_in(intro_timeout, self.display_main)
+
+        # TODO: Probably remove this at some point when better terminal
+        # color capability detection has been implemented
+        RNS.log("Starting Text UI in "+str(colormode)+" color mode. If no UI appears, try adjusting your color settings in "+str(self.app.configdir)+"/config", RNS.LOG_INFO)
         
         self.set_colormode(colormode)
 
