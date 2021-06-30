@@ -322,6 +322,10 @@ class ConversationsDisplay():
         self.currently_displayed_conversation = source_hash
         options = self.widget.options("weight", 1-ConversationsDisplay.list_width)
         self.widget.contents[1] = (self.make_conversation_widget(source_hash), options)
+        if source_hash == None:
+            self.widget.set_focus_column(0)
+        else:
+            self.widget.set_focus_column(1)
         
 
     def make_conversation_widget(self, source_hash):

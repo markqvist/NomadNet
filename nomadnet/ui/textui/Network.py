@@ -9,7 +9,7 @@ class NetworkDisplayShortcuts():
     def __init__(self, app):
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("Network Display Shortcuts"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-\u2191\u2193] Navigate announces"), "shortcutbar")
 
 
 class DialogLineBox(urwid.LineBox):
@@ -44,8 +44,95 @@ class ListEntry(urwid.Text):
         self._emit('click')
         return True
 
+
+class AnnounceInfo(urwid.WidgetWrap):
+    def __init__(self, announce, parent, app):
+        self.app = nomadnet.NomadNetworkApp.get_shared_instance()
+        self.parent = self.app.ui.main_display.sub_displays.network_display
+
+        source_hash  = announce[1]
+        time_format  = app.time_format
+        dt           = datetime.fromtimestamp(announce[0])
+        ts_string    = dt.strftime(time_format)
+        trust_level  = self.app.directory.trust_level(source_hash)
+        trust_str    = ""
+        display_str  = self.app.directory.simplest_display_str(source_hash)
+        addr_str     = "<"+RNS.hexrep(source_hash, delimit=False)+">"
+        try:
+            data_str = announce[2].decode("utf-8")
+            data_style = ""
+            if trust_level != DirectoryEntry.TRUSTED and len(data_str) > 32:
+                data_str = data_str[:32]+" [...]"
+        except Exception as e:
+            data_str = "Decode failed"
+            data_style = "list_untrusted"
+
+
+        if trust_level == DirectoryEntry.UNTRUSTED:
+            trust_str     = "Untrusted"
+            symbol        = "\u2715"
+            style         = "list_untrusted"
+        elif trust_level == DirectoryEntry.UNKNOWN:
+            trust_str     = "Unknown"
+            symbol        = "?"
+            style         = "list_unknown"
+        elif trust_level == DirectoryEntry.TRUSTED:
+            trust_str     = "Trusted"
+            symbol        = "\u2713"
+            style         = "list_trusted"
+        elif trust_level == DirectoryEntry.WARNING:
+            trust_str     = "Warning"
+            symbol        = "\u26A0"
+            style         = "list_warning"
+        else:
+            trust_str     = "Untrusted"
+            symbol        = "\u26A0"
+            style         = "list_untrusted"
+
+        def show_announce_stream(sender):
+            options = self.parent.left_pile.options(height_type="weight", height_amount=1)
+            self.parent.left_pile.contents[1] = (AnnounceStream(self.app, self.parent), options)
+
+        def converse(sender):
+            show_announce_stream(None)
+            try:
+                existing_conversations = nomadnet.Conversation.conversation_list(self.app)
+                
+                source_hash_text = RNS.hexrep(source_hash, delimit=False)
+                display_name = data_str
+
+                if not source_hash_text in [c[0] for c in existing_conversations]:
+                    entry = DirectoryEntry(source_hash, display_name, trust_level)
+                    self.app.directory.remember(entry)
+
+                    new_conversation = nomadnet.Conversation(source_hash_text, nomadnet.NomadNetworkApp.get_shared_instance(), initiator=True)
+                    self.app.ui.main_display.sub_displays.conversations_display.update_conversation_list()
+
+                self.app.ui.main_display.sub_displays.conversations_display.display_conversation(None, source_hash_text)
+                self.app.ui.main_display.show_conversations(None)
+
+            except Exception as e:
+                RNS.log("Error while starting conversation from announce. The contained exception was: "+str(e), RNS.LOG_ERROR)
+
+        pile = urwid.Pile([
+            urwid.Text("Addr  : "+addr_str, align="left"),
+            urwid.Text("Name  : "+display_str, align="left"),
+            urwid.Text(["Trust : ", (style, trust_str)], align="left"),
+            urwid.Divider("\u2504"),
+            urwid.Text(["Announce Data: \n", (data_style, data_str)], align="left"),
+            urwid.Divider("\u2504"),
+            urwid.Columns([("weight", 0.45, urwid.Button("Back", on_press=show_announce_stream)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Converse", on_press=converse))])
+        ])
+
+        self.display_widget = urwid.Filler(pile, valign="top", height="pack")
+
+        urwid.WidgetWrap.__init__(self, urwid.LineBox(self.display_widget, title="Announce Info"))
+
+
 class AnnounceStreamEntry(urwid.WidgetWrap):
-    def __init__(self, app, timestamp, source_hash):
+    def __init__(self, app, announce):
+        timestamp = announce[0]
+        source_hash = announce[1]
         self.app = app
         self.timestamp = timestamp
         time_format = app.time_format
@@ -77,9 +164,16 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
             focus_style   = "list_focus_untrusted"
 
         widget = ListEntry(ts_string+" "+display_str)
+        urwid.connect_signal(widget, "click", self.display_announce, announce)
 
         self.display_widget = urwid.AttrMap(widget, style, focus_style)
         urwid.WidgetWrap.__init__(self, self.display_widget)
+
+    def display_announce(self, event, announce):
+        parent = self.app.ui.main_display.sub_displays.network_display
+        info_widget = AnnounceInfo(announce, parent, self.app)
+        options = parent.left_pile.options(height_type="weight", height_amount=1)
+        parent.left_pile.contents[1] = (info_widget, options)
 
 class AnnounceStream(urwid.WidgetWrap):
     def __init__(self, app, parent):
@@ -93,7 +187,7 @@ class AnnounceStream(urwid.WidgetWrap):
         self.widget_list = []
         self.update_widget_list()
 
-        wlt = [AnnounceStreamEntry(self.app, e[0], e[1]) for e in self.app.directory.announce_stream]
+        wlt = [AnnounceStreamEntry(self.app, e) for e in self.app.directory.announce_stream]
         self.ilb = IndicativeListBox(
             self.widget_list,
             #wlt,
@@ -118,7 +212,7 @@ class AnnounceStream(urwid.WidgetWrap):
                 self.added_entries.insert(0, e[0])
                 new_entries.insert(0, e)
 
-        new_widgets = [AnnounceStreamEntry(self.app, e[0], e[1]) for e in new_entries]
+        new_widgets = [AnnounceStreamEntry(self.app, e) for e in new_entries]
         for nw in new_widgets:
             self.widget_list.insert(0, nw)
 
@@ -356,17 +450,6 @@ class NodeSettings(urwid.WidgetWrap):
 
         urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="Node Settings"), widget_style))
 
-    def node_list_selection(self, arg1, arg2):
-        pass
-
-    def make_node_widgets(self):
-        widget_list = []
-        for node_entry in self.node_list:
-            # TODO: Implement this
-            widget_list.append(ListEntry("Node "+RNS.prettyhexrep(node_entry.source_hash)))
-
-        # TODO: Sort list
-        return widget_list
 
 
 class UpdatingText(urwid.WidgetWrap):
