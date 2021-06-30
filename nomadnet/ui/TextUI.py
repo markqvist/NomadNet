@@ -20,7 +20,7 @@ THEMES = {
         ('heading',                     'light gray,underline', 'default',      'underline',                'g93,underline', 'default'),
         ('menubar',                     'black', 'light gray',                  'standout',                 '#111', '#bbb'),
         ('shortcutbar',                 'black', 'light gray',                  'standout',                 '#111', '#bbb'),
-        ('body_text',                   'white', 'default',                     'default',                  '#0a0', 'default'),
+        ('body_text',                   'white', 'default',                     'default',                  '#ddd', 'default'),
         ('error_text',                  'dark red', 'default',                  'default',                  'dark red', 'default'),
         ('warning_text',                'yellow', 'default',                    'default',                  '#ba4', 'default'),
         ('inactive_text',               'dark gray', 'default',                 'default',                  'dark gray', 'default'),

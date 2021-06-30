@@ -241,6 +241,9 @@ class NomadNetworkApp:
                             else:
                                 self.config["textui"]["intro_time"] = self.config["textui"].as_int("intro_time")
 
+                            if not "editor" in self.config["textui"]:
+                                self.config["textui"]["editor"] = "editor"
+
                             if not "animation_interval" in self.config["textui"]:
                                 self.config["textui"]["animation_interval"] = 1
                             else:
@@ -324,6 +327,7 @@ user_interface = text
 
 [textui]
 
+# Amount of time to show intro screen
 intro_time = 1
 
 # Specify the number of colors to use
@@ -340,6 +344,11 @@ colormode = 16
 # colormode = 88
 # colormode = 256
 # colormode = 24bit
+
+# What editor to use for editing text. By
+# default the operating systems "editor"
+# alias will be used.
+editor = editor
 
 [node]
 

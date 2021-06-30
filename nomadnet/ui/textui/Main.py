@@ -4,7 +4,9 @@ import time
 from .Network import *
 from .Conversations import *
 from .Directory import *
+from .Config import *
 from .Map import *
+from .Log import *
 import urwid
 
 class SubDisplays():
@@ -13,7 +15,9 @@ class SubDisplays():
         self.network_display = NetworkDisplay(self.app)
         self.conversations_display = ConversationsDisplay(self.app)
         self.directory_display = DirectoryDisplay(self.app)
+        self.config_display = ConfigDisplay(self.app)
         self.map_display = MapDisplay(self.app)
+        self.log_display = LogDisplay(self.app)
 
         self.active_display = self.conversations_display
 
@@ -101,6 +105,14 @@ class MainDisplay():
         self.sub_displays.active_display = self.sub_displays.map_display
         self.update_active_sub_display()
 
+    def show_config(self, user_data):
+        self.sub_displays.active_display = self.sub_displays.config_display
+        self.update_active_sub_display()
+
+    def show_log(self, user_data):
+        self.sub_displays.active_display = self.sub_displays.log_display
+        self.update_active_sub_display()
+
     def update_active_sub_display(self):
         self.frame.contents["body"] = (self.sub_displays.active().widget, None)
         self.update_active_shortcuts()
@@ -127,11 +139,13 @@ class MenuDisplay():
         button_network       = (11, MenuButton("Network", on_press=handler.show_network))
         button_conversations = (17, MenuButton("Conversations", on_press=handler.show_conversations))
         button_directory     = (13, MenuButton("Directory", on_press=handler.show_directory))
-        button_map           = (7, MenuButton("Map", on_press=handler.show_map))
-        button_quit          = (8, MenuButton("Quit", on_press=handler.quit))
+        button_map           = (7,  MenuButton("Map", on_press=handler.show_map))
+        button_log           = (7,  MenuButton("Log", on_press=handler.show_log))
+        button_config        = (10, MenuButton("Config", on_press=handler.show_config))
+        button_quit          = (8,  MenuButton("Quit", on_press=handler.quit))
 
         # buttons = [menu_text, button_conversations, button_node, button_directory, button_map]
-        buttons = [menu_text, button_conversations, button_network, button_quit]
+        buttons = [menu_text, button_conversations, button_network, button_log, button_config, button_quit]
         columns = MenuColumns(buttons, dividechars=1)
         columns.handler = handler
 
