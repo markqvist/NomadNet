@@ -83,7 +83,8 @@ class TextUI:
 
         # TODO: Probably remove this at some point when better terminal
         # color capability detection has been implemented
-        RNS.log("Starting Text UI in "+str(colormode)+" color mode. If no UI appears, try adjusting your color settings in "+str(self.app.configdir)+"/config", RNS.LOG_INFO)
+        if colormode > 16:
+            RNS.log("Starting Text UI in "+str(colormode)+" color mode. If no UI appears, try adjusting your color settings in "+str(self.app.configdir)+"/config", RNS.LOG_INFO)
         
         self.set_colormode(colormode)
 
