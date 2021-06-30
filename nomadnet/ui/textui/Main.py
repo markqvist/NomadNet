@@ -72,8 +72,8 @@ class MainFrame(urwid.Frame):
     def keypress(self, size, key):
         self.keypress_focus_check()
         
-        if key == "ctrl q":
-            raise urwid.ExitMainLoop
+        #if key == "ctrl q":
+        #    raise urwid.ExitMainLoop
 
         return super(MainFrame, self).keypress(size, key)
 
@@ -119,6 +119,12 @@ class MainDisplay():
 
     def update_active_shortcuts(self):
         self.frame.contents["footer"] = (self.sub_displays.active().shortcuts().widget, None)
+
+    def request_redraw(self):
+        self.app.ui.loop.set_alarm_in(0.25, self.redraw_now)
+    
+    def redraw_now(self, sender=None, data=None):
+        self.app.ui.loop.draw_screen()
 
     def quit(self, sender=None):
         raise urwid.ExitMainLoop

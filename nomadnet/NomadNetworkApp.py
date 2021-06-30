@@ -244,6 +244,11 @@ class NomadNetworkApp:
                             if not "editor" in self.config["textui"]:
                                 self.config["textui"]["editor"] = "editor"
 
+                            if not "mouse_enabled" in self.config["textui"]:
+                                self.config["textui"]["mouse_enabled"] = True
+                            else:
+                                self.config["textui"]["animation_interval"] = self.config["textui"].as_bool("mouse_enabled")
+
                             if not "animation_interval" in self.config["textui"]:
                                 self.config["textui"]["animation_interval"] = 1
                             else:
@@ -344,6 +349,11 @@ colormode = 16
 # colormode = 88
 # colormode = 256
 # colormode = 24bit
+
+# You can specify whether mouse events
+# should be considered as input to the
+# application. On by default.
+mouse_enabled = True
 
 # What editor to use for editing text. By
 # default the operating systems "editor"

@@ -61,6 +61,7 @@ class TextUI:
         intro_timeout = self.app.config["textui"]["intro_time"]
         colormode     = self.app.config["textui"]["colormode"]
         theme         = self.app.config["textui"]["theme"]
+        mouse_enabled = self.app.config["textui"]["mouse_enabled"]
 
         palette       = THEMES[theme]
 
@@ -75,7 +76,7 @@ class TextUI:
         else:
             initial_widget = self.main_display.widget
 
-        self.loop = urwid.MainLoop(initial_widget, screen=self.screen)
+        self.loop = urwid.MainLoop(initial_widget, screen=self.screen, handle_mouse=mouse_enabled)
 
         if intro_timeout > 0:
             self.loop.set_alarm_in(intro_timeout, self.display_main)
