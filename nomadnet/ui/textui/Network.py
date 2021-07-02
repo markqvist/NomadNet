@@ -8,8 +8,9 @@ from nomadnet.vendor.additional_urwid_widgets import IndicativeListBox, MODIFIER
 class NetworkDisplayShortcuts():
     def __init__(self, app):
         self.app = app
+        g = app.ui.glyphs
 
-        self.widget = urwid.AttrMap(urwid.Text("[C-\u2191\u2193] Navigate announces"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-"+g["arrow_u"]+g["arrow_d"]+"] Navigate announces"), "shortcutbar")
 
 
 class DialogLineBox(urwid.LineBox):
@@ -49,6 +50,7 @@ class AnnounceInfo(urwid.WidgetWrap):
     def __init__(self, announce, parent, app):
         self.app = nomadnet.NomadNetworkApp.get_shared_instance()
         self.parent = self.app.ui.main_display.sub_displays.network_display
+        g = self.app.ui.glyphs
 
         source_hash  = announce[1]
         time_format  = app.time_format
@@ -70,23 +72,23 @@ class AnnounceInfo(urwid.WidgetWrap):
 
         if trust_level == DirectoryEntry.UNTRUSTED:
             trust_str     = "Untrusted"
-            symbol        = "\u2715"
+            symbol        = g["cross"]
             style         = "list_untrusted"
         elif trust_level == DirectoryEntry.UNKNOWN:
             trust_str     = "Unknown"
-            symbol        = "?"
+            symbol        = g["unknown"]
             style         = "list_unknown"
         elif trust_level == DirectoryEntry.TRUSTED:
             trust_str     = "Trusted"
-            symbol        = "\u2713"
+            symbol        = g["check"]
             style         = "list_trusted"
         elif trust_level == DirectoryEntry.WARNING:
             trust_str     = "Warning"
-            symbol        = "\u26A0"
+            symbol        = g["warning"]
             style         = "list_warning"
         else:
-            trust_str     = "Untrusted"
-            symbol        = "\u26A0"
+            trust_str     = "Warning"
+            symbol        = g["warning"]
             style         = "list_untrusted"
 
         def show_announce_stream(sender):
@@ -118,9 +120,9 @@ class AnnounceInfo(urwid.WidgetWrap):
             urwid.Text("Addr  : "+addr_str, align="left"),
             urwid.Text("Name  : "+display_str, align="left"),
             urwid.Text(["Trust : ", (style, trust_str)], align="left"),
-            urwid.Divider("\u2504"),
+            urwid.Divider(g["divider1"]),
             urwid.Text(["Announce Data: \n", (data_style, data_str)], align="left"),
-            urwid.Divider("\u2504"),
+            urwid.Divider(g["divider1"]),
             urwid.Columns([("weight", 0.45, urwid.Button("Back", on_press=show_announce_stream)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Converse", on_press=converse))])
         ])
 
@@ -138,28 +140,29 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
         time_format = app.time_format
         dt = datetime.fromtimestamp(self.timestamp)
         ts_string = dt.strftime(time_format)
+        g = self.app.ui.glyphs
 
         trust_level  = self.app.directory.trust_level(source_hash)
         display_str = self.app.directory.simplest_display_str(source_hash)
 
         if trust_level == DirectoryEntry.UNTRUSTED:
-            symbol        = "\u2715"
+            symbol        = g["cross"]
             style         = "list_untrusted"
             focus_style   = "list_focus_untrusted"
         elif trust_level == DirectoryEntry.UNKNOWN:
-            symbol        = "?"
+            symbol        = g["unknown"]
             style         = "list_unknown"
             focus_style   = "list_focus"
         elif trust_level == DirectoryEntry.TRUSTED:
-            symbol        = "\u2713"
+            symbol        = g["check"]
             style         = "list_trusted"
             focus_style   = "list_focus_trusted"
         elif trust_level == DirectoryEntry.WARNING:
-            symbol        = "\u26A0"
+            symbol        = g["warning"]
             style         = "list_warning"
             focus_style   = "list_focus"
         else:
-            symbol        = "\u26A0"
+            symbol        = g["warning"]
             style         = "list_untrusted"
             focus_style   = "list_focus_untrusted"
 
@@ -268,6 +271,7 @@ class KnownNodes(urwid.WidgetWrap):
     def __init__(self, app):
         self.app = app
         self.node_list = app.directory.known_nodes()
+        g = self.app.ui.glyphs
         
         self.ilb = IndicativeListBox(
             self.make_node_widgets(),
@@ -283,7 +287,7 @@ class KnownNodes(urwid.WidgetWrap):
         else:
             self.no_content = True
             widget_style = "inactive_text"
-            self.display_widget = urwid.Pile([urwid.Text(("warning_text", "- i -\n"), align="center"), SelectText(("warning_text", "Currently, no nodes are known\n\n"), align="center")])
+            self.display_widget = urwid.Pile([urwid.Text(("warning_text", g["info"]+"\n"), align="center"), SelectText(("warning_text", "Currently, no nodes are known\n\n"), align="center")])
 
         urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="Known Nodes"), widget_style))
 
@@ -345,6 +349,7 @@ class LocalPeer(urwid.WidgetWrap):
     def __init__(self, app, parent):
         self.app = app
         self.parent = parent
+        g = self.app.ui.glyphs
         self.dialog_open = False
         display_name = self.app.lxmf_destination.display_name
         if display_name == None:
@@ -364,7 +369,7 @@ class LocalPeer(urwid.WidgetWrap):
                 urwid.Pile([
                     urwid.Text("\n\n\nSaved\n\n", align="center"),
                     urwid.Button("OK", on_press=dismiss_dialog)
-                ]), title="i"
+                ]), title=g["info"]
             )
             dialog.delegate = self
             bottom = self
@@ -387,7 +392,7 @@ class LocalPeer(urwid.WidgetWrap):
                 urwid.Pile([
                     urwid.Text("\n\n\nAnnounce Sent\n\n", align="center"),
                     urwid.Button("OK", on_press=dismiss_dialog)
-                ]), title="i"
+                ]), title=g["info"]
             )
             dialog.delegate = self
             bottom = self
@@ -416,10 +421,10 @@ class LocalPeer(urwid.WidgetWrap):
             [
                 t_id,
                 e_name,
-                urwid.Divider("\u2504"),
+                urwid.Divider(g["divider1"]),
                 self.t_last_announce,
                 announce_button,
-                urwid.Divider("\u2504"),
+                urwid.Divider(g["divider1"]),
                 urwid.Columns([("weight", 0.45, urwid.Button("Save", on_press=save_query)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Node Cfg", on_press=node_settings_query))])
             ]
         )
@@ -434,6 +439,7 @@ class NodeSettings(urwid.WidgetWrap):
     def __init__(self, app, parent):
         self.app = app
         self.parent = parent
+        g = self.app.ui.glyphs
 
         def show_peer_info(sender):
             options = self.parent.left_pile.options(height_type="pack", height_amount=None)
@@ -441,7 +447,7 @@ class NodeSettings(urwid.WidgetWrap):
 
         widget_style = "inactive_text"
         pile = urwid.Pile([
-            urwid.Text("- i -\n", align="center"),
+            urwid.Text("\n"+g["info"], align="center"),
             urwid.Text("\nNode Hosting currently unavailable\n\n", align="center"),
             urwid.Padding(urwid.Button("Back", on_press=show_peer_info), "center", "pack")
         ])
@@ -517,6 +523,7 @@ class NetworkDisplay():
 
     def __init__(self, app):
         self.app = app
+        g = self.app.ui.glyphs
 
         self.known_nodes_display = KnownNodes(self.app)
         self.network_stats_display = NetworkStats(self.app, self)
@@ -532,7 +539,7 @@ class NetworkDisplay():
         ])
 
         self.left_area = self.left_pile
-        self.right_area = urwid.AttrMap(urwid.LineBox(urwid.Filler(urwid.Text("Disconnected\n\u2190  \u2192", align="center"), "middle"), title="Remote Node"), "inactive_text")
+        self.right_area = urwid.AttrMap(urwid.LineBox(urwid.Filler(urwid.Text("Disconnected\n"+g["arrow_l"]+"  "+g["arrow_r"], align="center"), "middle"), title="Remote Node"), "inactive_text")
 
         self.columns = urwid.Columns(
             [

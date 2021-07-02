@@ -127,6 +127,7 @@ class ConversationsDisplay():
         self.columns_widget.contents[0] = (overlay, options)
 
     def edit_selected_in_directory(self):
+        g = self.app.ui.glyphs
         self.dialog_open = True
         source_hash_text = self.ilb.get_selected_item().source_hash
         display_name = self.ilb.get_selected_item().display_name
@@ -195,7 +196,7 @@ class ConversationsDisplay():
 
         source_is_known = self.app.directory.is_known(bytes.fromhex(source_hash_text))
         if source_is_known:
-            known_section = urwid.Divider("\u2504")
+            known_section = urwid.Divider(g["divider1"])
         else:
             def query_action(sender, user_data):
                 self.close_conversation_by_hash(user_data)
@@ -206,12 +207,12 @@ class ConversationsDisplay():
                     (urwid.Button("OK", on_press=dismiss_dialog), options)
                 ]
             query_button = urwid.Button("Query network for keys", on_press=query_action, user_data=source_hash_text)
-            known_section = urwid.Pile([urwid.Divider("\u2504"), urwid.Text("\u2139\n", align="center"), urwid.Text("The identity of this peer is not known, and you cannot currently communicate.\n", align="center"), query_button, urwid.Divider("\u2504")])
+            known_section = urwid.Pile([urwid.Divider(g["divider1"]), urwid.Text(g["info"]+"\n", align="center"), urwid.Text("The identity of this peer is not known, and you cannot currently communicate.\n", align="center"), query_button, urwid.Divider(g["divider1"])])
 
         dialog_pile = urwid.Pile([
             selected_id_widget,
             e_name,
-            urwid.Divider("\u2504"),
+            urwid.Divider(g["divider1"]),
             r_untrusted,
             r_unknown,
             r_trusted,
@@ -364,8 +365,10 @@ class ConversationsDisplay():
         display_name = conversation[1]
         source_hash  = conversation[0]
 
+        g = self.app.ui.glyphs
+
         if trust_level == DirectoryEntry.UNTRUSTED:
-            symbol        = "\u2715"
+            symbol        = g["cross"]
             style         = "list_untrusted"
             focus_style   = "list_focus_untrusted"
         elif trust_level == DirectoryEntry.UNKNOWN:
@@ -373,15 +376,15 @@ class ConversationsDisplay():
             style         = "list_unknown"
             focus_style   = "list_focus"
         elif trust_level == DirectoryEntry.TRUSTED:
-            symbol        = "\u2713"
+            symbol        = g["check"]
             style         = "list_trusted"
             focus_style   = "list_focus_trusted"
         elif trust_level == DirectoryEntry.WARNING:
-            symbol        = "\u26A0"
+            symbol        = g["warning"]
             style         = "list_warning"
             focus_style   = "list_focus"
         else:
-            symbol        = "\u26A0"
+            symbol        = g["warning"]
             style         = "list_untrusted"
             focus_style   = "list_focus_untrusted"
 
@@ -471,6 +474,8 @@ class ConversationFrame(urwid.Frame):
 
 class ConversationWidget(urwid.WidgetWrap):
     def __init__(self, source_hash):
+        self.app = nomadnet.NomadNetworkApp.get_shared_instance()
+        g = self.app.ui.glyphs
         if source_hash == None:
             self.frame = None
             display_widget = urwid.LineBox(urwid.Filler(urwid.Text("\n  No conversation selected"), "top"))
@@ -500,7 +505,7 @@ class ConversationWidget(urwid.WidgetWrap):
 
                 header = None
                 if self.conversation.trust_level == DirectoryEntry.UNTRUSTED:
-                    header = urwid.AttrMap(urwid.Padding(urwid.Text("\u26A0 Warning: Conversation with untrusted peer \u26A0", align="center")), "msg_warning_untrusted")
+                    header = urwid.AttrMap(urwid.Padding(urwid.Text(g["warning"]+" Warning: Conversation with untrusted peer "+g["warning"], align="center")), "msg_warning_untrusted")
 
                 self.minimal_editor = urwid.AttrMap(msg_editor, "msg_editor")
                 self.minimal_editor.name = "minimal_editor"
@@ -548,12 +553,13 @@ class ConversationWidget(urwid.WidgetWrap):
             self.full_editor_active = True
 
     def check_editor_allowed(self):
+        g = self.app.ui.glyphs
         if self.frame:
             allowed = nomadnet.NomadNetworkApp.get_shared_instance().directory.is_known(bytes.fromhex(self.source_hash))
             if allowed:
                 self.frame.contents["footer"] = (self.minimal_editor, None)
             else:
-                warning = urwid.AttrMap(urwid.Padding(urwid.Text("\u2139 You cannot currently communicate with this peer, since it's identity keys are unknown", align="center")), "msg_header_caution")
+                warning = urwid.AttrMap(urwid.Padding(urwid.Text(g["info"]+" You cannot currently communicate with this peer, since it's identity keys are unknown", align="center")), "msg_header_caution")
                 self.frame.contents["footer"] = (warning, None)
 
     def toggle_focus_area(self):
@@ -630,34 +636,35 @@ class ConversationWidget(urwid.WidgetWrap):
 class LXMessageWidget(urwid.WidgetWrap):
     def __init__(self, message):
         app = nomadnet.NomadNetworkApp.get_shared_instance()
+        g = app.ui.glyphs
         self.timestamp = message.get_timestamp()
         time_format = app.time_format
         message_time = datetime.fromtimestamp(self.timestamp)
         encryption_string = ""
         if message.get_transport_encrypted():
-            encryption_string = " [\U0001F512"+str(message.get_transport_encryption())+"]"
+            encryption_string = " ["+g["lock"]+" "+str(message.get_transport_encryption())+"]"
         else:
-            encryption_string = " [\U0001F513"+str(message.get_transport_encryption())+"]"
+            encryption_string = " ["+g["unlock"]+" "+str(message.get_transport_encryption())+"]"
         
         title_string = message_time.strftime(time_format)+encryption_string
 
         if app.lxmf_destination.hash == message.lxm.source_hash:
             if message.lxm.state == LXMF.LXMessage.DELIVERED:
                 header_style = "msg_header_delivered"
-                title_string = "\u2713 " + title_string
+                title_string = g["check"]+" "+title_string
             elif message.lxm.state == LXMF.LXMessage.FAILED:
                 header_style = "msg_header_failed"
-                title_string = "\u2715 " + title_string
+                title_string = g["cross"]+" "+title_string
             else:
                 header_style = "msg_header_sent"
-                title_string = "\u2192 " + title_string
+                title_string = g["arrow_r"]+" "+title_string
         else:
             if message.signature_validated():
                 header_style = "msg_header_ok"
-                title_string = "\u2713 " + title_string
+                title_string = g["check"]+" "+title_string
             else:
                 header_style = "msg_header_caution"
-                title_string = "\u26A0 "+message.get_signature_description() + "\n  " + title_string
+                title_string = g["warning"]+" "+message.get_signature_description() + "\n  " + title_string
 
         if message.get_title() != "":
             title_string += " | " + message.get_title()

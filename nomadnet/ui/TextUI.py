@@ -42,6 +42,29 @@ THEMES = {
     ]
 }
 
+GLYPHSETS = {
+    "plain": 1,
+    "unicode": 2,
+    "nerdfont": 3
+}
+
+GLYPHS = {
+    # Glyph name        # Plain      # Unicode      # Nerd Font
+    ("check",           "=",         "\u2713",      "\u2713"),
+    ("cross",           "X",         "\u2715",      "\u2715"),
+    ("unknown",         "?",         "?",           "?"),
+    ("lock",            "E",         "\U0001f512",  "\uf023"),
+    ("unlock",          "!",         "\U0001f513",  "\uf09c"),
+    ("arrow_r",         "->",        "\u2192",      "\u2192"),
+    ("arrow_l",         "<-",        "\u2190",      "\u2190"),
+    ("arrow_u",         "/\\",       "\u2191",      "\u2191"),
+    ("arrow_d",         "\\/",       "\u2193",      "\u2193"),
+    ("warning",         "!",         "\u26a0",      "\uf12a"),
+    ("info",            "i",         "\u2139",      "\ufb4d"),
+    ("divider1",        "-",         "\u2504",      "\u2504"),
+    ("decoration_menu", "",          "",            " \uf93a"),
+}
+
 class TextUI:
 
     def __init__(self):
@@ -64,6 +87,20 @@ class TextUI:
         mouse_enabled = self.app.config["textui"]["mouse_enabled"]
 
         palette       = THEMES[theme]
+
+        if self.app.config["textui"]["glyphs"] == "plain":
+            glyphset = "plain"
+        elif self.app.config["textui"]["glyphs"] == "unicoode":
+            glyphset = "unicode"
+        elif self.app.config["textui"]["glyphs"] == "nerdfont":
+            glyphset = "nerdfont"
+        else:
+            glyphset = "unicode"
+
+        self.glyphs = {}
+        for glyph in GLYPHS:
+            self.glyphs[glyph[0]] = glyph[GLYPHSETS[glyphset]]
+
 
         self.screen = urwid.raw_display.Screen()
         self.screen.register_palette(palette)

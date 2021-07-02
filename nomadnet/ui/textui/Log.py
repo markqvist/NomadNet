@@ -14,11 +14,6 @@ class LogDisplay():
         self.app = app
         self.log_term = LogTerminal(self.app)
 
-        pile = urwid.Pile([
-            ("weight", 90, self.log_term),
-            ("fixed", 1, urwid.Text(("body_text", "Log Display \U0001F332"))),
-        ])
-
         self.shortcuts_display = LogDisplayShortcuts(self.app)
         self.widget = urwid.LineBox(self.log_term)
         

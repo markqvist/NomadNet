@@ -244,6 +244,9 @@ class NomadNetworkApp:
                             if not "editor" in self.config["textui"]:
                                 self.config["textui"]["editor"] = "editor"
 
+                            if not "glyphs" in self.config["textui"]:
+                                self.config["textui"]["glyphs"] = "unicode"
+
                             if not "mouse_enabled" in self.config["textui"]:
                                 self.config["textui"]["mouse_enabled"] = True
                             else:
@@ -349,6 +352,16 @@ colormode = 16
 # colormode = 88
 # colormode = 256
 # colormode = 24bit
+
+# By default, unicode glyphs are used. If
+# you have a Nerd Font installed, you can
+# enable this for a better user interface.
+# You can also enable plain text glyphs if
+# your terminal doesn't support unicode.
+
+# glyphs = plain
+glyphs = unicode
+# glyphs = nerdfont
 
 # You can specify whether mouse events
 # should be considered as input to the

@@ -140,8 +140,9 @@ class MenuColumns(urwid.Columns):
 class MenuDisplay():
     def __init__(self, app, handler):
         self.app = app
+        g = self.app.ui.glyphs
 
-        menu_text            = ("pack", urwid.Text(" \U00002638"))
+        menu_text            = ("pack", urwid.Text(g["decoration_menu"]))
         button_network       = (11, MenuButton("Network", on_press=handler.show_network))
         button_conversations = (17, MenuButton("Conversations", on_press=handler.show_conversations))
         button_directory     = (13, MenuButton("Directory", on_press=handler.show_directory))
