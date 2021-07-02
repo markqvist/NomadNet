@@ -6,7 +6,7 @@ class LogDisplayShortcuts():
         import urwid
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("Log Display Shortcuts"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text(""), "shortcutbar")
 
 class LogDisplay():
     def __init__(self, app):

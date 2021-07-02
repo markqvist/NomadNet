@@ -6,7 +6,7 @@ class ConfigDisplayShortcuts():
         import urwid
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("Config Display Shortcuts"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text(""), "shortcutbar")
 
 class ConfigFiller(urwid.WidgetWrap):
     def __init__(self, widget, app):
