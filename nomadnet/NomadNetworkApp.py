@@ -250,7 +250,7 @@ class NomadNetworkApp:
                             if not "mouse_enabled" in self.config["textui"]:
                                 self.config["textui"]["mouse_enabled"] = True
                             else:
-                                self.config["textui"]["animation_interval"] = self.config["textui"].as_bool("mouse_enabled")
+                                self.config["textui"]["mouse_enabled"] = self.config["textui"].as_bool("mouse_enabled")
 
                             if not "animation_interval" in self.config["textui"]:
                                 self.config["textui"]["animation_interval"] = 1
@@ -330,7 +330,7 @@ destination = file
 
 [client]
 
-enable_client = Yes
+enable_client = yes
 user_interface = text
 
 [textui]
@@ -375,6 +375,6 @@ editor = editor
 
 [node]
 
-enable_node = No
+enable_node = no
 
 '''.splitlines()
