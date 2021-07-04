@@ -34,7 +34,7 @@ class ConfigDisplay():
             self.editor_term.term.change_focus(True)
 
         pile = urwid.Pile([
-            urwid.Text(("body_text", "\nTo change the configuration, edit the config file located at:\n\n"+self.app.configpath+"\n\nRestart Nomad Network for chanes to take effect\n"), align="center"),
+            urwid.Text(("body_text", "\nTo change the configuration, edit the config file located at:\n\n"+self.app.configpath+"\n\nRestart Nomad Network for changes to take effect\n"), align="center"),
             urwid.Padding(urwid.Button("Open Editor", on_press=open_editor), width=15, align="center"),
         ])
 

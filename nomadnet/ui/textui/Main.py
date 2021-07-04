@@ -7,6 +7,7 @@ from .Directory import *
 from .Config import *
 from .Map import *
 from .Log import *
+from .Guide import *
 import urwid
 
 class SubDisplays():
@@ -18,6 +19,7 @@ class SubDisplays():
         self.config_display = ConfigDisplay(self.app)
         self.map_display = MapDisplay(self.app)
         self.log_display = LogDisplay(self.app)
+        self.guide_display = GuideDisplay(self.app)
 
         self.active_display = self.conversations_display
 
@@ -113,6 +115,10 @@ class MainDisplay():
         self.sub_displays.active_display = self.sub_displays.log_display
         self.update_active_sub_display()
 
+    def show_guide(self, user_data):
+        self.sub_displays.active_display = self.sub_displays.guide_display
+        self.update_active_sub_display()
+
     def update_active_sub_display(self):
         self.frame.contents["body"] = (self.sub_displays.active().widget, None)
         self.update_active_shortcuts()
@@ -149,10 +155,15 @@ class MenuDisplay():
         button_map           = (7,  MenuButton("Map", on_press=handler.show_map))
         button_log           = (7,  MenuButton("Log", on_press=handler.show_log))
         button_config        = (10, MenuButton("Config", on_press=handler.show_config))
+        button_guide         = (9,  MenuButton("Guide", on_press=handler.show_guide))
         button_quit          = (8,  MenuButton("Quit", on_press=handler.quit))
 
         # buttons = [menu_text, button_conversations, button_node, button_directory, button_map]
-        buttons = [menu_text, button_conversations, button_network, button_log, button_config, button_quit]
+        if self.app.config["textui"]["hide_guide"]:
+            buttons = [menu_text, button_conversations, button_network, button_log, button_config, button_quit]
+        else:
+            buttons = [menu_text, button_conversations, button_network, button_log, button_config, button_guide, button_quit]
+
         columns = MenuColumns(buttons, dividechars=1)
         columns.handler = handler
 

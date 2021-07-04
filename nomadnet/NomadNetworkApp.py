@@ -252,6 +252,11 @@ class NomadNetworkApp:
                             else:
                                 self.config["textui"]["mouse_enabled"] = self.config["textui"].as_bool("mouse_enabled")
 
+                            if not "hide_guide" in self.config["textui"]:
+                                self.config["textui"]["hide_guide"] = False
+                            else:
+                                self.config["textui"]["hide_guide"] = self.config["textui"].as_bool("hide_guide")
+
                             if not "animation_interval" in self.config["textui"]:
                                 self.config["textui"]["animation_interval"] = 1
                             else:
@@ -372,6 +377,11 @@ mouse_enabled = True
 # default the operating systems "editor"
 # alias will be used.
 editor = editor
+
+# If you don't want the Guide section to
+# show up in the menu, you can disable it.
+
+hide_guide = no
 
 [node]
 
