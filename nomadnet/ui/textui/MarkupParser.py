@@ -20,7 +20,6 @@ INDENT_RIGHT   = 1
 
 def markup_to_attrmaps(markup):
     attrmaps = []
-    global_style = ""
 
     state = {
         "depth": 0,
@@ -32,7 +31,9 @@ def markup_to_attrmaps(markup):
             "italic": False,
             "strikethrough": False,
             "blink": False,
-        }
+        },
+        "default_align": "left",
+        "align": "left",
     }
 
     # Split entire document into lines for
@@ -45,11 +46,8 @@ def markup_to_attrmaps(markup):
         else:
             display_widget = urwid.Text("")
         
-        if global_style == "":
-            global_style = "plain"
-
         if display_widget != None:
-            attrmap = urwid.AttrMap(display_widget, global_style)
+            attrmap = urwid.AttrMap(display_widget, make_style(state))
             attrmaps.append(attrmap)
 
     return attrmaps
@@ -99,10 +97,13 @@ def parse_line(line, state):
 
     output = make_output(state, line)
 
-    if state["depth"] == 0:
-        return urwid.Text(output)
+    if output != None:
+        if state["depth"] == 0:
+            return urwid.Text(output, align=state["align"])
+        else:
+            return urwid.Padding(urwid.Text(output, align=state["align"]), left=left_indent(state), right=right_indent(state))
     else:
-        return urwid.Padding(urwid.Text(output), left=left_indent(state), right=right_indent(state))
+        return None
 
 def left_indent(state):
     return (state["depth"]-1)*SECTION_INDENT
@@ -139,7 +140,7 @@ def make_style(state):
     if italic:
         format_string += ",italics"
 
-    name = ""+fg+","+bg+","+format_string
+    name = "micron_"+fg+"_"+bg+"_"+format_string
     if not name in SYNTH_STYLES:
         screen = nomadnet.NomadNetworkApp.get_shared_instance().ui.screen
         screen.register_palette_entry(name, low_color(fg)+format_string,low_color(bg),mono_color(fg, bg)+format_string,high_color(fg)+format_string,high_color(bg))
@@ -172,7 +173,7 @@ def make_output(state, line):
                 elif c == "f":
                     state["fg_color"] = "default"
                 elif c == "B":
-                    if len(line) > i+4:
+                    if len(line) >= i+4:
                         color = line[i+1:i+4]
                         state["bg_color"] = color
                         skip = 3
@@ -184,7 +185,24 @@ def make_output(state, line):
                     state["formatting"]["italic"]    = False
                     state["fg_color"] = "default"
                     state["bg_color"] = "default"
-                
+                elif c == "c":
+                    if state["align"] != "center":
+                        state["align"] = "center"
+                    else:
+                        state["align"] = state["default_align"]
+                elif c == "l":
+                    if state["align"] != "left":
+                        state["align"] = "left"
+                    else:
+                        state["align"] = state["default_align"]
+                elif c == "r":
+                    if state["align"] != "right":
+                        state["align"] = "right"
+                    else:
+                        state["align"] = state["default_align"]
+                elif c == "a":
+                    state["align"] = state["default_align"]
+
                 mode = "text"
                 if len(part) > 0:
                     output.append(make_part(state, part))
@@ -199,6 +217,10 @@ def make_output(state, line):
                     part += c
 
         if i == len(line)-1:
-            output.append(make_part(state, part))
+            if len(part) > 0:
+                output.append(make_part(state, part))
 
-    return output
+    if len(output) > 0:
+        return output
+    else:
+        return None

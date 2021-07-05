@@ -185,11 +185,24 @@ Conversations in Nomad Network
 TOPIC_MARKUP = '''>Markup
 Nomad Network supports a simple and functional markup language called micron. It has a lean markup structure that adds very little overhead, and is still readable as plain text, but offers basic formatting and text structuring, ideal for displaying in a terminal.
 
-Lorem ipsum dolor sit amet.
+`cLorem ipsum dolor sit amet.
+`a
 
 >>Encoding
 `F222`BdddAll uM source files are encoded as UTF-8, and clients supporting uM display should support UTF-8.
+
 ``
+`B33f
+
+You can change background ...
+
+`B393
+
+`r... and foreground colors
+`a
+
+`b
+
 >>>Sections and `F900Headings`f
 You can define an arbitrary number of sections and sub-sections, each with their own heading
 
@@ -203,7 +216,7 @@ If no heading text is defined, the section will appear as a sub-section without 
 <-
 Horizontal dividers can be inserted
 
-Text `F2cccan`f be `_underlined`_, `!bold`! or `*italic`*. You `F000`B2cccan`b`f also `_`*`!combine formatting``!
+Text can be `_underlined`_, `!bold`! or `*italic`*. You can also `_`*`!`B5d5`F222combine`f`b`_ `_`Ff00f`Ff80o`Ffd0r`F9f0m`F0f2a`F0fdt`F07ft`F43fi`F70fn`Fe0fg``!
 
 '''
 
