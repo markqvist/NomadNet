@@ -3,7 +3,7 @@ import urwid
 import nomadnet
 from nomadnet.vendor.additional_urwid_widgets import IndicativeListBox, MODIFIER_KEY
 from .MicronParser import markup_to_attrmaps
-from .Scrollable import *
+from nomadnet.vendor.Scrollable import *
 
 class GuideDisplayShortcuts():
     def __init__(self, app):
@@ -87,10 +87,10 @@ class TopicList(urwid.WidgetWrap):
 
         self.topic_list = [
             GuideEntry(self.app, guide_display, "Introduction"),
-            GuideEntry(self.app, guide_display, "Conversations"),
+            # GuideEntry(self.app, guide_display, "Conversations"),
             GuideEntry(self.app, guide_display, "Markup"),
             GuideEntry(self.app, guide_display, "First Run"),
-            GuideEntry(self.app, guide_display, "Licenses & Credits"),
+            GuideEntry(self.app, guide_display, "Credits & Licenses"),
         ]
 
         self.ilb = IndicativeListBox(
@@ -145,38 +145,47 @@ class GuideDisplay():
 
 TOPIC_INTRODUCTION = '''>Nomad Network
 
-Communicate Freely.
+`c`*Communicate Freely.`*
+`a
 
-Nomad Network is built using Reticulum
--~
-## Notable Features
- - Encrypted messaging over packet-radio, LoRa, WiFi or anything else [Reticulum](https://github.com/markqvist/Reticulum) supports.
- - Zero-configuration, minimal-infrastructure mesh communication
--
-## Current Status
+The intention with this program is to provide a tool to that allows you to build private and resilient communications platforms that are in complete control and ownership of the people that use them.
 
-Pre-alpha. At this point Nomad Network is usable as a basic messaging client over Reticulum networks, but only the very core features have been implemented. Development is ongoing and current features being implemented are:
+Nomad Network is build on LXMF and Reticulum, which together provides the cryptographic mesh functionality and peer-to-peer message routing that Nomad Network relies on. This foundation also makes it possible to use the program over a very wide variety of communication mediums, from packet radio to gigabit fiber.
 
- - Propagated messaging and discussion threads
- - Connectable nodes that can host pages, files and other resources
- - Collaborative information sharing and spatial map-style "wikis"
--
-## Dependencies:
- - Python 3
- - RNS
- - LXMF
+Nomad Network does not need any connections to the public internet to work. In fact, it doesn't even need an IP or Ethernet network. You can use it entirely over packet radio, LoRa or even serial lines. But if you wish, you can bridge islanded Reticulum networks over the Internet or private ethernet networks, or you can build networks running completely over the Internet. The choice is yours.
 
-```
+The current version of the program should be considered an alpha release. The program works well, but there will most probably be bugs and possibly sub-optimal performance in some scenarios. On the other hand, this is the best time to have an influence on the direction of the development of Nomad Network. To do so, join the discussion on the Nomad Network project on GitHub.
 
-To use Nomad Network on packet radio or LoRa, you will need to configure your Reticulum installation 
-to use any relevant packet radio TNCs or LoRa devices on your system. See the Reticulum documentation
- for info.
+>Concepts and Terminology
 
-## Caveat Emptor
-Nomad Network is experimental software, and should be considered as such. While it has been built wit
-h cryptography best-practices very foremost in mind, it _has not_ been externally security audited, a
-nd there could very well be privacy-breaking bugs. If you want to help out, or help sponsor an audit,
- please do get in touch.
+The following section will briefly introduce various concepts and terms used in the program.
+
+>>Peer
+
+A `*peer`* refers to another Nomad Network client, which will generally be operated by another person. But since Nomad Network is a general LXMF client, it could also be any other LXMF client, program, automated system or machine that can communicate over LXMF.
+
+>>Announces
+
+An `*announce`* can be sent by any peer on the network, which will notify other peers of its existence, and contains the cryptographic keys that allows other peers to communicate with it.
+
+In the `![ Network ]`! section of the program, you can monitor announces on the network, initiate conversations with announced peers, and announce your own peer on the network.
+
+>>Conversations
+
+Nomad Network uses the term `*conversation`* to signify both direct peer-to-peer messaging threads, and also discussion threads with an arbitrary number of participants that might change over time.
+
+Both things like discussion forums and chat threads can be encapsulated as conversations in Nomad Network. The user interface will indicate the different characteristics a conversation can take, and also what form of transport encryption messages within used.
+
+In the `![ Conversations ]`! part of the program you can view and interact with all currently active conversations. You can also edit nickname and trust settings for peers here.
+
+>>Node
+
+A Nomad Network `*node`* is an instance of the Nomad Network program that has been configured to host information for other peers and help propagate messages and information on the network.
+
+Nodes can host pages (similar to webpages) written in a markup-language called `*micron`*, as well as make files and other resources available for download for peers on the network. Nodes are also integral in allowing forum/discussion threads to exist and propagate on the network.
+
+If no nodes exist on a network, all peers will still be able to communicate directly peer-to-peer, but both endpoints of a conversation will need to be online at the same time to converse. When nodes exist on the network, messages will be held and syncronised between nodes for deferred delivery if the destination peer is unavailable.
+
 '''
 
 TOPIC_CONVERSATIONS = '''Conversations
@@ -412,7 +421,26 @@ Now go out there and explore. This is still early days. See what you can find an
 
 TOPIC_LICENSES = '''>Thanks, Acknowledgements and Licenses
 
-Lorem Ipsum
+This program uses various other software components, without which Nomad Network would not have been possible. Sincere thanks to the authors and contributors of the following projects
+
+>>>
+ - `!Cryptography.io`! by `*pyca`*
+   BSD License
+
+ - `!Additional Urwid Widgets`! by `*AFoeee`*
+   MIT License
+
+ - `!Scrollable`! by `*rndusr`*
+   GPLv3 License
+
+ - `!Configobj`! by `*Michael Foord`*
+   BSD License
+
+ - `!Reticulum Network Stack`! by `*unsignedmark`*
+   MIT License
+
+ - `!LXMF`! by `*unsignedmark`*
+   MIT License
 '''
 
 TOPICS = {
@@ -420,5 +448,5 @@ TOPICS = {
     "Conversations": TOPIC_CONVERSATIONS,
     "Markup": TOPIC_MARKUP,
     "First Run": TOPIC_FIRST_RUN,
-    "Licenses & Credits": TOPIC_LICENSES,
+    "Credits & Licenses": TOPIC_LICENSES,
 }
