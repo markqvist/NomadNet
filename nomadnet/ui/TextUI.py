@@ -20,6 +20,7 @@ THEMES = {
             # Style name                    # 16-color style                        # Monochrome style          # 88, 256 and true-color style
             ('heading',                     'light gray,underline', 'default',      'underline',                'g93,underline', 'default'),
             ('menubar',                     'black', 'light gray',                  'standout',                 '#111', '#bbb'),
+            ('scrollbar',                   'black', 'light gray',                  'standout',                 '#444', 'default'),
             ('shortcutbar',                 'black', 'light gray',                  'standout',                 '#111', '#bbb'),
             ('body_text',                   'white', 'default',                     'default',                  '#ddd', 'default'),
             ('error_text',                  'dark red', 'default',                  'default',                  'dark red', 'default'),
@@ -90,9 +91,6 @@ class TextUI:
         mouse_enabled  = self.app.config["textui"]["mouse_enabled"]
 
         self.palette   = THEMES[theme]["urwid_theme"]
-
-        for entry in nomadnet.ui.textui.MarkupParser.URWID_THEME:
-            self.palette.append(entry)
 
         if self.app.config["textui"]["glyphs"] == "plain":
             glyphset = "plain"
