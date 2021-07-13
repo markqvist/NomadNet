@@ -10,7 +10,7 @@ class GuideDisplayShortcuts():
         self.app = app
         g = app.ui.glyphs
 
-        self.widget = urwid.AttrMap(urwid.Text(""), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Padding(urwid.Text(""), align="left"), "shortcutbar")
 
 class ListEntry(urwid.Text):
     _selectable = True

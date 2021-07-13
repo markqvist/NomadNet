@@ -3,7 +3,7 @@ Nomad Network
 
 Communicate Freely.
 
-![Screenshot](https://github.com/markqvist/NomadNet/raw/master/docs/screenshots/3.png)
+![Screenshot](https://github.com/markqvist/NomadNet/raw/master/docs/screenshots/1.png)
 
 The intention with this program is to provide a tool to that allows you to build private and resilient communications platforms that are in complete control and ownership of the people that use them.
 
