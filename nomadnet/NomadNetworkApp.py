@@ -154,8 +154,6 @@ class NomadNetworkApp:
             app_data=None
         )
 
-        RNS.Transport.register_announce_handler(nomadnet.Conversation)
-
         RNS.log("LXMF Router ready to receive on: "+RNS.prettyhexrep(self.lxmf_destination.hash))
 
         self.directory = nomadnet.Directory.Directory(self)
@@ -164,6 +162,9 @@ class NomadNetworkApp:
             self.node = nomadnet.Node(self)
         else:
             self.node = None
+
+        RNS.Transport.register_announce_handler(nomadnet.Conversation)
+        RNS.Transport.register_announce_handler(nomadnet.Directory)
 
         nomadnet.ui.spawn(self.uimode)
 

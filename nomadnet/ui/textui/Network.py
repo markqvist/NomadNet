@@ -1,6 +1,7 @@
 import RNS
 import urwid
 import nomadnet
+import time
 from datetime import datetime
 from nomadnet.Directory import DirectoryEntry
 from nomadnet.vendor.additional_urwid_widgets import IndicativeListBox, MODIFIER_KEY
@@ -133,14 +134,25 @@ class AnnounceInfo(urwid.WidgetWrap):
 
 class AnnounceStreamEntry(urwid.WidgetWrap):
     def __init__(self, app, announce):
+        full_time_format = "%Y-%m-%d %H:%M:%S"
+        date_time_format = "%Y-%m-%d"
+        time_time_format = "%H:%M:%S"
+        short_time_format = "%Y-%m-%d %H:%M"
+
         timestamp = announce[0]
         source_hash = announce[1]
+        is_node = announce[3]
         self.app = app
         self.timestamp = timestamp
         time_format = app.time_format
         dt = datetime.fromtimestamp(self.timestamp)
-        ts_string = dt.strftime(time_format)
+        dtn = datetime.fromtimestamp(time.time())
         g = self.app.ui.glyphs
+
+        if dt.strftime(date_time_format) == dtn.strftime(date_time_format):
+            ts_string = dt.strftime(time_time_format)
+        else:
+            ts_string = dt.strftime(short_time_format)
 
         trust_level  = self.app.directory.trust_level(source_hash)
         display_str = self.app.directory.simplest_display_str(source_hash)
@@ -166,7 +178,12 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
             style         = "list_untrusted"
             focus_style   = "list_focus_untrusted"
 
-        widget = ListEntry(ts_string+" "+display_str)
+        if is_node:
+            type_symbol = g["node"]
+        else:
+            type_symbol = g["peer"]
+
+        widget = ListEntry(ts_string+" "+type_symbol+" "+display_str)
         urwid.connect_signal(widget, "click", self.display_announce, announce)
 
         self.display_widget = urwid.AttrMap(widget, style, focus_style)

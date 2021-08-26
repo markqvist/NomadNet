@@ -66,6 +66,8 @@ GLYPHS = {
     ("warning",         "!",         "\u26a0",      "\uf12a"),
     ("info",            "i",         "\u2139",      "\ufb4d"),
     ("divider1",        "-",         "\u2504",      "\u2504"),
+    ("peer",            "P",         "\U0001F464",  "\uf415"),
+    ("node",            "N",         "\U0001F5A5",  "\uf502"),
     ("decoration_menu", "",          "",            " \uf93a"),
 }
 

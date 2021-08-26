@@ -7,11 +7,23 @@ import RNS.vendor.umsgpack as msgpack
 class Directory:
     ANNOUNCE_STREAM_MAXLENGTH = 64
 
+    aspect_filter = "nomadnetwork.node"
+    @staticmethod
+    def received_announce(destination_hash, announced_identity, app_data):
+        app = nomadnet.NomadNetworkApp.get_shared_instance()
+        destination_hash_text = RNS.hexrep(destination_hash, delimit=False)
+
+        # TODO: REMOVE
+        RNS.log("Received node announce from: "+destination_hash_text)
+        app.directory.lxmf_announce_received(destination_hash, app_data)
+
+
     def __init__(self, app):
         self.directory_entries = {}
         self.announce_stream = []
         self.app = app
         self.load_from_disk()
+
 
     def save_to_disk(self):
         try:
@@ -49,20 +61,31 @@ class Directory:
                     entries[e[0]] = DirectoryEntry(e[0], e[1], e[2], hosts_node)
 
                 self.directory_entries = entries
-                self.announce_stream = unpacked_directory["announce_stream"]
+
+                # TODO: Revert back to this simpler method instead of checking
+                # for the old format
+                # self.announce_stream = unpacked_directory["announce_stream"]
+
+                for entry in unpacked_directory["announce_stream"]:
+                    RNS.log(str(entry))
+                    if len(entry) < 4:
+                        entry[3] = False
+
+                    self.announce_stream.append(entry)
+
 
             except Exception as e:
                 RNS.log("Could not load directory from disk. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
     def lxmf_announce_received(self, source_hash, app_data):
         timestamp = time.time()
-        self.announce_stream.insert(0, (timestamp, source_hash, app_data))
+        self.announce_stream.insert(0, (timestamp, source_hash, app_data, False))
         while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
             self.announce_stream.pop()
 
     def node_announce_received(self, source_hash, app_data):
         timestamp = time.time()
-        self.announce_stream.insert(0, (timestamp, source_hash, app_data))
+        self.announce_stream.insert(0, (timestamp, source_hash, app_data, True))
         while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
             self.announce_stream.pop()
 
