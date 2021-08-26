@@ -168,7 +168,7 @@ A `*peer`* refers to another Nomad Network client, which will generally be opera
 
 An `*announce`* can be sent by any peer on the network, which will notify other peers of its existence, and contains the cryptographic keys that allows other peers to communicate with it.
 
-In the `![ Network ]`! section of the program, you can monitor announces on the network, initiate conversations with announced peers, and announce your own peer on the network.
+In the `![ Network ]`! section of the program, you can monitor announces on the network, initiate conversations with announced peers, and announce your own peer on the network. You can also connect to nodes on the network and browse information shared by them.
 
 >>Conversations
 
@@ -188,8 +188,7 @@ If no nodes exist on a network, all peers will still be able to communicate dire
 
 '''
 
-TOPIC_CONVERSATIONS = '''Conversations
-=============
+TOPIC_CONVERSATIONS = '''>Conversations
 
 Conversations in Nomad Network
 '''

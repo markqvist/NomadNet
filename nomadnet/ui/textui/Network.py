@@ -10,7 +10,7 @@ class NetworkDisplayShortcuts():
         self.app = app
         g = app.ui.glyphs
 
-        self.widget = urwid.AttrMap(urwid.Text("[C-"+g["arrow_u"]+g["arrow_d"]+"] Navigate announces"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-l] View Nodes/Announces  [C-"+g["arrow_u"]+g["arrow_d"]+"] Navigate Lists"), "shortcutbar")
 
 
 class DialogLineBox(urwid.LineBox):
@@ -93,7 +93,7 @@ class AnnounceInfo(urwid.WidgetWrap):
 
         def show_announce_stream(sender):
             options = self.parent.left_pile.options(height_type="weight", height_amount=1)
-            self.parent.left_pile.contents[1] = (AnnounceStream(self.app, self.parent), options)
+            self.parent.left_pile.contents[0] = (AnnounceStream(self.app, self.parent), options)
 
         def converse(sender):
             show_announce_stream(None)
@@ -176,7 +176,7 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
         parent = self.app.ui.main_display.sub_displays.network_display
         info_widget = AnnounceInfo(announce, parent, self.app)
         options = parent.left_pile.options(height_type="weight", height_amount=1)
-        parent.left_pile.contents[1] = (info_widget, options)
+        parent.left_pile.contents[0] = (info_widget, options)
 
 class AnnounceStream(urwid.WidgetWrap):
     def __init__(self, app, parent):
@@ -202,6 +202,12 @@ class AnnounceStream(urwid.WidgetWrap):
 
         self.display_widget = self.ilb
         urwid.WidgetWrap.__init__(self, urwid.LineBox(self.display_widget, title="Announce Stream"))
+
+    def keypress(self, size, key):
+        if key == "up":
+            nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.set_focus("header")
+            
+        return super(AnnounceStream, self).keypress(size, key)
 
     def rebuild_widget_list(self):
         self.added_entries = []
@@ -287,7 +293,8 @@ class KnownNodes(urwid.WidgetWrap):
         else:
             self.no_content = True
             widget_style = "inactive_text"
-            self.display_widget = urwid.Pile([urwid.Text(("warning_text", g["info"]+"\n"), align="center"), SelectText(("warning_text", "Currently, no nodes are known\n\n"), align="center")])
+            self.pile = urwid.Pile([urwid.Text(("warning_text", g["info"]+"\n"), align="center"), SelectText(("warning_text", "Currently, no nodes are known\n\n"), align="center")])
+            self.display_widget = urwid.Filler(self.pile, valign="top", height="pack")
 
         urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="Known Nodes"), widget_style))
 
@@ -361,7 +368,7 @@ class LocalPeer(urwid.WidgetWrap):
         def save_query(sender):
             def dismiss_dialog(sender):
                 self.dialog_open = False
-                self.parent.left_pile.contents[3] = (LocalPeer(self.app, self.parent), options)
+                self.parent.left_pile.contents[2] = (LocalPeer(self.app, self.parent), options)
 
             self.app.set_display_name(e_name.get_edit_text())
 
@@ -378,13 +385,13 @@ class LocalPeer(urwid.WidgetWrap):
             overlay = dialog
             options = self.parent.left_pile.options(height_type="pack", height_amount=None)
             self.dialog_open = True
-            self.parent.left_pile.contents[3] = (overlay, options)
+            self.parent.left_pile.contents[2] = (overlay, options)
 
         def announce_query(sender):
             def dismiss_dialog(sender):
                 self.dialog_open = False
                 options = self.parent.left_pile.options(height_type="pack", height_amount=None)
-                self.parent.left_pile.contents[3] = (LocalPeer(self.app, self.parent), options)
+                self.parent.left_pile.contents[2] = (LocalPeer(self.app, self.parent), options)
 
             self.app.announce_now()
 
@@ -402,11 +409,11 @@ class LocalPeer(urwid.WidgetWrap):
             
             self.dialog_open = True
             options = self.parent.left_pile.options(height_type="pack", height_amount=None)
-            self.parent.left_pile.contents[3] = (overlay, options)
+            self.parent.left_pile.contents[2] = (overlay, options)
 
         def node_settings_query(sender):
             options = self.parent.left_pile.options(height_type="pack", height_amount=None)
-            self.parent.left_pile.contents[3] = (self.parent.node_settings_display, options)
+            self.parent.left_pile.contents[2] = (self.parent.node_settings_display, options)
 
         if LocalPeer.announce_timer == None:
             self.t_last_announce = AnnounceTime(self.app)
@@ -443,7 +450,7 @@ class NodeSettings(urwid.WidgetWrap):
 
         def show_peer_info(sender):
             options = self.parent.left_pile.options(height_type="pack", height_amount=None)
-            self.parent.left_pile.contents[3] = (LocalPeer(self.app, self.parent), options)
+            self.parent.left_pile.contents[2] = (LocalPeer(self.app, self.parent), options)
 
         widget_style = "inactive_text"
         pile = urwid.Pile([
@@ -518,6 +525,16 @@ class NetworkStats(urwid.WidgetWrap):
         self.w_heard_peers.start()
         self.w_known_nodes.start()
 
+
+
+class NetworkLeftPile(urwid.Pile):
+    def keypress(self, size, key):
+        if key == "ctrl l":
+            self.parent.toggle_list()
+        else:
+            return super(NetworkLeftPile, self).keypress(size, key)
+
+
 class NetworkDisplay():
     list_width = 0.33
 
@@ -525,18 +542,20 @@ class NetworkDisplay():
         self.app = app
         g = self.app.ui.glyphs
 
-        self.known_nodes_display = KnownNodes(self.app)
+        self.known_nodes_display = None
         self.network_stats_display = NetworkStats(self.app, self)
         self.announce_stream_display = AnnounceStream(self.app, self)
         self.local_peer_display = LocalPeer(self.app, self)
         self.node_settings_display = NodeSettings(self.app, self)
 
-        self.left_pile = urwid.Pile([
-            ("pack", self.known_nodes_display),
+        self.list_display = 0
+        self.left_pile = NetworkLeftPile([
             ("weight", 1, self.announce_stream_display),
             ("pack", self.network_stats_display),
             ("pack", self.local_peer_display),
         ])
+
+        self.left_pile.parent = self
 
         self.left_area = self.left_pile
         self.right_area = urwid.AttrMap(urwid.LineBox(urwid.Filler(urwid.Text("Disconnected\n"+g["arrow_l"]+"  "+g["arrow_r"], align="center"), "middle"), title="Remote Node"), "inactive_text")
@@ -551,6 +570,18 @@ class NetworkDisplay():
 
         self.shortcuts_display = NetworkDisplayShortcuts(self.app)
         self.widget = self.columns
+
+    def toggle_list(self):
+        if self.list_display != 0:
+            self.announce_stream_display = AnnounceStream(self.app, self)
+            options = self.left_pile.options(height_type="weight", height_amount=1)
+            self.left_pile.contents[0] = (self.announce_stream_display, options)
+            self.list_display = 0
+        else:
+            self.known_nodes_display = KnownNodes(self.app)
+            options = self.left_pile.options(height_type="weight", height_amount=1)
+            self.left_pile.contents[0] = (self.known_nodes_display, options)
+            self.list_display = 1
 
     def start(self):
         self.local_peer_display.start()

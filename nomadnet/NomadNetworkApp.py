@@ -51,6 +51,9 @@ class NomadNetworkApp:
         self.directorypath     = self.configdir+"/storage/directory"
         self.peersettingspath  = self.configdir+"/storage/peersettings"
 
+        self.pagespath         = self.configdir+"/storage/pages"
+        self.filespath         = self.configdir+"/storage/files"
+
         if not os.path.isdir(self.storagepath):
             os.makedirs(self.storagepath)
 
@@ -62,6 +65,12 @@ class NomadNetworkApp:
 
         if not os.path.isdir(self.conversationpath):
             os.makedirs(self.conversationpath)
+
+        if not os.path.isdir(self.pagespath):
+            os.makedirs(self.pagespath)
+
+        if not os.path.isdir(self.filespath):
+            os.makedirs(self.filespath)
 
         if os.path.isfile(self.configpath):
             try:
@@ -150,6 +159,11 @@ class NomadNetworkApp:
         RNS.log("LXMF Router ready to receive on: "+RNS.prettyhexrep(self.lxmf_destination.hash))
 
         self.directory = nomadnet.Directory.Directory(self)
+
+        if self.enable_node:
+            self.node = nomadnet.Node(self)
+        else:
+            self.node = None
 
         nomadnet.ui.spawn(self.uimode)
 
@@ -295,13 +309,40 @@ class NomadNetworkApp:
                         self.uimode = nomadnet.ui.UI_WEB
 
         if "node" in self.config:
-            for option in self.config["node"]:
-                value = self.config["node"][option]
+            if not "enable_node" in self.config["node"]:
+                self.enable_node = False
+            else:
+                self.enable_node = self.config["node"].as_bool("enable_node")
 
-                if option == "enable_node":
-                    value = self.config["node"].as_bool(option)
-                    self.enable_node = value
+            if not "node_name" in self.config["node"]:
+                self.node_name = None
+            else:
+                value = self.config["node"]["node_name"]
+                if value.lower() == "none":
+                    self.node_name = None
+                else:
+                    self.node_name = self.config["node"]["node_name"]
 
+            if not "announce_at_start" in self.config["node"]:
+                self.node_announce_at_start = False
+            else:
+                self.node_announce_at_start = self.config["announce_at_start"].as_bool("announce_at_start")
+
+            if not "announce_interval" in self.config["node"]:
+                self.node_announce_interval = 720
+            else:
+                value = self.config["announce_interval"].as_int("announce_interval")
+                if value < 1:
+                    value = 1
+                self.node_announce_interval = value
+
+            if "pages_path" in self.config["node"]:
+                self.pagespath = self.config["node"]["pages_path"]
+
+            if "files_path" in self.config["node"]:
+                self.filespath = self.config["node"]["files_path"]
+
+              
     @staticmethod
     def get_shared_instance():
         if NomadNetworkApp._shared_instance != None:
@@ -385,6 +426,23 @@ hide_guide = no
 
 [node]
 
+# Whether to enable node hosting
+
 enable_node = no
+
+# The node name will be visible to other
+# peers on the network, and included in
+# announces.
+
+node_name = None
+
+# Automatic announce interval in minutes.
+# 12 hours by default.
+
+announce_interval = 720
+
+# Whether to announce when the node starts
+
+announce_at_start = No
 
 '''.splitlines()

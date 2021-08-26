@@ -26,7 +26,7 @@ class Conversation:
 
         # Add the announce to the directory announce
         # stream logger
-        app.directory.announce_received(destination_hash, app_data)
+        app.directory.lxmf_announce_received(destination_hash, app_data)
 
     @staticmethod
     def query_for_peer(source_hash):

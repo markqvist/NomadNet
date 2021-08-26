@@ -5,7 +5,7 @@ import time
 import RNS.vendor.umsgpack as msgpack
 
 class Directory:
-    ANNOUNCE_STREAM_MAXLENGTH = 256
+    ANNOUNCE_STREAM_MAXLENGTH = 64
 
     def __init__(self, app):
         self.directory_entries = {}
@@ -54,7 +54,13 @@ class Directory:
             except Exception as e:
                 RNS.log("Could not load directory from disk. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
-    def announce_received(self, source_hash, app_data):
+    def lxmf_announce_received(self, source_hash, app_data):
+        timestamp = time.time()
+        self.announce_stream.insert(0, (timestamp, source_hash, app_data))
+        while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
+            self.announce_stream.pop()
+
+    def node_announce_received(self, source_hash, app_data):
         timestamp = time.time()
         self.announce_stream.insert(0, (timestamp, source_hash, app_data))
         while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
