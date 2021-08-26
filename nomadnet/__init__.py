@@ -3,6 +3,7 @@ import glob
 
 from .NomadNetworkApp import NomadNetworkApp
 from .Conversation import Conversation
+from .Directory import Directory
 from .Node import Node
 from .ui import *
 

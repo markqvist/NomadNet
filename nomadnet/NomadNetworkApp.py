@@ -156,7 +156,7 @@ class NomadNetworkApp:
 
         RNS.log("LXMF Router ready to receive on: "+RNS.prettyhexrep(self.lxmf_destination.hash))
 
-        self.directory = nomadnet.Directory.Directory(self)
+        self.directory = nomadnet.Directory(self)
 
         if self.enable_node:
             self.node = nomadnet.Node(self)

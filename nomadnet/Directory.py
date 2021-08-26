@@ -2,6 +2,7 @@ import os
 import RNS
 import LXMF
 import time
+import nomadnet
 import RNS.vendor.umsgpack as msgpack
 
 class Directory:
@@ -13,9 +14,11 @@ class Directory:
         app = nomadnet.NomadNetworkApp.get_shared_instance()
         destination_hash_text = RNS.hexrep(destination_hash, delimit=False)
 
+        associated_peer = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", announced_identity)
+
         # TODO: REMOVE
-        RNS.log("Received node announce from: "+destination_hash_text)
-        app.directory.lxmf_announce_received(destination_hash, app_data)
+        RNS.log("Received node announce for node: "+destination_hash_text+" from "+RNS.prettyhexrep(associated_peer))
+        app.directory.node_announce_received(destination_hash, app_data, associated_peer)
 
 
     def __init__(self, app):
@@ -62,16 +65,7 @@ class Directory:
 
                 self.directory_entries = entries
 
-                # TODO: Revert back to this simpler method instead of checking
-                # for the old format
-                # self.announce_stream = unpacked_directory["announce_stream"]
-
-                for entry in unpacked_directory["announce_stream"]:
-                    RNS.log(str(entry))
-                    if len(entry) < 4:
-                        entry = (entry[0], entry[1], entry[2], False)
-
-                    self.announce_stream.append(entry)
+                self.announce_stream = unpacked_directory["announce_stream"]
 
 
             except Exception as e:
@@ -83,11 +77,15 @@ class Directory:
         while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
             self.announce_stream.pop()
 
-    def node_announce_received(self, source_hash, app_data):
+    def node_announce_received(self, source_hash, app_data, associated_peer):
         timestamp = time.time()
         self.announce_stream.insert(0, (timestamp, source_hash, app_data, True))
         while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
             self.announce_stream.pop()
+
+        if self.trust_level(associated_peer) == DirectoryEntry.TRUSTED:
+            node_entry = DirectoryEntry(source_hash, display_name=app_data.decode("utf-8"), trust_level=DirectoryEntry.TRUSTED, hosts_node=True)
+            self.remember(node_entry)
 
     def display_name(self, source_hash):
         if source_hash in self.directory_entries:
