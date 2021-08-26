@@ -69,7 +69,7 @@ class Directory:
                 for entry in unpacked_directory["announce_stream"]:
                     RNS.log(str(entry))
                     if len(entry) < 4:
-                        entry[3] = False
+                        entry = (entry[0], entry[1], entry[2], False)
 
                     self.announce_stream.append(entry)
 
