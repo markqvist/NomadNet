@@ -327,12 +327,12 @@ class NomadNetworkApp:
             if not "announce_at_start" in self.config["node"]:
                 self.node_announce_at_start = False
             else:
-                self.node_announce_at_start = self.config["announce_at_start"].as_bool("announce_at_start")
+                self.node_announce_at_start = self.config["node"]["announce_at_start"]
 
             if not "announce_interval" in self.config["node"]:
                 self.node_announce_interval = 720
             else:
-                value = self.config["announce_interval"].as_int("announce_interval")
+                value = self.config["node"].as_int("announce_interval")
                 if value < 1:
                     value = 1
                 self.node_announce_interval = value

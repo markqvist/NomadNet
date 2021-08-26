@@ -22,15 +22,13 @@ class Node:
         self.register_pages()
         self.register_files()
 
+        if self.name == None:
+            self.name = self.app.peer_settings["display_name"]+"'s Node"
+
+        RNS.log("Node \""+self.name+"\" ready for incoming connections on "+RNS.prettyhexrep(self.destination.hash), RNS.LOG_VERBOSE)
+
         if self.app.node_announce_at_start:
             self.announce()
-
-        if self.name == None:
-            name_string = self.app.peer_settings["display_name"]+"'s Node"
-        else:
-            name_string = self.name
-
-        RNS.log("Node \""+name_string+"\" ready for incoming connections on "+RNS.prettyhexrep(self.destination.hash), RNS.LOG_VERBOSE)
 
 
     def register_pages(self):
