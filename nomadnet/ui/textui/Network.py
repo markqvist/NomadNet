@@ -94,7 +94,7 @@ class AnnounceInfo(urwid.WidgetWrap):
 
         def show_announce_stream(sender):
             options = self.parent.left_pile.options(height_type="weight", height_amount=1)
-            self.parent.left_pile.contents[0] = (AnnounceStream(self.app, self.parent), options)
+            self.parent.left_pile.contents[0] = (self.parent.announce_stream_display, options)
 
         def converse(sender):
             show_announce_stream(None)
@@ -590,7 +590,6 @@ class NetworkDisplay():
 
     def toggle_list(self):
         if self.list_display != 0:
-            self.announce_stream_display = AnnounceStream(self.app, self)
             options = self.left_pile.options(height_type="weight", height_amount=1)
             self.left_pile.contents[0] = (self.announce_stream_display, options)
             self.list_display = 0
