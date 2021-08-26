@@ -218,6 +218,10 @@ With micron you can easily create structured documents and pages with formatting
 
 While micron can output formatted text to even the most basic terminal, there's a few capabilities your terminal `*must`* support to display micron output correctly, and some that, while not strictly necessary, make the experience a lot better.
 
+Formatting such as `_underline`_, `!bold`! or `*italics`* will be displayed if your terminal supports it.
+
+If you are having trouble getting micron output to display correctly, try using `*gnome-terminal`*, which should work with all formatting options out of the box. Most other terminals will work fine as well, but you might have to change some settings to get certain formatting to display correctly.
+
 >>>Encoding
 
 All micron sources are intepreted as UTF-8, and micron assumes it can output UTF-8 characters to the terminal. If your terminal does not support UTF-8, output will be faulty.
@@ -228,7 +232,7 @@ Shading and coloring text and backgrounds is integral to micron output, and whil
 
 >>>Terminal Font
 
-While any font any unicode capable font can be used with micron, it's highly recommended to use a `*"Nerd Font"`* (see https://www.nerdfonts.com/), which will add a lot of extra glyphs and icons to your output.
+While any unicode capable font can be used with micron, it's highly recommended to use a `*"Nerd Font"`* (see https://www.nerdfonts.com/), which will add a lot of extra glyphs and icons to your output.
 
 > A Few Demo Outputs
 
@@ -427,6 +431,10 @@ This program uses various other software components, without which Nomad Network
  - `!Cryptography.io`! by `*pyca`*
    https://cryptography.io/
    BSD License
+
+ - `!Urwid`! by `*Ian Ward`*
+   http://urwid.org/
+   LGPL-2.1 License
 
  - `!Additional Urwid Widgets`! by `*AFoeee`*
    https://github.com/AFoeee/additional_urwid_widgets
