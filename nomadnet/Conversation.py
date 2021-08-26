@@ -26,8 +26,6 @@ class Conversation:
 
         # Add the announce to the directory announce
         # stream logger
-        # TODO: REMOVE
-        RNS.log("Received LXMF announce from: "+destination_hash_text)
         app.directory.lxmf_announce_received(destination_hash, app_data)
 
     @staticmethod

@@ -11,7 +11,8 @@ class NetworkDisplayShortcuts():
         self.app = app
         g = app.ui.glyphs
 
-        self.widget = urwid.AttrMap(urwid.Text("[C-l] View Nodes/Announces  [C-"+g["arrow_u"]+g["arrow_d"]+"] Navigate Lists"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-l] Toggle Nodes/Announces View  [C-x] Remove entry"), "shortcutbar")
+        #   "[C-"+g["arrow_u"]+g["arrow_d"]+"] Navigate Lists"
 
 
 class DialogLineBox(urwid.LineBox):
@@ -61,6 +62,13 @@ class AnnounceInfo(urwid.WidgetWrap):
         trust_str    = ""
         display_str  = self.app.directory.simplest_display_str(source_hash)
         addr_str     = "<"+RNS.hexrep(source_hash, delimit=False)+">"
+        is_node      = announce[3]
+
+        if is_node:
+            type_string = g["node"] + " Node"
+        else:
+            type_string = g["peer"] + " Peer"
+
         try:
             data_str = announce[2].decode("utf-8")
             data_style = ""
@@ -96,6 +104,9 @@ class AnnounceInfo(urwid.WidgetWrap):
             options = self.parent.left_pile.options(height_type="weight", height_amount=1)
             self.parent.left_pile.contents[0] = (self.parent.announce_stream_display, options)
 
+        def connect(sender):
+            show_announce_stream(None)
+
         def converse(sender):
             show_announce_stream(None)
             try:
@@ -117,15 +128,31 @@ class AnnounceInfo(urwid.WidgetWrap):
             except Exception as e:
                 RNS.log("Error while starting conversation from announce. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
-        pile = urwid.Pile([
+        if is_node:
+            type_button = ("weight", 0.45, urwid.Button("Connect", on_press=connect))
+        else:
+            type_button = ("weight", 0.45, urwid.Button("Converse", on_press=converse))
+
+        pile_widgets = [
+            urwid.Text("Time  : "+ts_string, align="left"),
             urwid.Text("Addr  : "+addr_str, align="left"),
+            urwid.Text("Type  : "+type_string, align="left"),
             urwid.Text("Name  : "+display_str, align="left"),
             urwid.Text(["Trust : ", (style, trust_str)], align="left"),
             urwid.Divider(g["divider1"]),
             urwid.Text(["Announce Data: \n", (data_style, data_str)], align="left"),
             urwid.Divider(g["divider1"]),
-            urwid.Columns([("weight", 0.45, urwid.Button("Back", on_press=show_announce_stream)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Converse", on_press=converse))])
-        ])
+            urwid.Columns([("weight", 0.45, urwid.Button("Back", on_press=show_announce_stream)), ("weight", 0.1, urwid.Text("")), type_button])
+        ]
+
+        if is_node:
+            node_ident = RNS.Identity.recall(source_hash)
+            op_hash = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", node_ident)
+            op_str = self.app.directory.simplest_display_str(op_hash)
+            operator_entry = urwid.Text("Oprtr : "+op_str, align="left")
+            pile_widgets.insert(4, operator_entry)
+
+        pile = urwid.Pile(pile_widgets)
 
         self.display_widget = urwid.Filler(pile, valign="top", height="pack")
 
@@ -195,6 +222,9 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
         options = parent.left_pile.options(height_type="weight", height_amount=1)
         parent.left_pile.contents[0] = (info_widget, options)
 
+    def timestamp(self):
+        return self.timestamp
+
 class AnnounceStream(urwid.WidgetWrap):
     def __init__(self, app, parent):
         self.app = app
@@ -202,18 +232,17 @@ class AnnounceStream(urwid.WidgetWrap):
         self.started = False
         self.timeout = self.app.config["textui"]["animation_interval"]*2
         self.ilb = None
+        self.no_content = True
         
         self.added_entries = []
         self.widget_list = []
         self.update_widget_list()
 
-        wlt = [AnnounceStreamEntry(self.app, e) for e in self.app.directory.announce_stream]
         self.ilb = IndicativeListBox(
             self.widget_list,
-            #wlt,
             on_selection_change=self.list_selection,
             initialization_is_selection_change=False,
-            modifier_key=MODIFIER_KEY.CTRL,
+            #modifier_key=MODIFIER_KEY.CTRL,
             #highlight_offFocus="list_off_focus"
         )
 
@@ -221,12 +250,20 @@ class AnnounceStream(urwid.WidgetWrap):
         urwid.WidgetWrap.__init__(self, urwid.LineBox(self.display_widget, title="Announce Stream"))
 
     def keypress(self, size, key):
-        if key == "up":
+        if key == "up" and (self.no_content or self.ilb.first_item_is_selected()):
             nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.set_focus("header")
+        elif key == "ctrl x":
+            self.delete_selected_entry()
             
         return super(AnnounceStream, self).keypress(size, key)
 
+    def delete_selected_entry(self):
+        if self.ilb.get_selected_item() != None:
+            self.app.directory.remove_announce_with_timestamp(self.ilb.get_selected_item().original_widget.timestamp)
+            self.rebuild_widget_list()
+
     def rebuild_widget_list(self):
+        self.no_content = True
         self.added_entries = []
         self.widget_list = []
         self.update_widget_list()
@@ -238,13 +275,22 @@ class AnnounceStream(urwid.WidgetWrap):
                 self.added_entries.insert(0, e[0])
                 new_entries.insert(0, e)
 
-        new_widgets = [AnnounceStreamEntry(self.app, e) for e in new_entries]
-        for nw in new_widgets:
+        for e in new_entries:
+            nw = AnnounceStreamEntry(self.app, e)
+            nw.timestamp = e[0]
             self.widget_list.insert(0, nw)
 
-        if len(new_widgets) > 0:
+        if len(new_entries) > 0:
+            self.no_content = False
             if self.ilb != None:
                 self.ilb.set_body(self.widget_list)
+        else:
+            if len(self.widget_list) == 0:
+                self.no_content = True
+            
+            if self.ilb != None:
+                self.ilb.set_body(self.widget_list)
+
 
     def list_selection(self, arg1, arg2):
         pass
@@ -290,14 +336,23 @@ class SelectText(urwid.Text):
         self._emit('click')
         return True
 
+class ListDialogLineBox(urwid.LineBox):
+    def keypress(self, size, key):
+        if key == "esc":
+            self.delegate.close_list_dialogs()
+        else:
+            return super(ListDialogLineBox, self).keypress(size, key)
+
 class KnownNodes(urwid.WidgetWrap):
     def __init__(self, app):
         self.app = app
         self.node_list = app.directory.known_nodes()
         g = self.app.ui.glyphs
+
+        self.widget_list = self.make_node_widgets()
         
         self.ilb = IndicativeListBox(
-            self.make_node_widgets(),
+            self.widget_list,
             on_selection_change=self.node_list_selection,
             initialization_is_selection_change=False,
             highlight_offFocus="list_off_focus"
@@ -316,8 +371,10 @@ class KnownNodes(urwid.WidgetWrap):
         urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="Known Nodes"), widget_style))
 
     def keypress(self, size, key):
-        if key == "up" and (self.no_content or self.ilb.top_is_visible):
+        if key == "up" and (self.no_content or self.ilb.first_item_is_selected()):
             nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.set_focus("header")
+        elif key == "ctrl x":
+            self.delete_selected_entry()
             
         return super(KnownNodes, self).keypress(size, key)
 
@@ -325,14 +382,123 @@ class KnownNodes(urwid.WidgetWrap):
     def node_list_selection(self, arg1, arg2):
         pass
 
+    def connect_node(self, event, node):
+        source_hash = node.source_hash
+        trust_level = node.trust_level
+        trust_level  = self.app.directory.trust_level(source_hash)
+        display_str = self.app.directory.simplest_display_str(source_hash)
+
+        def dismiss_dialog(sender):
+            self.delegate.close_list_dialogs()
+
+        def confirmed(sender):
+            self.delegate.close_list_dialogs()
+
+
+        dialog = ListDialogLineBox(
+            urwid.Pile([
+                urwid.Text("Connect to node\n"+self.app.directory.simplest_display_str(source_hash)+"\n", align="center"),
+                urwid.Columns([("weight", 0.45, urwid.Button("Yes", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("No", on_press=dismiss_dialog))])
+            ]), title="?"
+        )
+        dialog.delegate = self.delegate
+        bottom = self
+
+        overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+
+        options = self.delegate.left_pile.options("weight", 1)
+        self.delegate.left_pile.contents[0] = (overlay, options)
+
+    def delete_selected_entry(self):
+        source_hash = self.ilb.get_selected_item().original_widget.source_hash
+
+        def dismiss_dialog(sender):
+            self.delegate.close_list_dialogs()
+
+        def confirmed(sender):
+            self.app.directory.forget(source_hash)
+            self.rebuild_widget_list()
+            self.delegate.close_list_dialogs()
+
+
+        dialog = ListDialogLineBox(
+            urwid.Pile([
+                urwid.Text("Delete Node\n"+self.app.directory.simplest_display_str(source_hash)+"\n", align="center"),
+                urwid.Columns([("weight", 0.45, urwid.Button("Yes", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("No", on_press=dismiss_dialog))])
+            ]), title="?"
+        )
+        dialog.delegate = self.delegate
+        bottom = self
+
+        overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+
+        options = self.delegate.left_pile.options("weight", 1)
+        self.delegate.left_pile.contents[0] = (overlay, options)
+
+
+    def rebuild_widget_list(self):
+        self.node_list = self.app.directory.known_nodes()
+        self.widget_list = self.make_node_widgets()
+        self.ilb.set_body(self.widget_list)
+        if len(self.widget_list) > 0:
+            self.no_content = False
+        else:
+            self.no_content = True
+            self.delegate.reinit_known_nodes()
+
     def make_node_widgets(self):
         widget_list = []
         for node_entry in self.node_list:
             # TODO: Implement this
-            widget_list.append(ListEntry("Node "+RNS.prettyhexrep(node_entry.source_hash)))
+            ne = NodeEntry(self.app, node_entry, self)
+            ne.source_hash = node_entry.source_hash
+            widget_list.append(ne)
 
         # TODO: Sort list
         return widget_list
+
+
+
+class NodeEntry(urwid.WidgetWrap):
+    def __init__(self, app, node, delegate):
+        source_hash = node.source_hash
+        trust_level = node.trust_level
+
+        self.app = app
+        g = self.app.ui.glyphs
+
+        trust_level  = self.app.directory.trust_level(source_hash)
+        display_str = self.app.directory.simplest_display_str(source_hash)
+
+        if trust_level == DirectoryEntry.UNTRUSTED:
+            symbol        = g["cross"]
+            style         = "list_untrusted"
+            focus_style   = "list_focus_untrusted"
+        elif trust_level == DirectoryEntry.UNKNOWN:
+            symbol        = g["unknown"]
+            style         = "list_unknown"
+            focus_style   = "list_focus"
+        elif trust_level == DirectoryEntry.TRUSTED:
+            symbol        = g["check"]
+            style         = "list_trusted"
+            focus_style   = "list_focus_trusted"
+        elif trust_level == DirectoryEntry.WARNING:
+            symbol        = g["warning"]
+            style         = "list_warning"
+            focus_style   = "list_focus"
+        else:
+            symbol        = g["warning"]
+            style         = "list_untrusted"
+            focus_style   = "list_focus_untrusted"
+
+        type_symbol = g["node"]
+        
+        widget = ListEntry(type_symbol+" "+display_str)
+        urwid.connect_signal(widget, "click", delegate.connect_node, node)
+
+        self.display_widget = urwid.AttrMap(widget, style, focus_style)
+        self.display_widget.source_hash = source_hash
+        urwid.WidgetWrap.__init__(self, self.display_widget)
 
 
 class AnnounceTime(urwid.WidgetWrap):
@@ -559,11 +725,13 @@ class NetworkDisplay():
         self.app = app
         g = self.app.ui.glyphs
 
-        self.known_nodes_display = None
+        self.known_nodes_display = KnownNodes(self.app)
         self.network_stats_display = NetworkStats(self.app, self)
         self.announce_stream_display = AnnounceStream(self.app, self)
         self.local_peer_display = LocalPeer(self.app, self)
         self.node_settings_display = NodeSettings(self.app, self)
+
+        self.known_nodes_display.delegate = self
 
         self.list_display = 0
         self.left_pile = NetworkLeftPile([
@@ -594,10 +762,23 @@ class NetworkDisplay():
             self.left_pile.contents[0] = (self.announce_stream_display, options)
             self.list_display = 0
         else:
-            self.known_nodes_display = KnownNodes(self.app)
             options = self.left_pile.options(height_type="weight", height_amount=1)
             self.left_pile.contents[0] = (self.known_nodes_display, options)
             self.list_display = 1
+
+    def reinit_known_nodes(self):
+        self.known_nodes_display = KnownNodes(self.app)
+        self.known_nodes_display.delegate = self
+        self.close_list_dialogs()
+        self.announce_stream_display.rebuild_widget_list()
+
+    def close_list_dialogs(self):
+        if self.list_display == 0:
+            options = self.left_pile.options(height_type="weight", height_amount=1)
+            self.left_pile.contents[0] = (self.announce_stream_display, options)
+        else:
+            options = self.left_pile.options(height_type="weight", height_amount=1)
+            self.left_pile.contents[0] = (self.known_nodes_display, options)
 
     def start(self):
         self.local_peer_display.start()
@@ -609,6 +790,10 @@ class NetworkDisplay():
 
     def directory_change_callback(self):
         self.announce_stream_display.rebuild_widget_list()
+        if self.known_nodes_display.no_content:
+            self.reinit_known_nodes()
+        else:
+            self.known_nodes_display.rebuild_widget_list()
 
 
 

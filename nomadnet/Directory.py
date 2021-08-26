@@ -16,8 +16,6 @@ class Directory:
 
         associated_peer = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", announced_identity)
 
-        # TODO: REMOVE
-        RNS.log("Received node announce for node: "+destination_hash_text+" from "+RNS.prettyhexrep(associated_peer))
         app.directory.node_announce_received(destination_hash, app_data, associated_peer)
 
 
@@ -76,6 +74,7 @@ class Directory:
         self.announce_stream.insert(0, (timestamp, source_hash, app_data, False))
         while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
             self.announce_stream.pop()
+        self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
 
     def node_announce_received(self, source_hash, app_data, associated_peer):
         timestamp = time.time()
@@ -86,6 +85,16 @@ class Directory:
         if self.trust_level(associated_peer) == DirectoryEntry.TRUSTED:
             node_entry = DirectoryEntry(source_hash, display_name=app_data.decode("utf-8"), trust_level=DirectoryEntry.TRUSTED, hosts_node=True)
             self.remember(node_entry)
+            self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
+
+    def remove_announce_with_timestamp(self, timestamp):
+        selected_announce = None
+        for announce in self.announce_stream:
+            if announce[0] == timestamp:
+                selected_announce = announce
+
+        if selected_announce != None:
+            self.announce_stream.remove(selected_announce)
 
     def display_name(self, source_hash):
         if source_hash in self.directory_entries:
@@ -120,6 +129,12 @@ class Directory:
 
     def remember(self, entry):
         self.directory_entries[entry.source_hash] = entry
+
+        identity = RNS.Identity.recall(entry.source_hash)
+        associated_node = RNS.Destination.hash_from_name_and_identity("nomadnetwork.node", identity)
+        if associated_node in self.directory_entries:
+            node_entry = self.directory_entries[associated_node]
+            node_entry.trust_level = entry.trust_level
 
     def forget(self, source_hash):
         if source_hash in self.directory_entries:
