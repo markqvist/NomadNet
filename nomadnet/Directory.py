@@ -70,22 +70,24 @@ class Directory:
                 RNS.log("Could not load directory from disk. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
     def lxmf_announce_received(self, source_hash, app_data):
-        timestamp = time.time()
-        self.announce_stream.insert(0, (timestamp, source_hash, app_data, False))
-        while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
-            self.announce_stream.pop()
-        self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
+        if app_data != None:
+            timestamp = time.time()
+            self.announce_stream.insert(0, (timestamp, source_hash, app_data, False))
+            while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
+                self.announce_stream.pop()
+            self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
 
     def node_announce_received(self, source_hash, app_data, associated_peer):
-        timestamp = time.time()
-        self.announce_stream.insert(0, (timestamp, source_hash, app_data, True))
-        while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
-            self.announce_stream.pop()
+        if app_data != None:
+            timestamp = time.time()
+            self.announce_stream.insert(0, (timestamp, source_hash, app_data, True))
+            while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
+                self.announce_stream.pop()
 
-        if self.trust_level(associated_peer) == DirectoryEntry.TRUSTED:
-            node_entry = DirectoryEntry(source_hash, display_name=app_data.decode("utf-8"), trust_level=DirectoryEntry.TRUSTED, hosts_node=True)
-            self.remember(node_entry)
-            self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
+            if self.trust_level(associated_peer) == DirectoryEntry.TRUSTED:
+                node_entry = DirectoryEntry(source_hash, display_name=app_data.decode("utf-8"), trust_level=DirectoryEntry.TRUSTED, hosts_node=True)
+                self.remember(node_entry)
+                self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
 
     def remove_announce_with_timestamp(self, timestamp):
         selected_announce = None

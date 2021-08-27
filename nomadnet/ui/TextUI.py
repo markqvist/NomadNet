@@ -133,6 +133,7 @@ class TextUI:
         self.loop.run()
 
     def set_colormode(self, colormode):
+        self.colormode = colormode
         self.screen.set_terminal_properties(colormode)
         self.screen.reset_default_terminal_palette()
 

@@ -6,12 +6,14 @@ from datetime import datetime
 from nomadnet.Directory import DirectoryEntry
 from nomadnet.vendor.additional_urwid_widgets import IndicativeListBox, MODIFIER_KEY
 
+from .Browser import Browser
+
 class NetworkDisplayShortcuts():
     def __init__(self, app):
         self.app = app
         g = app.ui.glyphs
 
-        self.widget = urwid.AttrMap(urwid.Text("[C-l] Toggle Nodes/Announces View  [C-x] Remove entry"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-l] Toggle Nodes/Announces view  [C-x] Remove entry  [C-w] Disconnect remote"), "shortcutbar")
         #   "[C-"+g["arrow_u"]+g["arrow_d"]+"] Navigate Lists"
 
 
@@ -392,6 +394,7 @@ class KnownNodes(urwid.WidgetWrap):
             self.delegate.close_list_dialogs()
 
         def confirmed(sender):
+            self.delegate.browser.retrieve_url(RNS.hexrep(source_hash, delimit=False))
             self.delegate.close_list_dialogs()
 
 
@@ -714,6 +717,8 @@ class NetworkLeftPile(urwid.Pile):
     def keypress(self, size, key):
         if key == "ctrl l":
             self.parent.toggle_list()
+        elif key == "ctrl w":
+            self.parent.browser.disconnect()
         else:
             return super(NetworkLeftPile, self).keypress(size, key)
 
@@ -725,6 +730,8 @@ class NetworkDisplay():
         self.app = app
         g = self.app.ui.glyphs
 
+        self.browser = Browser(self.app, "nomadnetwork", "node", auth_identity = self.app.identity, delegate = self)
+
         self.known_nodes_display = KnownNodes(self.app)
         self.network_stats_display = NetworkStats(self.app, self)
         self.announce_stream_display = AnnounceStream(self.app, self)
@@ -733,9 +740,9 @@ class NetworkDisplay():
 
         self.known_nodes_display.delegate = self
 
-        self.list_display = 0
+        self.list_display = 1
         self.left_pile = NetworkLeftPile([
-            ("weight", 1, self.announce_stream_display),
+            ("weight", 1, self.known_nodes_display),
             ("pack", self.network_stats_display),
             ("pack", self.local_peer_display),
         ])
@@ -743,7 +750,7 @@ class NetworkDisplay():
         self.left_pile.parent = self
 
         self.left_area = self.left_pile
-        self.right_area = urwid.AttrMap(urwid.LineBox(urwid.Filler(urwid.Text("Disconnected\n"+g["arrow_l"]+"  "+g["arrow_r"], align="center"), "middle"), title="Remote Node"), "inactive_text")
+        self.right_area = self.browser.display_widget
 
         self.columns = urwid.Columns(
             [
@@ -765,6 +772,9 @@ class NetworkDisplay():
             options = self.left_pile.options(height_type="weight", height_amount=1)
             self.left_pile.contents[0] = (self.known_nodes_display, options)
             self.list_display = 1
+
+    def focus_lists(self):
+        self.columns.focus_position = 0
 
     def reinit_known_nodes(self):
         self.known_nodes_display = KnownNodes(self.app)

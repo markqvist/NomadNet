@@ -1,5 +1,8 @@
 import nomadnet
 import urwid
+import time
+from urwid.util import is_mouse_press
+from urwid.text_layout import calc_coords
 import re
 
 STYLES = {
@@ -10,11 +13,12 @@ STYLES = {
 }
 
 SYNTH_STYLES = []
+SYNTH_SPECS  = {}
 
 SECTION_INDENT = 2
 INDENT_RIGHT   = 1
 
-def markup_to_attrmaps(markup):
+def markup_to_attrmaps(markup, url_delegate = None):
     attrmaps = []
 
     state = {
@@ -39,7 +43,7 @@ def markup_to_attrmaps(markup):
 
     for line in lines:
         if len(line) > 0:
-            display_widget = parse_line(line, state)
+            display_widget = parse_line(line, state, url_delegate)
         else:
             display_widget = urwid.Text("")
         
@@ -50,7 +54,7 @@ def markup_to_attrmaps(markup):
     return attrmaps
 
 
-def parse_line(line, state):
+def parse_line(line, state, url_delegate):
     if len(line) > 0:
         first_char = line[0]
 
@@ -68,7 +72,7 @@ def parse_line(line, state):
             # Check for section heading reset
             elif first_char == "<":
                 state["depth"] = 0
-                return parse_line(line[1:], state)
+                return parse_line(line[1:], state, url_delegate)
 
             # Check for section headings
             elif first_char == ">":
@@ -88,7 +92,7 @@ def parse_line(line, state):
                     style_to_state(style, state)
 
                     heading_style = make_style(state)
-                    output = make_output(state, line)
+                    output = make_output(state, line, url_delegate)
                     
                     style_to_state(latched_style, state)
 
@@ -114,13 +118,18 @@ def parse_line(line, state):
                 else:
                     return urwid.Padding(urwid.Divider(divider_char), left=left_indent(state), right=right_indent(state))
 
-        output = make_output(state, line)
+        output = make_output(state, line, url_delegate)
 
         if output != None:
-            if state["depth"] == 0:
-                return urwid.Text(output, align=state["align"])
+            if url_delegate != None:
+                text_widget = LinkableText(output, align=state["align"], delegate=url_delegate)
             else:
-                return urwid.Padding(urwid.Text(output, align=state["align"]), left=left_indent(state), right=right_indent(state))
+                text_widget = urwid.Text(output, align=state["align"])
+
+            if state["depth"] == 0:
+                return text_widget
+            else:
+                return urwid.Padding(text_widget, left=left_indent(state), right=right_indent(state))
         else:
             return None
     else:
@@ -180,11 +189,15 @@ def make_style(state):
     if not name in SYNTH_STYLES:
         screen = nomadnet.NomadNetworkApp.get_shared_instance().ui.screen
         screen.register_palette_entry(name, low_color(fg)+format_string,low_color(bg),mono_color(fg, bg)+format_string,high_color(fg)+format_string,high_color(bg))
+        
+        synth_spec = screen._palette[name]
         SYNTH_STYLES.append(name)
+        if not name in SYNTH_SPECS:
+            SYNTH_SPECS[name] = synth_spec
 
     return name
 
-def make_output(state, line):
+def make_output(state, line, url_delegate):
     output = []
     if state["literal"]:
         if line == "\\`=":
@@ -246,6 +259,58 @@ def make_output(state, line):
                     elif c == "a":
                         state["align"] = state["default_align"]
 
+                    elif c == "[":
+                        endpos = line[i:].find("]")
+                        if endpos == -1:
+                            pass
+                        else:
+                            link_data = line[i+1:i+endpos]
+                            skip = endpos
+
+                            link_components = link_data.split("`")
+                            if len(link_components) == 1:
+                                link_label = ""
+                                link_url = link_data
+                            elif len(link_components) == 2:
+                                link_label = link_components[0]
+                                link_url = link_components[1]
+                            else:
+                                link_url = ""
+                                link_label = ""
+
+                            if len(link_url) != 0:
+                                if link_label == "":
+                                    link_label = link_url
+
+                                # First generate output until now
+                                if len(part) > 0:
+                                    output.append(make_part(state, part))
+
+                                cm = nomadnet.NomadNetworkApp.get_shared_instance().ui.colormode
+
+                                specname = make_style(state)
+                                speclist = SYNTH_SPECS[specname]
+
+                                orig_spec = urwid.AttrSpec('underline', 'default', cm)
+                                if cm == 1:
+                                    orig_spec = speclist[0]
+                                elif cm == 16:
+                                    orig_spec = speclist[1]
+                                elif cm == 88:
+                                    orig_spec = speclist[2]
+                                elif cm == 256:
+                                    orig_spec = speclist[3]
+                                elif cm == 2**24:
+                                    orig_spec = speclist[4]
+
+                                if url_delegate != None:
+                                    linkspec = LinkSpec(link_url, orig_spec)
+                                    output.append((linkspec, link_label))
+                                else:
+                                    output.append(make_part(state, link_label)) 
+
+                                
+
                     mode = "text"
                     if len(part) > 0:
                         output.append(make_part(state, part))
@@ -273,3 +338,140 @@ def make_output(state, line):
         return output
     else:
         return None
+
+
+class LinkSpec(urwid.AttrSpec):
+    def __init__(self, link_target, orig_spec):
+        self.link_target = link_target
+
+        urwid.AttrSpec.__init__(self, orig_spec.foreground, orig_spec.background)
+
+
+class LinkableText(urwid.Text):
+    ignore_focus = False
+    _selectable = True
+
+    signals = ["click", "change"]
+
+    def __init__(self, text, align=None, cursor_position=0, delegate=None):
+        self.__super.__init__(text, align=align)
+        self.delegate = delegate
+        self._cursor_position = 0
+        self.key_timeout = 3
+        if self.delegate != None:
+            self.delegate.last_keypress = 0
+
+    def handle_link(self, link_target):
+        if self.delegate != None:
+            self.delegate.handle_link(link_target)
+
+
+    def find_next_part_pos(self, pos, part_positions):
+        for position in part_positions:
+            if position > pos:
+                return position
+        return pos
+
+    def find_prev_part_pos(self, pos, part_positions):
+        nextpos = pos
+        for position in part_positions:
+            if position < pos:
+                nextpos = position
+        return nextpos
+
+    def find_item_at_pos(self, pos):
+        total = 0
+        text, parts = self.get_text()
+        for i, info in enumerate(parts):
+            style, length = info
+            if total <= pos < length+total:
+                return style
+
+            total += length
+
+        return None
+
+    def keypress(self, size, key):
+        part_positions = [0]
+        parts = []
+        total = 0
+        text, parts = self.get_text()
+        for i, info in enumerate(parts):
+            style_name, length = info
+            part_positions.append(length+total)
+            total += length
+
+
+        if self.delegate != None:
+            self.delegate.last_keypress = time.time()
+            self._invalidate()
+            nomadnet.NomadNetworkApp.get_shared_instance().ui.loop.set_alarm_in(self.key_timeout, self.kt_event)
+
+        if self._command_map[key] == urwid.ACTIVATE:
+            item = self.find_item_at_pos(self._cursor_position)
+            if item != None:
+                if isinstance(item, LinkSpec):
+                    self.handle_link(item.link_target)
+
+        elif key == "up":
+            self._cursor_position = 0
+            return key
+        
+        elif key == "down":
+            self._cursor_position = 0
+            return key
+        
+        elif key == "right":
+            self._cursor_position = self.find_next_part_pos(self._cursor_position, part_positions)
+            self._invalidate()
+        
+        elif key == "left":
+            if self._cursor_position > 0:
+                self._cursor_position = self.find_prev_part_pos(self._cursor_position, part_positions)
+                self._invalidate()
+
+            else:
+                if self.delegate != None:
+                    self.delegate.micron_released_focus()
+
+        else:
+            return key
+
+    def kt_event(self, loop, user_data):
+        self._invalidate()
+
+    def render(self, size, focus=False):
+        now = time.time()
+        c = self.__super.render(size, focus)
+
+        if focus and (self.delegate == None or now < self.delegate.last_keypress+self.key_timeout):
+            c = urwid.CompositeCanvas(c)
+            c.cursor = self.get_cursor_coords(size)
+        return c
+
+    def get_cursor_coords(self, size):
+            if self._cursor_position > len(self.text):
+                return None
+
+            (maxcol,) = size
+            trans = self.get_line_translation(maxcol)
+            x, y = calc_coords(self.text, trans, self._cursor_position)
+            if maxcol <= x:
+                return None
+            return x, y
+
+    def mouse_event(self, size, event, button, x, y, focus):
+        if button != 1 or not is_mouse_press(event):
+            return False
+        else:
+            pos = (y * size[0]) + x
+            self._cursor_position = pos
+            item = self.find_item_at_pos(self._cursor_position)
+            if item != None:
+                if isinstance(item, LinkSpec):
+                    self.handle_link(item.link_target)
+
+            self._invalidate()
+            self._emit("change")
+            
+            return True

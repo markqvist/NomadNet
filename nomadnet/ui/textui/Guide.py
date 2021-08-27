@@ -64,6 +64,7 @@ class GuideEntry(urwid.WidgetWrap):
     def __init__(self, app, reader, topic_name):
         self.app = app
         self.reader = reader
+        self.last_keypress = None
         g = self.app.ui.glyphs
 
         widget = ListEntry(topic_name)
@@ -76,9 +77,12 @@ class GuideEntry(urwid.WidgetWrap):
 
     def display_topic(self, event, topic):
         markup = TOPICS[topic]
-        attrmaps = markup_to_attrmaps(markup)
+        attrmaps = markup_to_attrmaps(markup, url_delegate=None)
 
         self.reader.set_content_widgets(attrmaps)
+
+    def micron_released_focus(self):
+        self.reader.focus_topics()
 
 class TopicList(urwid.WidgetWrap):
     def __init__(self, app, guide_display):
@@ -142,11 +146,20 @@ class GuideDisplay():
     def shortcuts(self):
         return self.shortcuts_display
 
+    def focus_topics(self):
+        self.columns.focus_position = 0
+
 
 TOPIC_INTRODUCTION = '''>Nomad Network
 
 `c`*Communicate Freely.`*
 `a
+
+TODO: REMOVE
+This is a `F07flink `[With a label`344858860838a8d9f8ed:/page/test] to some resource`f.
+This is a link `*`[With a label`:/page/test]`* to some resource.
+This is a link `[With a label`:] to some resource.
+This is a link `*`[With a label`344858860838a8d9f8ed] to some`* resource.
 
 The intention with this program is to provide a tool to that allows you to build private and resilient communications platforms that are in complete control and ownership of the people that use them.
 
