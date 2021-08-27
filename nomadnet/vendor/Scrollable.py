@@ -211,7 +211,7 @@ class Scrollable(urwid.WidgetDecoration):
         # If the cursor was moved by the most recent keypress, adjust trim_top
         # so that the new cursor position is within the displayed canvas part.
         # But don't do this if the cursor is at the top/bottom edge so we can still scroll out
-        if self._old_cursor_coords is not None and self._old_cursor_coords != canv.cursor:
+        if self._old_cursor_coords is not None and self._old_cursor_coords != canv.cursor and canv.cursor != None:
             self._old_cursor_coords = None
             curscol, cursrow = canv.cursor
             if cursrow < self._trim_top:
@@ -411,7 +411,10 @@ class ScrollBar(urwid.WidgetDecoration):
         if not handled and hasattr(ow, 'set_scrollpos'):
             if button == 4:    # scroll wheel up
                 pos = ow.get_scrollpos(ow_size)
-                ow.set_scrollpos(pos - 1)
+                newpos = pos - 1
+                if newpos < 0:
+                    newpos = 0
+                ow.set_scrollpos(newpos)
                 return True
             elif button == 5:  # scroll wheel down
                 pos = ow.get_scrollpos(ow_size)
