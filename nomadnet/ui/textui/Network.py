@@ -107,6 +107,7 @@ class AnnounceInfo(urwid.WidgetWrap):
             self.parent.left_pile.contents[0] = (self.parent.announce_stream_display, options)
 
         def connect(sender):
+            self.parent.browser.retrieve_url(RNS.hexrep(source_hash, delimit=False))
             show_announce_stream(None)
 
         def converse(sender):
