@@ -37,7 +37,7 @@ THEMES = {
             ("list_focus",                  "black", "light gray",                  "standout",                 "#111", "#bbb"),
             ("list_off_focus",              "black", "dark gray",                   "standout",                 "#111", "dark gray"),
             ("list_trusted",                "dark green", "default",                "default",                  "#6b2", "default"),
-            ("list_focus_trusted",          "black", "light gray",                  "standout",                 "#170", "#bbb"),
+            ("list_focus_trusted",          "black", "light gray",                  "standout",                 "#150", "#bbb"),
             ("list_unknown",                "dark gray", "default",                 "default",                  "#bbb", "default"),
             ("list_normal",                 "dark gray", "default",                 "default",                  "#bbb", "default"),
             ("list_untrusted",              "dark red", "default",                  "default",                  "dark red", "default"),
