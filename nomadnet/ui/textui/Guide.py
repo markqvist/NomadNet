@@ -70,7 +70,7 @@ class GuideEntry(urwid.WidgetWrap):
         widget = ListEntry(topic_name)
         urwid.connect_signal(widget, "click", self.display_topic, topic_name)
 
-        style = "list_normal"
+        style = "topic_list_normal"
         focus_style = "list_focus"
         self.display_widget = urwid.AttrMap(widget, style, focus_style)
         urwid.WidgetWrap.__init__(self, self.display_widget)
@@ -154,12 +154,6 @@ TOPIC_INTRODUCTION = '''>Nomad Network
 
 `c`*Communicate Freely.`*
 `a
-
-TODO: REMOVE
-This is a `F07flink `[With a label`344858860838a8d9f8ed:/page/test] to some resource`f.
-This is a link `*`[With a label`:/page/test]`* to some resource.
-This is a link `[With a label`:] to some resource.
-This is a link `*`[With a label`344858860838a8d9f8ed] to some`* resource.
 
 The intention with this program is to provide a tool to that allows you to build private and resilient communications platforms that are in complete control and ownership of the people that use them.
 
@@ -417,9 +411,13 @@ TOPIC_MARKUP += "\n`=\n\n>Closing Remarks\n\nIf you made it all the way here, yo
 
 TOPIC_FIRST_RUN = '''>First Time Information
 
-Hi there. This first run message will only appear once. It contains a few pointers on getting started with Nomad Network, and getting the most out of the program. You're currently located in the guide section of the program. I'm sorry I had to drag you here by force, but it will only happen this one time, I promise. If you ever get lost, return here and peruse the list of topics you see on the left. I will do my best to fill it with answers to mostly anything about Nomad Network.
+Hi there. This first run message will only appear once. It contains a few pointers on getting started with Nomad Network, and getting the most out of the program.
 
-To get the most out of Nomad Network, you will need a terminal that supports UTF-8 and at least 256 colors, ideally true-color. By default, Nomad Network starts in low-color mode. It does this for the sake of compatibility, but it does look rather ugly. If your terminal supports true-color or just 256 colors, you should go to the `![ Config ]`! menu item, launch the editor and change the configuration to use a high-color mode.
+You're currently located in the guide section of the program. I'm sorry I had to drag you here by force, but it will only happen this one time, I promise. If you ever get lost, return here and peruse the list of topics you see on the left. I will do my best to fill it with answers to mostly anything about Nomad Network.
+
+To get the most out of Nomad Network, you will need a terminal that supports UTF-8 and at least 256 colors, ideally true-color.
+
+By default, Nomad Network starts in low-color mode. It does this for the sake of compatibility, but it does look rather ugly. If your terminal supports true-color or just 256 colors, you should go to the `![ Config ]`! menu item, launch the editor and change the configuration to use a high-color mode.
 
 If you don't already have a Nerd Font installed (see https://www.nerdfonts.com/), I also highly recommend to do so, since it will greatly expand the amount of glyphs, icons and graphics that Nomad Network can use.
 

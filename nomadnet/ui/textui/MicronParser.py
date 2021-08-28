@@ -291,7 +291,6 @@ def make_output(state, line, url_delegate):
                                 specname = make_style(state)
                                 speclist = SYNTH_SPECS[specname]
 
-                                orig_spec = urwid.AttrSpec('underline', 'default', cm)
                                 if cm == 1:
                                     orig_spec = speclist[0]
                                 elif cm == 16:

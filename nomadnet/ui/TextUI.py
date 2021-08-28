@@ -20,7 +20,7 @@ THEMES = {
             # Style name                    # 16-color style                        # Monochrome style          # 88, 256 and true-color style
             ('heading',                     'light gray,underline', 'default',      'underline',                'g93,underline', 'default'),
             ('menubar',                     'black', 'light gray',                  'standout',                 '#111', '#bbb'),
-            ('scrollbar',                   'black', 'light gray',                  'standout',                 '#444', 'default'),
+            ('scrollbar',                   'light gray', 'default',                'standout',                 '#444', 'default'),
             ('shortcutbar',                 'black', 'light gray',                  'standout',                 '#111', '#bbb'),
             ('body_text',                   'white', 'default',                     'default',                  '#ddd', 'default'),
             ('error_text',                  'dark red', 'default',                  'default',                  'dark red', 'default'),
@@ -38,10 +38,13 @@ THEMES = {
             ("list_off_focus",              "black", "dark gray",                   "standout",                 "#111", "dark gray"),
             ("list_trusted",                "light green", "default",               "default",                  "#6b2", "default"),
             ("list_focus_trusted",          "black", "light gray",                  "standout",                 "#180", "#bbb"),
-            ("list_unknown",                "dark gray", "default",                 "default",                  "light gray", "default"),
-            ("list_normal",                 "dark gray", "default",                 "default",                  "light gray", "default"),
+            ("list_unknown",                "dark gray", "default",                 "default",                  "#bbb", "default"),
+            ("list_normal",                 "dark gray", "default",                 "default",                  "#bbb", "default"),
             ("list_untrusted",              "dark red", "default",                  "default",                  "dark red", "default"),
             ("list_focus_untrusted",        "black", "light gray",                  "standout",                 "#810", "#bbb"),
+            ("topic_list_normal",           "white", "default",                     "default",                  "#ddd", "default"),
+            ("progress_full",               "black", "light gray",                  "standout",                 "#111", "#bbb"),
+            ("progress_empty",              "light gray", "default",                "default",                  "#ddd", "default"),
         ],        
     }
 }
@@ -68,6 +71,8 @@ GLYPHS = {
     ("divider1",        "-",         "\u2504",      "\u2504"),
     ("peer",            "P",         "\U0001F464",  "\uf415"),
     ("node",            "N",         "\U0001F5A5",  "\uf502"),
+    ("page",            "",          "\U0001F5B9",  "\uf719 "),
+    ("speed",           "",          "\U0001F5B9",  "\uf9c4"),
     ("decoration_menu", "",          "",            " \uf93a"),
 }
 

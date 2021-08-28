@@ -53,6 +53,9 @@ class Browser:
 
         self.link = None
         self.status = Browser.DISCONECTED
+        self.response_progress = 0
+        self.response_size = None
+        self.response_transfer_size = None
         self.page_data = None
         self.displayed_page_data = None
         self.auth_identity = auth_identity
@@ -78,7 +81,7 @@ class Browser:
             return RNS.hexrep(self.destination_hash, delimit=False)+":"+path
 
     def handle_link(self, link_target):
-        RNS.log("Browser handling link to: "+str(link_target))
+        RNS.log("Browser handling link to: "+str(link_target), RNS.LOG_DEBUG)
         try:
             self.retrieve_url(link_target)
         except Exception as e:
@@ -101,7 +104,13 @@ class Browser:
         self.display_widget = urwid.AttrMap(urwid.LineBox(self.frame, title="Remote Node"), "inactive_text")
 
     def make_status_widget(self):
-        return urwid.Pile([urwid.Divider(self.g["divider1"]), urwid.Text(self.status_text())])
+        if self.response_progress > 0:
+            pb = ResponseProgressBar("progress_empty" , "progress_full", current=self.response_progress, done=1.0, satt=None)
+            widget = urwid.Pile([urwid.Divider(self.g["divider1"]), pb])
+        else:
+            widget = urwid.Pile([urwid.Divider(self.g["divider1"]), urwid.Text(self.status_text())])
+
+        return widget
 
     def make_control_widget(self):
         return urwid.Pile([urwid.Text(self.g["node"]+" "+self.current_url()), urwid.Divider(self.g["divider1"])])
@@ -119,9 +128,14 @@ class Browser:
             ("weight", 0.5, urwid.Text(" "))
         ])
 
-        pile = urwid.Pile([
-                urwid.Text("!\n\n"+self.status_text()+"\n", align="center"),
-                columns
+        if len(self.attr_maps) > 0:
+            pile = urwid.Pile([
+                    urwid.Text("!\n\n"+self.status_text()+"\n", align="center"),
+                    columns
+            ])
+        else:
+            pile = urwid.Pile([
+                    urwid.Text("!\n\n"+self.status_text(), align="center")
             ])
 
         return urwid.Filler(pile, "middle")
@@ -139,16 +153,21 @@ class Browser:
             if self.status == Browser.DONE:
                 self.browser_footer = self.make_status_widget()
                 self.update_page_display()
+            
             elif self.status <= Browser.REQUEST_SENT:
                 if len(self.attr_maps) == 0:
                     self.browser_body = urwid.Filler(urwid.Text("Retrieving\n["+self.current_url()+"]", align="center"), "middle")
+
                 self.browser_footer = self.make_status_widget()
+            
             elif self.status == Browser.REQUEST_FAILED:
                 self.browser_body = self.make_request_failed_widget()
                 self.browser_footer = urwid.Text("")
+            
             elif self.status == Browser.REQUEST_TIMEOUT:
                 self.browser_body = self.make_request_failed_widget()
                 self.browser_footer = urwid.Text("")
+            
             else:
                 pass
 
@@ -172,6 +191,10 @@ class Browser:
         
         self.attr_maps = []
         self.status = Browser.DISCONECTED
+        self.response_progress = 0
+        self.response_size = None
+        self.response_transfer_size = None
+
         self.update_display()
 
 
@@ -264,6 +287,7 @@ class Browser:
                     now = time.time()
                     if now > pr_time+self.timeout:
                         self.request_timeout()
+                        return
 
                     time.sleep(0.25)
 
@@ -286,6 +310,7 @@ class Browser:
                 now = time.time()
                 if now > l_time+self.timeout:
                     self.request_timeout()
+                    return
 
                 time.sleep(0.25)
 
@@ -293,12 +318,17 @@ class Browser:
 
         # Send the request
         self.status = Browser.REQUESTING
+        self.response_progress = 0
+        self.response_size = None
+        self.response_transfer_size = None
+
         self.update_display()
         receipt = self.link.request(
             self.path,
             data = None,
             response_callback = self.response_received,
             failed_callback = self.request_failed,
+            progress_callback = self.response_progressed,
             timeout = self.timeout
         )
 
@@ -328,6 +358,8 @@ class Browser:
             self.page_data = request_receipt.response
             self.markup = self.page_data.decode("utf-8")
             self.attr_maps = markup_to_attrmaps(self.markup, url_delegate=self)
+            self.response_progress = 0
+
             self.update_display()
         except Exception as e:
             RNS.log("An error occurred while handling response. The contained exception was: "+str(e))
@@ -337,18 +369,46 @@ class Browser:
         if request_receipt != None:
             if request_receipt.request_id == self.last_request_id:
                 self.status = Browser.REQUEST_FAILED
+                self.response_progress = 0
+                self.response_size = None
+                self.response_transfer_size = None
+
                 self.update_display()
         else:
             self.status = Browser.REQUEST_FAILED
+            self.response_progress = 0
+            self.response_size = None
+            self.response_transfer_size = None
+
             self.update_display()
 
 
     def request_timeout(self, request_receipt=None):
         self.status = Browser.REQUEST_TIMEOUT
+        self.response_progress = 0
+        self.response_size = None
+        self.response_transfer_size = None
+
+        self.update_display()
+
+
+    def response_progressed(self, request_receipt):
+        self.response_progress      = request_receipt.progress
+        self.response_time          = request_receipt.response_time()
+        self.response_size          = request_receipt.response_size
+        self.response_transfer_size = request_receipt.response_transfer_size
         self.update_display()
 
 
     def status_text(self):
+        if self.response_transfer_size != None:
+            response_time_str = "{:.2f}".format(self.response_time)
+            stats_string = "  "+self.g["page"]+size_str(self.response_size)
+            stats_string += "   "+self.g["arrow_d"]+size_str(self.response_transfer_size)+" in "+response_time_str
+            stats_string += "s   "+self.g["speed"]+size_str(self.response_transfer_size/self.response_time, suffix="b")+"/s"
+        else:
+            stats_string = ""
+
         if self.status == Browser.NO_PATH:
             return "No path to destination known"
         elif self.status == Browser.PATH_REQUESTED:
@@ -368,10 +428,30 @@ class Browser:
         elif self.status == Browser.RECEIVING_RESPONSE:
             return "Receiving response..."
         elif self.status == Browser.DONE:
-            return "Done"
+            return "Done"+stats_string
         elif self.status == Browser.DISCONECTED:
             return "Disconnected"
         else:
             return "Browser Status Unknown"
 
-    
+
+class ResponseProgressBar(urwid.ProgressBar):
+    def get_text(self):
+        return "Receiving response "+super().get_text()
+
+# A convenience function for printing a human-
+# readable file size
+def size_str(num, suffix='B'):
+    units = ['','K','M','G','T','P','E','Z']
+    last_unit = 'Y'
+
+    if suffix == 'b':
+        num *= 8
+        units = ['','K','M','G','T','P','E','Z']
+        last_unit = 'Y'
+
+    for unit in units:
+        if abs(num) < 1000.0:
+            return "%3.2f %s%s" % (num, unit, suffix)
+        num /= 1000.0
+    return "%.2f %s%s" % (num, last_unit, suffix)
