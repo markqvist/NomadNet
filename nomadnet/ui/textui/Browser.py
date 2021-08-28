@@ -110,10 +110,10 @@ class Browser:
         else:
             widget = urwid.Pile([urwid.Divider(self.g["divider1"]), urwid.Text(self.status_text())])
 
-        return widget
+        return urwid.AttrMap(widget, "browser_controls")
 
     def make_control_widget(self):
-        return urwid.Pile([urwid.Text(self.g["node"]+" "+self.current_url()), urwid.Divider(self.g["divider1"])])
+        return urwid.AttrMap(urwid.Pile([urwid.Text(self.g["node"]+" "+self.current_url()), urwid.Divider(self.g["divider1"])]), "browser_controls")
 
     def make_request_failed_widget(self):
         def back_action(sender):

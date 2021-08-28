@@ -43,6 +43,7 @@ THEMES = {
             ("list_untrusted",              "dark red", "default",                  "default",                  "#a22", "default"),
             ("list_focus_untrusted",        "black", "light gray",                  "standout",                 "#810", "#aaa"),
             ("topic_list_normal",           "white", "default",                     "default",                  "#ddd", "default"),
+            ('browser_controls',            "light gray", 'default',                     'default',                  '#bbb', 'default'),
             ("progress_full",               "black", "light gray",                  "standout",                 "#111", "#bbb"),
             ("progress_empty",              "light gray", "default",                "default",                  "#ddd", "default"),
         ],        

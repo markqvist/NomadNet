@@ -421,9 +421,11 @@ By default, Nomad Network starts in low-color mode. It does this for the sake of
 
 If you don't already have a Nerd Font installed (see https://www.nerdfonts.com/), I also highly recommend to do so, since it will greatly expand the amount of glyphs, icons and graphics that Nomad Network can use.
 
-Nomad Network expects that you are already connected to some form of Reticulum network. That could be as simple as the default UDP-based demo interface on your local ethernet network, or as advanced as some elaborate hybrid RF and free-space optical laser network. This short guide won't go into any details on that, but you will find other entries in the guide that deal with network setup and configuration.
+Nomad Network expects that you are already connected to some form of Reticulum network. That could be as simple as the default UDP-based demo interface on your local ethernet network. This short guide won't go into any details on building, but you will find other entries in the guide that deal with network setup and configuration.
 
 At least, if Nomad Network launches, it means that it is connected to a running Reticulum instance, that should in turn be connected to `*something`*, which should get you started.
+
+For more some more information, you can also read the `*Introduction`* section of this guide.
 
 Now go out there and explore. This is still early days. See what you can find and create.
 

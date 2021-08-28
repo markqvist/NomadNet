@@ -5,8 +5,11 @@ from urwid.util import is_mouse_press
 from urwid.text_layout import calc_coords
 import re
 
+DEFAULT_FG = "ddd"
+DEFAULT_BG = "default"
+
 STYLES = {
-    "plain":    { "fg": "bbb", "bg": "default", "bold": False, "underline": False, "italic": False },
+    "plain":    { "fg": DEFAULT_FG, "bg": DEFAULT_BG, "bold": False, "underline": False, "italic": False },
     "heading1": { "fg": "222", "bg": "bbb", "bold": False, "underline": False, "italic": False },
     "heading2": { "fg": "111", "bg": "999", "bold": False, "underline": False, "italic": False },
     "heading3": { "fg": "000", "bg": "777", "bold": False, "underline": False, "italic": False },
@@ -24,8 +27,8 @@ def markup_to_attrmaps(markup, url_delegate = None):
     state = {
         "literal": False,
         "depth": 0,
-        "fg_color": "default",
-        "bg_color": "default",
+        "fg_color": DEFAULT_FG,
+        "bg_color": DEFAULT_BG,
         "formatting": {
             "bold": False,
             "underline": False,
@@ -163,7 +166,7 @@ def make_style(state):
     def mono_color(fg, bg):
         return "default"
     def low_color(color):
-        # TODO: Implement
+        # TODO: Implement low-color mapper
         return "default"
     def high_color(color):
         if color == "default":
@@ -226,20 +229,20 @@ def make_output(state, line, url_delegate):
                             state["fg_color"] = color
                             skip = 3
                     elif c == "f":
-                        state["fg_color"] = "default"
+                        state["fg_color"] = DEFAULT_FG
                     elif c == "B":
                         if len(line) >= i+4:
                             color = line[i+1:i+4]
                             state["bg_color"] = color
                             skip = 3
                     elif c == "b":
-                        state["bg_color"] = "default"
+                        state["bg_color"] = DEFAULT_BG
                     elif c == "`":
                         state["formatting"]["bold"]      = False 
                         state["formatting"]["underline"] = False
                         state["formatting"]["italic"]    = False
-                        state["fg_color"] = "default"
-                        state["bg_color"] = "default"
+                        state["fg_color"] = DEFAULT_FG
+                        state["bg_color"] = DEFAULT_BG
                         state["align"] = state["default_align"]
                     elif c == "c":
                         if state["align"] != "center":
