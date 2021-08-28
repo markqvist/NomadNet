@@ -452,6 +452,10 @@ def size_str(num, suffix='B'):
 
     for unit in units:
         if abs(num) < 1000.0:
-            return "%3.2f %s%s" % (num, unit, suffix)
+            if unit == "":
+                return "%.0f%s%s" % (num, unit, suffix)
+            else:
+                return "%.2f%s%s" % (num, unit, suffix)
         num /= 1000.0
-    return "%.2f %s%s" % (num, last_unit, suffix)
+
+    return "%.2f%s%s" % (num, last_unit, suffix)
