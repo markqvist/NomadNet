@@ -101,7 +101,8 @@ class Browser:
 
         self.frame = BrowserFrame(self.browser_body, header=self.browser_header, footer=self.browser_footer)
         self.frame.delegate = self
-        self.display_widget = urwid.AttrMap(urwid.LineBox(self.frame, title="Remote Node"), "inactive_text")
+        self.linebox = urwid.LineBox(self.frame, title="Remote Node")
+        self.display_widget = urwid.AttrMap(self.linebox, "inactive_text")
 
     def make_status_widget(self):
         if self.response_progress > 0:
@@ -146,9 +147,11 @@ class Browser:
             self.browser_body = urwid.Filler(urwid.Text("Disconnected\n"+self.g["arrow_l"]+"  "+self.g["arrow_r"], align="center"), "middle")
             self.browser_footer = urwid.Text("")
             self.browser_header = urwid.Text("")
+            self.linebox.set_title("Remote Node")
         else:
             self.display_widget.set_attr_map({None: "body_text"})
             self.browser_header = self.make_control_widget()
+            self.linebox.set_title(self.app.directory.simplest_display_str(self.destination_hash))
 
             if self.status == Browser.DONE:
                 self.browser_footer = self.make_status_widget()
@@ -332,11 +335,14 @@ class Browser:
             timeout = self.timeout
         )
 
-        self.last_request_receipt = receipt
-        self.last_request_id = receipt.request_id
+        if receipt:
+            self.last_request_receipt = receipt
+            self.last_request_id = receipt.request_id
+            self.status = Browser.REQUEST_SENT
+            self.update_display()
+        else:
+            self.link.teardown()
 
-        self.status = Browser.REQUEST_SENT
-        self.update_display()
 
 
     def link_established(self, link):

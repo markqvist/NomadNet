@@ -559,7 +559,7 @@ class ConversationWidget(urwid.WidgetWrap):
             if allowed:
                 self.frame.contents["footer"] = (self.minimal_editor, None)
             else:
-                warning = urwid.AttrMap(urwid.Padding(urwid.Text(g["info"]+" You cannot currently communicate with this peer, since it's identity keys are unknown", align="center")), "msg_header_caution")
+                warning = urwid.AttrMap(urwid.Padding(urwid.Text(g["info"]+" You cannot currently communicate with this peer, since it's identity keys are not known", align="center")), "msg_header_caution")
                 self.frame.contents["footer"] = (warning, None)
 
     def toggle_focus_area(self):
