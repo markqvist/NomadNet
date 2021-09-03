@@ -35,8 +35,8 @@ class Browser:
     REQUEST_FAILED     = 0x07
     REQUEST_TIMEOUT    = 0x08
     RECEIVING_RESPONSE = 0x09
-    DONE               = 0xFF
     DISCONECTED        = 0xFE
+    DONE               = 0xFF
 
     def __init__(self, app, app_name, aspects, destination_hash = None, path = None, auth_identity = None, delegate = None):
         self.app = app
@@ -79,12 +79,16 @@ class Browser:
             return RNS.hexrep(self.destination_hash, delimit=False)+":"+path
 
     def handle_link(self, link_target):
-        RNS.log("Browser handling link to: "+str(link_target), RNS.LOG_DEBUG)
-        try:
-            self.retrieve_url(link_target)
-        except Exception as e:
-            self.browser_footer = urwid.Text("Could not open link: "+str(e))
-            self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
+        if self.status >= Browser.DISCONECTED:
+            RNS.log("Browser handling link to: "+str(link_target), RNS.LOG_DEBUG)
+            try:
+                self.retrieve_url(link_target)
+            except Exception as e:
+                self.browser_footer = urwid.Text("Could not open link: "+str(e))
+                self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
+        else:
+            RNS.log("Browser aleady hadling link, cannot handle link to: "+str(link_target), RNS.LOG_DEBUG)
+
 
 
     def micron_released_focus(self):
