@@ -26,7 +26,7 @@ class BrowserFrame(urwid.Frame):
 
 class Browser:
     DEFAULT_PATH       = "/page/index.mu"
-    DEFAULT_TIMEOUT    = 5
+    DEFAULT_TIMEOUT    = 10
 
     NO_PATH            = 0x00
     PATH_REQUESTED     = 0x01
@@ -331,8 +331,7 @@ class Browser:
             data = None,
             response_callback = self.response_received,
             failed_callback = self.request_failed,
-            progress_callback = self.response_progressed,
-            timeout = self.timeout
+            progress_callback = self.response_progressed
         )
 
         if receipt:
@@ -400,7 +399,7 @@ class Browser:
 
     def response_progressed(self, request_receipt):
         self.response_progress      = request_receipt.progress
-        self.response_time          = request_receipt.response_time()
+        self.response_time          = request_receipt.get_response_time()
         self.response_size          = request_receipt.response_size
         self.response_transfer_size = request_receipt.response_transfer_size
         self.update_display()
@@ -408,7 +407,11 @@ class Browser:
 
     def status_text(self):
         if self.response_transfer_size != None:
-            response_time_str = "{:.2f}".format(self.response_time)
+            if self.response_time != None:
+                response_time_str = "{:.2f}".format(self.response_time)
+            else:
+                response_time_str = "None"
+
             stats_string = "  "+self.g["page"]+size_str(self.response_size)
             stats_string += "   "+self.g["arrow_d"]+size_str(self.response_transfer_size)+" in "+response_time_str
             stats_string += "s   "+self.g["speed"]+size_str(self.response_transfer_size/self.response_time, suffix="b")+"/s"
