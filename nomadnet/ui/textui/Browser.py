@@ -6,9 +6,6 @@ import threading
 from .MicronParser import markup_to_attrmaps
 from nomadnet.vendor.Scrollable import *
 
-# TODO: REMOVE
-import os
-
 class BrowserFrame(urwid.Frame):
     def keypress(self, size, key):
         if key == "ctrl w":
@@ -31,12 +28,13 @@ class Browser:
     NO_PATH            = 0x00
     PATH_REQUESTED     = 0x01
     ESTABLISHING_LINK  = 0x02
-    LINK_ESTABLISHED   = 0x03
-    REQUESTING         = 0x04
-    REQUEST_SENT       = 0x05
-    REQUEST_FAILED     = 0x06
-    REQUEST_TIMEOUT    = 0x07
-    RECEIVING_RESPONSE = 0x08
+    LINK_TIMEOUT       = 0x03
+    LINK_ESTABLISHED   = 0x04
+    REQUESTING         = 0x05
+    REQUEST_SENT       = 0x06
+    REQUEST_FAILED     = 0x07
+    REQUEST_TIMEOUT    = 0x08
+    RECEIVING_RESPONSE = 0x09
     DONE               = 0xFF
     DISCONECTED        = 0xFE
 
@@ -156,6 +154,10 @@ class Browser:
             if self.status == Browser.DONE:
                 self.browser_footer = self.make_status_widget()
                 self.update_page_display()
+            
+            elif self.status == Browser.LINK_TIMEOUT:
+                self.browser_body = self.make_request_failed_widget()
+                self.browser_footer = urwid.Text("")
             
             elif self.status <= Browser.REQUEST_SENT:
                 if len(self.attr_maps) == 0:
@@ -308,14 +310,11 @@ class Browser:
 
             self.link = RNS.Link(destination, established_callback = self.link_established, closed_callback = self.link_closed)
 
-            l_time = time.time()
-            while not self.status == Browser.LINK_ESTABLISHED:
-                now = time.time()
-                if now > l_time+self.timeout:
-                    self.request_timeout()
-                    return
+            while self.status == Browser.ESTABLISHING_LINK:
+                time.sleep(0.1)
 
-                time.sleep(0.25)
+            if self.status != Browser.LINK_ESTABLISHED:
+                return
 
             self.update_display()
 
@@ -351,9 +350,20 @@ class Browser:
     def link_closed(self, link):
         if self.status == Browser.DISCONECTED or self.status == Browser.DONE:
             self.link = None
+        elif self.status == Browser.ESTABLISHING_LINK:
+            self.link_establishment_timeout()
         else:
             self.link = None
             self.status = Browser.REQUEST_FAILED
+        self.update_display()
+
+    def link_establishment_timeout(self):
+        self.status = Browser.LINK_TIMEOUT
+        self.response_progress = 0
+        self.response_size = None
+        self.response_transfer_size = None
+        self.link = None
+
         self.update_display()
 
 
@@ -406,7 +416,7 @@ class Browser:
 
 
     def status_text(self):
-        if self.response_transfer_size != None:
+        if self.status == Browser.DONE and self.response_transfer_size != None:
             if self.response_time != None:
                 response_time_str = "{:.2f}".format(self.response_time)
             else:
@@ -424,6 +434,8 @@ class Browser:
             return "Path requested, waiting for path..."
         elif self.status == Browser.ESTABLISHING_LINK:
             return "Establishing link..."
+        elif self.status == Browser.LINK_TIMEOUT:
+            return "Link establishment timed out"
         elif self.status == Browser.LINK_ESTABLISHED:
             return "Link established"
         elif self.status == Browser.REQUESTING:
