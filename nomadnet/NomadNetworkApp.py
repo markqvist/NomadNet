@@ -205,6 +205,18 @@ class NomadNetworkApp:
     def conversations(self):
         return nomadnet.Conversation.conversation_list(self)
 
+    def conversation_is_unread(self, source_hash):
+        if bytes.fromhex(source_hash) in nomadnet.Conversation.unread_conversations:
+            return True
+        else:
+            return False
+
+    def mark_conversation_read(self, source_hash):
+        if bytes.fromhex(source_hash) in nomadnet.Conversation.unread_conversations:
+            nomadnet.Conversation.unread_conversations.pop(bytes.fromhex(source_hash))
+            if os.path.isfile(self.conversationpath + "/" + source_hash + "/unread"):
+                os.unlink(self.conversationpath + "/" + source_hash + "/unread")
+
     def createDefaultConfig(self):
         self.config = ConfigObj(__default_nomadnet_config__)
         self.config.filename = self.configpath

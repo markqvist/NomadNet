@@ -7,6 +7,7 @@ from nomadnet.Directory import DirectoryEntry
 
 class Conversation:
     cached_conversations = {}
+    unread_conversations = {}
     created_callback = None
 
     aspect_filter = "lxmf.delivery"
@@ -57,6 +58,16 @@ class Conversation:
             conversation = Conversation.cached_conversations[RNS.hexrep(source_hash, delimit=False)]
             conversation.scan_storage()
 
+        if not source_hash in Conversation.unread_conversations:
+            Conversation.unread_conversations[source_hash] = True
+            try:
+                dirname = RNS.hexrep(source_hash, delimit=False)
+                open(app.conversationpath + "/" + dirname + "/unread", 'a').close()
+            except Exception as e:
+                pass
+
+            Conversation.created_callback()
+
         return ingested_path
 
     @staticmethod
@@ -70,6 +81,13 @@ class Conversation:
                     app_data         = RNS.Identity.recall_app_data(source_hash)
                     display_name     = app.directory.display_name(source_hash)
 
+                    unread = False
+                    if source_hash in Conversation.unread_conversations:
+                        unread = True
+                    elif os.path.isfile(app.conversationpath + "/" + dirname + "/unread"):
+                        Conversation.unread_conversations[source_hash] = True
+                        unread = True
+
                     if display_name == None and app_data:
                         display_name = app_data.decode("utf-8")
 
@@ -80,7 +98,7 @@ class Conversation:
                     
                     trust_level      = app.directory.trust_level(source_hash, display_name)
                     
-                    entry = (source_hash_text, display_name, trust_level, sort_name)
+                    entry = (source_hash_text, display_name, trust_level, sort_name, unread)
                     conversations.append(entry)
 
                 except Exception as e:
@@ -114,6 +132,7 @@ class Conversation:
         self.source_known       = False
         self.source_trusted     = False
         self.source_blocked     = False
+        self.unread             = False
 
         self.__changed_callback = None
 
@@ -142,6 +161,11 @@ class Conversation:
             if len(filename) == RNS.Identity.HASHLENGTH//8*2:
                 message_path = self.messages_path + "/" + filename
                 self.messages.append(ConversationMessage(message_path))
+
+        new_len = len(self.messages)
+
+        if new_len > old_len:
+            self.unread = True
 
         if self.__changed_callback != None:
             self.__changed_callback(self)

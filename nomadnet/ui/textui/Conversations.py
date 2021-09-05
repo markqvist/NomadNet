@@ -1,4 +1,5 @@
 import RNS
+import os
 import time
 import nomadnet
 import LXMF
@@ -316,17 +317,43 @@ class ConversationsDisplay():
             self.ilb.select_item(ilb_position)
         nomadnet.NomadNetworkApp.get_shared_instance().ui.loop.draw_screen()
 
+        if self.currently_displayed_conversation != None:
+            if self.app.conversation_is_unread(self.currently_displayed_conversation):
+                self.app.mark_conversation_read(self.currently_displayed_conversation)
+                try:
+                    if os.path.isfile(self.app.conversationpath + "/" + self.currently_displayed_conversation + "/unread"):
+                        os.unlink(self.app.conversationpath + "/" + self.currently_displayed_conversation + "/unread")
+                except Exception as e:
+                    raise e
+
 
 
 
     def display_conversation(self, sender=None, source_hash=None):
+        if self.currently_displayed_conversation != None:
+            if self.app.conversation_is_unread(self.currently_displayed_conversation):
+                self.app.mark_conversation_read(self.currently_displayed_conversation)
+
         self.currently_displayed_conversation = source_hash
         options = self.widget.options("weight", 1-ConversationsDisplay.list_width)
         self.widget.contents[1] = (self.make_conversation_widget(source_hash), options)
         if source_hash == None:
             self.widget.set_focus_column(0)
         else:
+            if self.app.conversation_is_unread(source_hash):
+                self.app.mark_conversation_read(source_hash)
+                self.update_conversation_list()
+
             self.widget.set_focus_column(1)
+            conversation_position = None
+            index = 0
+            for widget in self.list_widgets:
+                if widget.source_hash == source_hash:
+                    conversation_position = index
+                index += 1
+
+            if conversation_position != None:
+                self.ilb.select_item(conversation_position)
         
 
     def make_conversation_widget(self, source_hash):
@@ -364,6 +391,7 @@ class ConversationsDisplay():
         trust_level  = conversation[2]
         display_name = conversation[1]
         source_hash  = conversation[0]
+        unread       = conversation[4]
 
         g = self.app.ui.glyphs
 
@@ -389,11 +417,17 @@ class ConversationsDisplay():
             focus_style   = "list_focus_untrusted"
 
         display_text = symbol
+
         if display_name != None and display_name != "":
             display_text += " "+display_name
 
         if trust_level != DirectoryEntry.TRUSTED:
             display_text += " <"+source_hash+">"
+        else:
+            if unread:
+                if source_hash != self.currently_displayed_conversation:
+                    display_text += " "+g["unread"]
+
 
         widget = ListEntry(display_text)
         urwid.connect_signal(widget, "click", self.display_conversation, conversation[0])
