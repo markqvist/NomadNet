@@ -54,6 +54,8 @@ class NomadNetworkApp:
         self.pagespath         = self.configdir+"/storage/pages"
         self.filespath         = self.configdir+"/storage/files"
 
+        self.downloads_path    = os.path.expanduser("~/Downloads")
+
         if not os.path.isdir(self.storagepath):
             os.makedirs(self.storagepath)
 
@@ -254,6 +256,10 @@ class NomadNetworkApp:
                     value = self.config["client"].as_bool(option)
                     self.enable_client = value
 
+                if option == "downloads_path":
+                    value = self.config["client"]["downloads_path"]
+                    self.downloads_path = os.path.expanduser(value)
+
                 if option == "user_interface":
                     value = value.lower()
                     if value == "none":
@@ -391,6 +397,7 @@ destination = file
 
 enable_client = yes
 user_interface = text
+downloads_path = ~/Downloads
 
 [textui]
 

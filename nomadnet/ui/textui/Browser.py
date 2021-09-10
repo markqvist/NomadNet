@@ -1,4 +1,5 @@
 import RNS
+import os
 import time
 import urwid
 import nomadnet
@@ -54,6 +55,7 @@ class Browser:
         self.response_progress = 0
         self.response_size = None
         self.response_transfer_size = None
+        self.saved_file_name = None
         self.page_data = None
         self.displayed_page_data = None
         self.auth_identity = auth_identity
@@ -248,9 +250,16 @@ class Browser:
             raise ValueError("Malformed URL")
 
         if destination_hash != None and path != None:
-            self.set_destination_hash(destination_hash)
-            self.set_path(path)
-            self.load_page()
+            if path.startswith("/file/"):
+                if destination_hash == self.destination_hash:
+                    self.download_file(destination_hash, path)
+                else:
+                    RNS.log("Cannot request file download from a node that is not currently connected.", RNS.LOG_ERROR)
+                    RNS.log("The requested URL was: "+str(url), RNS.LOG_ERROR)
+            else:
+                self.set_destination_hash(destination_hash)
+                self.set_path(path)
+                self.load_page()
 
     def set_destination_hash(self, destination_hash):
         if len(destination_hash) == RNS.Identity.TRUNCATED_HASHLENGTH//8:
@@ -268,6 +277,33 @@ class Browser:
         self.timeout = timeout
 
 
+    def download_file(self, destination_hash, path):
+        if self.link != None and self.link.destination.hash == self.destination_hash:
+            # Send the request
+            self.status = Browser.REQUESTING
+            self.response_progress = 0
+            self.response_size = None
+            self.response_transfer_size = None
+            self.saved_file_name = None
+
+            self.update_display()
+            receipt = self.link.request(
+                path,
+                data = None,
+                response_callback = self.file_received,
+                failed_callback = self.request_failed,
+                progress_callback = self.response_progressed
+            )
+
+            if receipt:
+                self.last_request_receipt = receipt
+                self.last_request_id = receipt.request_id
+                self.status = Browser.REQUEST_SENT
+                self.update_display()
+            else:
+                self.link.teardown()
+
+
     def load_page(self):
         load_thread = threading.Thread(target=self.__load)
         load_thread.setDaemon(True)
@@ -278,7 +314,7 @@ class Browser:
         # If an established link exists, but it doesn't match the target
         # destination, we close and clear it.
         if self.link != None and self.link.destination.hash != self.destination_hash:
-            self.link.close()
+            self.link.teardown()
             self.link = None
 
         # If no link to the destination exists, we create one.
@@ -327,6 +363,8 @@ class Browser:
         self.response_progress = 0
         self.response_size = None
         self.response_transfer_size = None
+        self.saved_file_name = None
+
 
         self.update_display()
         receipt = self.link.request(
@@ -382,6 +420,30 @@ class Browser:
             self.update_display()
         except Exception as e:
             RNS.log("An error occurred while handling response. The contained exception was: "+str(e))
+
+
+    def file_received(self, request_receipt):
+        try:
+            file_name = request_receipt.response[0]
+            file_data = request_receipt.response[1]
+            file_destination = self.app.downloads_path+"/"+file_name
+            
+            counter = 0
+            while os.path.isfile(file_destination):
+                counter += 1
+                file_destination = self.app.downloads_path+"/"+file_name+"."+str(counter)
+
+            fh = open(file_destination, "wb")
+            fh.write(file_data)
+            fh.close()
+
+            self.saved_file_name = file_destination.replace(self.app.downloads_path+"/", "", 1)
+            self.status = Browser.DONE
+            self.response_progress = 0
+
+            self.update_display()
+        except Exception as e:
+            RNS.log("An error occurred while handling file response. The contained exception was: "+str(e))
 
     
     def request_failed(self, request_receipt=None):
@@ -453,7 +515,10 @@ class Browser:
         elif self.status == Browser.RECEIVING_RESPONSE:
             return "Receiving response..."
         elif self.status == Browser.DONE:
-            return "Done"+stats_string
+            if self.saved_file_name == None:
+                return "Done"+stats_string
+            else:
+                return "Saved "+str(self.saved_file_name)+stats_string
         elif self.status == Browser.DISCONECTED:
             return "Disconnected"
         else:

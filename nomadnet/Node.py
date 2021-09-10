@@ -44,7 +44,6 @@ class Node:
 
         for page in self.servedpages:
             request_path = "/page"+page.replace(self.app.pagespath, "")
-
             self.destination.register_request_handler(
                 request_path,
                 response_generator = self.serve_page,
@@ -54,6 +53,14 @@ class Node:
     def register_files(self):
         self.servedfiles = []
         self.scan_files(self.app.filespath)
+
+        for file in self.servedfiles:
+            request_path = "/file"+file.replace(self.app.filespath, "")
+            self.destination.register_request_handler(
+                request_path,
+                response_generator = self.serve_file,
+                allow = RNS.Destination.ALLOW_ALL
+            )
 
     def scan_pages(self, base_path):
         files = [file for file in os.listdir(base_path) if os.path.isfile(os.path.join(base_path, file)) and file[:1] != "."]
@@ -76,10 +83,10 @@ class Node:
             self.scan_files(base_path+"/"+directory)
 
     def serve_page(self, path, data, request_id, remote_identity, requested_at):
-        RNS.log("Request "+RNS.prettyhexrep(request_id)+" for: "+str(path), RNS.LOG_VERBOSE)
+        RNS.log("Page request "+RNS.prettyhexrep(request_id)+" for: "+str(path), RNS.LOG_VERBOSE)
         file_path = path.replace("/page", self.app.pagespath, 1)
         try:
-            RNS.log("Serving file: "+file_path, RNS.LOG_VERBOSE)
+            RNS.log("Serving page: "+file_path, RNS.LOG_VERBOSE)
             fh = open(file_path, "rb")
             response_data = fh.read()
             fh.close()
@@ -90,6 +97,22 @@ class Node:
             RNS.log("The contained exception was: "+str(e), RNS.LOG_ERROR)
             return None
 
+    # TODO: Improve file handling, this will be slow for large files
+    def serve_file(self, path, data, request_id, remote_identity, requested_at):
+        RNS.log("File request "+RNS.prettyhexrep(request_id)+" for: "+str(path), RNS.LOG_VERBOSE)
+        file_path = path.replace("/file", self.app.filespath, 1)
+        file_name = path.replace("/file/", "", 1)
+        try:
+            RNS.log("Serving file: "+file_path, RNS.LOG_VERBOSE)
+            fh = open(file_path, "rb")
+            file_data = fh.read()
+            fh.close()
+            return [file_name, file_data]
+
+        except Exception as e:
+            RNS.log("Error occurred while handling request "+RNS.prettyhexrep(request_id)+" for: "+str(path), RNS.LOG_ERROR)
+            RNS.log("The contained exception was: "+str(e), RNS.LOG_ERROR)
+            return None
 
     def serve_default_index(self, path, data, request_id, remote_identity, requested_at):
         RNS.log("Serving default index for request "+RNS.prettyhexrep(request_id)+" for: "+str(path), RNS.LOG_VERBOSE)
