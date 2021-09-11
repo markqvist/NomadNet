@@ -81,8 +81,6 @@ class GuideEntry(urwid.WidgetWrap):
         markup = TOPICS[topic]
         attrmaps = markup_to_attrmaps(markup, url_delegate=None)
 
-        self.reader.set_content_widgets(attrmaps)
-
         topic_position = None
         index = 0
         for topic in self.parent.topic_list:
@@ -93,6 +91,10 @@ class GuideEntry(urwid.WidgetWrap):
 
         if topic_position != None:
             self.parent.ilb.select_item(topic_position)
+
+        self.reader.set_content_widgets(attrmaps)
+        self.reader.focus_reader()
+
 
     def micron_released_focus(self):
         self.reader.focus_topics()
@@ -106,7 +108,7 @@ class TopicList(urwid.WidgetWrap):
 
         self.topic_list = [
             GuideEntry(self.app, self, guide_display, "Introduction"),
-            # GuideEntry(self.app, self, guide_display, "Conversations"),
+            GuideEntry(self.app, self, guide_display, "Hosting a Node"),
             GuideEntry(self.app, self, guide_display, "Markup"),
             self.first_run_entry,
             GuideEntry(self.app, self, guide_display, "Credits & Licenses"),
@@ -115,6 +117,7 @@ class TopicList(urwid.WidgetWrap):
         self.ilb = IndicativeListBox(
             self.topic_list,
             initialization_is_selection_change=False,
+            highlight_offFocus="list_off_focus"
         )
 
         urwid.WidgetWrap.__init__(self, urwid.LineBox(self.ilb, title="Topics"))
@@ -133,7 +136,7 @@ class GuideDisplay():
         self.app = app
         g = self.app.ui.glyphs
 
-        topic_text = urwid.Text("\nNo topic selected", align="left")
+        topic_text = urwid.Text("\n  No topic selected", align="left")
 
         self.left_area  = TopicList(self.app, self)
         self.right_area = urwid.LineBox(urwid.Filler(topic_text, "top"))
@@ -167,6 +170,9 @@ class GuideDisplay():
 
     def focus_topics(self):
         self.columns.focus_position = 0
+
+    def focus_reader(self):
+        self.columns.focus_position = 1
 
 
 TOPIC_INTRODUCTION = '''>Nomad Network
@@ -214,10 +220,110 @@ If no nodes exist on a network, all peers will still be able to communicate dire
 
 '''
 
+TOPIC_HOSTING = '''>Hosting a Node
+
+To host a node on the network, you must enable it in the configuration file, by setting `*enable_node`* directive to `*yes`*. You should also configure the other node-related parameters such as the node name and announce interval settings. Once node hosting has been enabled in the configuration, Nomad Network will start hosting your node as soon as the program is lauched, and other peers on the network will be able to connect and interact with content on your node.
+
+By default, no content is defined, apart from a short placeholder home page. To learn how to add your own content, read on.
+
+>>Pages
+
+Nomad Network nodes can host pages similar to web pages, that other peers can read and interact with. Pages are written in a compact markup language called `*micron`*. To learn how to write formatted pages with micron, see the `*Markup`* section of this guide (which is, itself, written in micron). Pages can be linked arbitrarily with hyperlinks, that can also link to pages (or other resources) on other nodes.
+
+To add pages to your node, place micron files in the `*pages`* directory of your Nomad Network programs `*storage`* directory. By default, the path to this will be `!~/.nomadnetwork/storage/pages`!. You should probably create the file `!index.mu`! first, as this is the page that will get served by default to a connecting peer.
+
+Pages are static in this version, but the next release of Nomad Network will add the ability to use a preprocessor such as PHP, bash, Python (or whatever you prefer) to generate dynamic pages.
+
+>>Files
+
+Like pages, you can place files you want to make available in the `!~/.nomadnetwork/storage/files`! directory. To let a peer download a file, you should create a link to it in one of your pages.
+
+>>Links and URLs
+
+Links to pages and resources in Nomad Network use a simple URL format. Here is an example:
+
+`!1385edace36466a6b3dd:/page/index.mu`!
+
+The first part is the 10 byte destination address of the node (represented as readable hexadecimal), followed by the `!:`! character. Everything after the `!:`! represents the request path.
+
+By convention, Nomad Network nodes maps all hosted pages under the `!/page`! path, and all hosted files under the `!/file`! path. You can create as many subdirectories for pages and files as you please, and they will be automatically mapped to corresponding request paths.
+
+You can omit the destination address of the node, if you are reffering to a local page or file. You must still keep the `!:`! character. In such a case, the URL to a page could look like this:
+
+`!:/page/other_page.mu`!
+
+The URL to a local file could look like this:
+
+`!:/file/document.pdf`!
+
+Links can be inserted into micron documents. See the `*Markup`* section of this guide for info on how to do so.
+
+'''
+
 TOPIC_CONVERSATIONS = '''>Conversations
 
 Conversations in Nomad Network
 '''
+
+
+TOPIC_FIRST_RUN = '''>First Time Information
+
+Hi there. This first run message will only appear once. It contains a few pointers on getting started with Nomad Network, and getting the most out of the program.
+
+You're currently located in the guide section of the program. I'm sorry I had to drag you here by force, but it will only happen this one time, I promise. If you ever get lost, return here and peruse the list of topics you see on the left. I will do my best to fill it with answers to mostly anything about Nomad Network.
+
+To get the most out of Nomad Network, you will need a terminal that supports UTF-8 and at least 256 colors, ideally true-color. If your terminal supports true-color, you can go to the `![ Config ]`! menu item, launch the editor and change the configuration.
+
+If you don't already have a Nerd Font installed (see https://www.nerdfonts.com/), I also highly recommend to do so, since it will greatly expand the amount of glyphs, icons and graphics that Nomad Network can use. Once you have your terminal set up with a Nerd Font, go to the `![ Config ]`! menu item and enable Nerd Fonts in the configuration instead of normal unicode glyphs.
+
+Nomad Network expects that you are already connected to some form of Reticulum network. That could be as simple as the default UDP-based demo interface on your local ethernet network. This short guide won't go into any details on building, but you will find other entries in the guide that deal with network setup and configuration.
+
+At least, if Nomad Network launches, it means that it is connected to a running Reticulum instance, that should in turn be connected to `*something`*, which should get you started.
+
+For more some more information, you can also read the `*Introduction`* section of this guide.
+
+Now go out there and explore. This is still early days. See what you can find and create.
+
+>>>>>>>>>>>>>>>
+-\u223f
+<
+
+'''
+
+TOPIC_LICENSES = '''>Thanks, Acknowledgements and Licenses
+
+This program uses various other software components, without which Nomad Network would not have been possible. Sincere thanks to the authors and contributors of the following projects
+
+>>>
+ - `!Cryptography.io`! by `*pyca`*
+   https://cryptography.io/
+   BSD License
+
+ - `!Urwid`! by `*Ian Ward`*
+   http://urwid.org/
+   LGPL-2.1 License
+
+ - `!Additional Urwid Widgets`! by `*AFoeee`*
+   https://github.com/AFoeee/additional_urwid_widgets
+   MIT License
+
+ - `!Scrollable`! by `*rndusr`*
+   https://github.com/rndusr/stig/blob/master/stig/tui/scroll.py
+   GPLv3 License
+
+ - `!Configobj`! by `*Michael Foord`*
+   https://github.com/DiffSK/configobj
+   BSD License
+
+ - `!Reticulum Network Stack`! by `*unsignedmark`*
+   https://github.com/markqvist/Reticulum
+   MIT License
+
+ - `!LXMF`! by `*unsignedmark`*
+   https://github.com/markqvist/LXMF
+   MIT License
+'''
+
 
 TOPIC_MARKUP = '''>Outputting Formatted Text
 
@@ -417,6 +523,36 @@ You can use `B5d5`F222 color `f`B333 `Ff00f`Ff80o`Ffd0r`F9f0m`F0f2a`F0fdt`F07ft`
 ``
 
 
+>Links
+
+Links to pages, files or other resources can be created with the \\`[ tag, which should always be terminated with a closing ]. You can create links with and without labels, it is up to you to control the formatting of links with other tags. Although not strictly necessary, it is good practice to at least format links with underlining.
+
+Here's a few examples:
+
+`Faaa
+`=
+Here is a link without any label: `[1385edace36466a6b3dd:/page/index.mu]
+
+This is a `[labeled link`1385edace36466a6b3dd:/page/index.mu] to the same page, but it's hard to see if you don't know it
+
+Here is `F00a`_`[a more visible link`1385edace36466a6b3dd:/page/index.mu]`_`f
+`=
+``
+
+The above markup produces the following output:
+
+`Faaa`B333
+
+Here is a link without any label: `[1385edace36466a6b3dd:/page/index.mu]
+
+This is a `[labeled link`1385edace36466a6b3dd:/page/index.mu] to the same page, but it's hard to see if you don't know it
+
+Here is `F00f`_`[a more visible link`1385edace36466a6b3dd:/page/index.mu]`_`f
+
+``
+
+When links like these are displayed in the built-in browser, clicking on them or activating them using the keyboard will cause the browser to load the specified URL.
+
 >Literals
 
 To display literal content, for example source-code, or blocks of text that should not be interpreted by micron, you can use literal blocks, specified by the \\`= tag. Below is the source code of this entire document, presented as a literal block.
@@ -428,67 +564,11 @@ To display literal content, for example source-code, or blocks of text that shou
 TOPIC_MARKUP += TOPIC_MARKUP.replace("`=", "\\`=") + "[ micron source for document goes here, we don't want infinite recursion now, do we? ]\n\\`="
 TOPIC_MARKUP += "\n`=\n\n>Closing Remarks\n\nIf you made it all the way here, you should be well equipped to write documents and pages using micron. Thank you for staying with me.\n\n`c\U0001F332\n"
 
-TOPIC_FIRST_RUN = '''>First Time Information
-
-Hi there. This first run message will only appear once. It contains a few pointers on getting started with Nomad Network, and getting the most out of the program.
-
-You're currently located in the guide section of the program. I'm sorry I had to drag you here by force, but it will only happen this one time, I promise. If you ever get lost, return here and peruse the list of topics you see on the left. I will do my best to fill it with answers to mostly anything about Nomad Network.
-
-To get the most out of Nomad Network, you will need a terminal that supports UTF-8 and at least 256 colors, ideally true-color. If your terminal supports true-color, you can go to the `![ Config ]`! menu item, launch the editor and change the configuration.
-
-If you don't already have a Nerd Font installed (see https://www.nerdfonts.com/), I also highly recommend to do so, since it will greatly expand the amount of glyphs, icons and graphics that Nomad Network can use. Once you have your terminal set up with a Nerd Font, go to the `![ Config ]`! menu item and enable Nerd Fonts in the configuration instead of normal unicode glyphs.
-
-Nomad Network expects that you are already connected to some form of Reticulum network. That could be as simple as the default UDP-based demo interface on your local ethernet network. This short guide won't go into any details on building, but you will find other entries in the guide that deal with network setup and configuration.
-
-At least, if Nomad Network launches, it means that it is connected to a running Reticulum instance, that should in turn be connected to `*something`*, which should get you started.
-
-For more some more information, you can also read the `*Introduction`* section of this guide.
-
-Now go out there and explore. This is still early days. See what you can find and create.
-
->>>>>>>>>>>>>>>
--\u223f
-<
-
-'''
-
-TOPIC_LICENSES = '''>Thanks, Acknowledgements and Licenses
-
-This program uses various other software components, without which Nomad Network would not have been possible. Sincere thanks to the authors and contributors of the following projects
-
->>>
- - `!Cryptography.io`! by `*pyca`*
-   https://cryptography.io/
-   BSD License
-
- - `!Urwid`! by `*Ian Ward`*
-   http://urwid.org/
-   LGPL-2.1 License
-
- - `!Additional Urwid Widgets`! by `*AFoeee`*
-   https://github.com/AFoeee/additional_urwid_widgets
-   MIT License
-
- - `!Scrollable`! by `*rndusr`*
-   https://github.com/rndusr/stig/blob/master/stig/tui/scroll.py
-   GPLv3 License
-
- - `!Configobj`! by `*Michael Foord`*
-   https://github.com/DiffSK/configobj
-   BSD License
-
- - `!Reticulum Network Stack`! by `*unsignedmark`*
-   https://github.com/markqvist/Reticulum
-   MIT License
-
- - `!LXMF`! by `*unsignedmark`*
-   https://github.com/markqvist/LXMF
-   MIT License
-'''
 
 TOPICS = {
     "Introduction": TOPIC_INTRODUCTION,
     "Conversations": TOPIC_CONVERSATIONS,
+    "Hosting a Node": TOPIC_HOSTING,
     "Markup": TOPIC_MARKUP,
     "First Run": TOPIC_FIRST_RUN,
     "Credits & Licenses": TOPIC_LICENSES,

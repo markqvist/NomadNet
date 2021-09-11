@@ -60,6 +60,8 @@ class Browser:
         self.displayed_page_data = None
         self.auth_identity = auth_identity
         self.display_widget = None
+        self.link_status_showing = False
+        self.link_target = None
         self.frame = None
         self.attr_maps = []
         self.build_display()
@@ -79,6 +81,24 @@ class Browser:
             else:
                 path = self.path
             return RNS.hexrep(self.destination_hash, delimit=False)+":"+path
+
+
+    def marked_link(self, link_target):
+        self.link_target = link_target
+        self.app.ui.loop.set_alarm_in(0.1, self.marked_link_job)
+
+    def marked_link_job(self, sender, event):
+        link_target = self.link_target
+
+        if link_target == None:
+            if self.link_status_showing:
+                self.browser_footer = self.make_status_widget()
+                self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
+                self.link_status_showing = False
+        else:
+            self.link_status_showing = True
+            self.browser_footer = urwid.AttrMap(urwid.Pile([urwid.Divider(self.g["divider1"]), urwid.Text("Link to: "+str(link_target))]), "browser_controls")
+            self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
 
     def handle_link(self, link_target):
         if self.status >= Browser.DISCONECTED:
@@ -188,7 +208,7 @@ class Browser:
 
     def update_page_display(self):
         pile = urwid.Pile(self.attr_maps)
-        self.browser_body = urwid.AttrMap(ScrollBar(Scrollable(pile), thumb_char="\u2503", trough_char=" "), "scrollbar")
+        self.browser_body = urwid.AttrMap(ScrollBar(Scrollable(pile, force_forward_keypress=True), thumb_char="\u2503", trough_char=" "), "scrollbar")
 
     def identify(self):
         if self.link != None:

@@ -393,6 +393,17 @@ class LinkableText(urwid.Text):
 
         return None
 
+    def peek_link(self):
+        item = self.find_item_at_pos(self._cursor_position)
+        if item != None:
+            if isinstance(item, LinkSpec):
+                if self.delegate != None:
+                    self.delegate.marked_link(item.link_target)
+            else:
+                if self.delegate != None:
+                    self.delegate.marked_link(None)
+
+
     def keypress(self, size, key):
         part_positions = [0]
         parts = []
@@ -449,6 +460,9 @@ class LinkableText(urwid.Text):
         if focus and (self.delegate == None or now < self.delegate.last_keypress+self.key_timeout):
             c = urwid.CompositeCanvas(c)
             c.cursor = self.get_cursor_coords(size)
+            if self.delegate != None:
+                self.peek_link()
+
         return c
 
     def get_cursor_coords(self, size):

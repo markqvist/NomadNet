@@ -31,7 +31,7 @@ class Scrollable(urwid.WidgetDecoration):
     def selectable(self):
         return True
 
-    def __init__(self, widget):
+    def __init__(self, widget, force_forward_keypress = False):
         """Box widget that makes a fixed or flow widget vertically scrollable
 
         TODO: Focusable widgets are handled, including switching focus, but
@@ -49,6 +49,7 @@ class Scrollable(urwid.WidgetDecoration):
         self._forward_keypress = None
         self._old_cursor_coords = None
         self._rows_max_cached = 0
+        self.force_forward_keypress = force_forward_keypress
         self.__super.__init__(widget)
 
     def render(self, size, focus=False):
@@ -127,7 +128,7 @@ class Scrollable(urwid.WidgetDecoration):
 
     def keypress(self, size, key):
         # Maybe offer key to original widget
-        if self._forward_keypress:
+        if self._forward_keypress or self.force_forward_keypress:
             ow = self._original_widget
             ow_size = self._get_original_widget_size(size)
 

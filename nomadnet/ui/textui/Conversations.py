@@ -87,7 +87,6 @@ class ConversationsDisplay():
         for conversation in self.app.conversations():
             conversation_list_widgets.append(self.conversation_list_widget(conversation))
 
-        walker = urwid.SimpleFocusListWalker(conversation_list_widgets)
         self.list_widgets = conversation_list_widgets
         self.ilb = IndicativeListBox(
             self.list_widgets,
