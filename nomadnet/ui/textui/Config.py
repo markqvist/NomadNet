@@ -1,5 +1,6 @@
 import nomadnet
 import urwid
+import platform
 
 class ConfigDisplayShortcuts():
     def __init__(self, app):
@@ -50,6 +51,12 @@ class EditorTerminal(urwid.WidgetWrap):
         self.app = app
         self.parent = parent
         editor_cmd = self.app.config["textui"]["editor"]
+
+        # The "editor" alias is unavailable on Darwin,
+        # so we replace it with nano.
+        if platform.system() == "Darwin" and editor_cmd == "editor":
+            editor_cmd = "nano"
+
         self.term = urwid.Terminal(
             (editor_cmd, self.app.configpath),
             encoding='utf-8',
