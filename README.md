@@ -7,24 +7,25 @@ Communicate Freely.
 
 The intention with this program is to provide a tool to that allows you to build private and resilient communications platforms that are in complete control and ownership of the people that use them.
 
-Nomad Network is build on [LXMF](https://github.com/markqvist/LXMF) and [Reticulum](https://github.com/markqvist/Reticulum), which together provides the cryptographic mesh functionality and peer-to-peer message routing that Nomad Network relies on. This foundation also makes it possible to use the program over a very wide variety of communication mediums, from packet radio to gigabit fiber.
+Nomad Network is build on [LXMF](https://github.com/markqvist/LXMF) and [Reticulum](https://github.com/markqvist/Reticulum), which together provides the cryptographic mesh functionality and peer-to-peer message routing that Nomad Network relies on. This foundation also makes it possible to use the program over a very wide variety of communication mediums, from packet radio to fiber.
 
 Nomad Network does not need any connections to the public internet to work. In fact, it doesn't even need an IP or Ethernet network. You can use it entirely over packet radio, LoRa or even serial lines. But if you wish, you can bridge islanded Reticulum networks over the Internet or private ethernet networks, or you can build networks running completely over the Internet. The choice is yours.
 
 ## Notable Features
  - Encrypted messaging over packet-radio, LoRa, WiFi or anything else [Reticulum](https://github.com/markqvist/Reticulum) supports.
  - Zero-configuration, minimal-infrastructure mesh communication
+ - Connectable nodes that can host pages and files
+ - Built-in text-based browser for interacting with contents on nodes
+ - An easy to use and bandwidth efficient markup language for writing pages
 
 ## Current Status
+The current version of the program should be considered a beta release. The program works well, but there will most probably be bugs and possibly sub-optimal performance in some scenarios. On the other hand, this is the ideal time to have an influence on the direction of the development of Nomad Network. To do so, join the discussion, report bugs and request features here on the GitHub project.
 
-
-The current version of the program should be considered an alpha release. The program works well, but there will most probably be bugs and possibly sub-optimal performance in some scenarios. On the other hand, this is the ideal time to have an influence on the direction of the development of Nomad Network. To do so, join the discussion, report bugs and request features here on the GitHub project.
-
-Development is ongoing and current features being implemented are:
-
+### Feature roadmap
+ - Page caching in browser
+ - Node-side generated pages with PHP, Python, bash or others
+ - Access control and authentication for pages and files
  - Propagated messaging and discussion threads
- - Connectable nodes that can host pages, files and other resources
- - Collaborative information sharing and spatial map-style "wikis"
 
 ## Dependencies:
  - Python 3
