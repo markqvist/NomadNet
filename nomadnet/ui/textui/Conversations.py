@@ -20,7 +20,7 @@ class ConversationDisplayShortcuts():
     def __init__(self, app):
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("[C-d] Send  [C-k] Clear  [C-w] Close  [C-t] Editor Type  [C-p] Purge"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-d] Send  [C-k] Clear Editor  [C-w] Close  [C-t] Editor Type  [C-p] Purge  [C-x] Clear History"), "shortcutbar")
 
 class ConversationsArea(urwid.LineBox):
     def keypress(self, size, key):
@@ -578,6 +578,31 @@ class ConversationWidget(urwid.WidgetWrap):
                 
                 urwid.WidgetWrap.__init__(self, self.display_widget)
 
+    def clear_history_dialog(self):
+        def dismiss_dialog(sender):
+            self.dialog_open = False
+            self.conversation_changed(None)
+
+        def confirmed(sender):
+            self.dialog_open = False
+            self.conversation.clear_history()
+            self.conversation_changed(None)
+
+
+        dialog = DialogLineBox(
+            urwid.Pile([
+                urwid.Text("Clear conversation history\n", align="center"),
+                urwid.Columns([("weight", 0.45, urwid.Button("Yes", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("No", on_press=dismiss_dialog))])
+            ]), title="?"
+        )
+        dialog.delegate = self
+        bottom = self.messagelist
+
+        overlay = urwid.Overlay(dialog, bottom, align="center", width=34, valign="middle", height="pack", left=2, right=2)
+
+        self.frame.contents["body"] = (overlay, self.frame.options())
+        self.frame.set_focus("body")
+    
     def toggle_editor(self):
         if self.full_editor_active:
             self.frame.contents["footer"] = (self.minimal_editor, None)
@@ -618,6 +643,8 @@ class ConversationWidget(urwid.WidgetWrap):
             self.conversation_changed(None)
         elif key == "ctrl t":
             self.toggle_editor()
+        elif key == "ctrl x":
+            self.clear_history_dialog()
         else:
             return super(ConversationWidget, self).keypress(size, key)
 

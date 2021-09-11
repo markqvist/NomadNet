@@ -180,6 +180,15 @@ class Conversation:
         for purged_message in purged_messages:
             self.messages.remove(purged_message)
 
+    def clear_history(self):
+        purged_messages = []
+        for conversation_message in self.messages:
+            purged_messages.append(conversation_message)
+            conversation_message.purge()
+
+        for purged_message in purged_messages:
+            self.messages.remove(purged_message)
+
     def register_changed_callback(self, callback):
         self.__changed_callback = callback
 
