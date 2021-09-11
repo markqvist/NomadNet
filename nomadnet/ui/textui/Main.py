@@ -21,7 +21,10 @@ class SubDisplays():
         self.log_display = LogDisplay(self.app)
         self.guide_display = GuideDisplay(self.app)
 
-        self.active_display = self.conversations_display
+        if app.firstrun:
+            self.active_display = self.guide_display
+        else:
+            self.active_display = self.conversations_display
 
     def active(self):
         return self.active_display

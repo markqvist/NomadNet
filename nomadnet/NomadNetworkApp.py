@@ -56,6 +56,8 @@ class NomadNetworkApp:
 
         self.downloads_path    = os.path.expanduser("~/Downloads")
 
+        self.firstrun          = False
+
         if not os.path.isdir(self.storagepath):
             os.makedirs(self.storagepath)
 
@@ -91,7 +93,7 @@ class NomadNetworkApp:
         else:
             RNS.log("Could not load config file, creating default configuration file...")
             self.createDefaultConfig()
-
+            self.firstrun = True
 
         if os.path.isfile(self.identitypath):
             try:
@@ -129,7 +131,7 @@ class NomadNetworkApp:
             try:
                 RNS.log("No peer settings file found, creating new...")
                 self.peer_settings = {
-                    "display_name": "",
+                    "display_name": "Anonymous Peer",
                     "announce_interval": None,
                     "last_announce": None,
                 }
@@ -408,15 +410,15 @@ intro_time = 1
 # valid colormodes are:
 # monochrome, 16, 88, 256 and 24bit
 #
-# The default is a conservative 16 colors,
-# but 256 colors can probably be used on
-# most terminals. Some terminals support
+# The default is a conservative 256 colors.
+# If your terminal does not support this,
+# you can lower it. Some terminals support
 # 24 bit color.
 
 # colormode = monochrome
-colormode = 16
+# colormode = 16
 # colormode = 88
-# colormode = 256
+colormode = 256
 # colormode = 24bit
 
 # By default, unicode glyphs are used. If

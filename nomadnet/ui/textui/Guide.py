@@ -61,14 +61,16 @@ class SelectText(urwid.Text):
         return True
 
 class GuideEntry(urwid.WidgetWrap):
-    def __init__(self, app, reader, topic_name):
+    def __init__(self, app, parent, reader, topic_name):
         self.app = app
+        self.parent = parent
         self.reader = reader
         self.last_keypress = None
+        self.topic_name = topic_name
         g = self.app.ui.glyphs
 
         widget = ListEntry(topic_name)
-        urwid.connect_signal(widget, "click", self.display_topic, topic_name)
+        urwid.connect_signal(widget, "click", self.display_topic, self.topic_name)
 
         style = "topic_list_normal"
         focus_style = "list_focus"
@@ -81,6 +83,17 @@ class GuideEntry(urwid.WidgetWrap):
 
         self.reader.set_content_widgets(attrmaps)
 
+        topic_position = None
+        index = 0
+        for topic in self.parent.topic_list:
+            widget = topic._original_widget
+            if widget.topic_name == self.topic_name:
+                topic_position = index
+            index += 1
+
+        if topic_position != None:
+            self.parent.ilb.select_item(topic_position)
+
     def micron_released_focus(self):
         self.reader.focus_topics()
 
@@ -89,12 +102,14 @@ class TopicList(urwid.WidgetWrap):
         self.app = app
         g = self.app.ui.glyphs
 
+        self.first_run_entry = GuideEntry(self.app, self, guide_display, "First Run")
+
         self.topic_list = [
-            GuideEntry(self.app, guide_display, "Introduction"),
-            # GuideEntry(self.app, guide_display, "Conversations"),
-            GuideEntry(self.app, guide_display, "Markup"),
-            GuideEntry(self.app, guide_display, "First Run"),
-            GuideEntry(self.app, guide_display, "Credits & Licenses"),
+            GuideEntry(self.app, self, guide_display, "Introduction"),
+            # GuideEntry(self.app, self, guide_display, "Conversations"),
+            GuideEntry(self.app, self, guide_display, "Markup"),
+            self.first_run_entry,
+            GuideEntry(self.app, self, guide_display, "Credits & Licenses"),
         ]
 
         self.ilb = IndicativeListBox(
@@ -134,6 +149,10 @@ class GuideDisplay():
 
         self.shortcuts_display = GuideDisplayShortcuts(self.app)
         self.widget = self.columns
+
+        if self.app.firstrun:
+            entry = self.left_area.first_run_entry
+            entry.display_topic(entry.display_topic, entry.topic_name)
 
     def set_content_widgets(self, new_content):
         options = self.columns.options(width_type="weight", width_amount=1-GuideDisplay.list_width)
@@ -415,11 +434,9 @@ Hi there. This first run message will only appear once. It contains a few pointe
 
 You're currently located in the guide section of the program. I'm sorry I had to drag you here by force, but it will only happen this one time, I promise. If you ever get lost, return here and peruse the list of topics you see on the left. I will do my best to fill it with answers to mostly anything about Nomad Network.
 
-To get the most out of Nomad Network, you will need a terminal that supports UTF-8 and at least 256 colors, ideally true-color.
+To get the most out of Nomad Network, you will need a terminal that supports UTF-8 and at least 256 colors, ideally true-color. If your terminal supports true-color, you can go to the `![ Config ]`! menu item, launch the editor and change the configuration.
 
-By default, Nomad Network starts in low-color mode. It does this for the sake of compatibility, but it does look rather ugly. If your terminal supports true-color or just 256 colors, you should go to the `![ Config ]`! menu item, launch the editor and change the configuration to use a high-color mode.
-
-If you don't already have a Nerd Font installed (see https://www.nerdfonts.com/), I also highly recommend to do so, since it will greatly expand the amount of glyphs, icons and graphics that Nomad Network can use.
+If you don't already have a Nerd Font installed (see https://www.nerdfonts.com/), I also highly recommend to do so, since it will greatly expand the amount of glyphs, icons and graphics that Nomad Network can use. Once you have your terminal set up with a Nerd Font, go to the `![ Config ]`! menu item and enable Nerd Fonts in the configuration instead of normal unicode glyphs.
 
 Nomad Network expects that you are already connected to some form of Reticulum network. That could be as simple as the default UDP-based demo interface on your local ethernet network. This short guide won't go into any details on building, but you will find other entries in the guide that deal with network setup and configuration.
 
