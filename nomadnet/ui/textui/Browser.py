@@ -84,8 +84,9 @@ class Browser:
 
 
     def marked_link(self, link_target):
-        self.link_target = link_target
-        self.app.ui.loop.set_alarm_in(0.1, self.marked_link_job)
+        if self.status == Browser.DONE:
+            self.link_target = link_target
+            self.app.ui.loop.set_alarm_in(0.1, self.marked_link_job)
 
     def marked_link_job(self, sender, event):
         link_target = self.link_target

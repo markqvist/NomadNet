@@ -702,9 +702,9 @@ class LXMessageWidget(urwid.WidgetWrap):
         message_time = datetime.fromtimestamp(self.timestamp)
         encryption_string = ""
         if message.get_transport_encrypted():
-            encryption_string = " ["+g["lock"]+" "+str(message.get_transport_encryption())+"]"
+            encryption_string = " ["+g["encrypted"]+" "+str(message.get_transport_encryption())+"]"
         else:
-            encryption_string = " ["+g["unlock"]+" "+str(message.get_transport_encryption())+"]"
+            encryption_string = " ["+g["plaintext"]+" "+str(message.get_transport_encryption())+"]"
         
         title_string = message_time.strftime(time_format)+encryption_string
 

@@ -67,9 +67,9 @@ class AnnounceInfo(urwid.WidgetWrap):
         is_node      = announce[3]
 
         if is_node:
-            type_string = g["node"] + " Node"
+            type_string = "Node " + g["node"]
         else:
-            type_string = g["peer"] + " Peer"
+            type_string = "Peer " + g["peer"]
 
         try:
             data_str = announce[2].decode("utf-8")
@@ -461,8 +461,6 @@ class KnownNodes(urwid.WidgetWrap):
         # TODO: Sort list
         return widget_list
 
-
-
 class NodeEntry(urwid.WidgetWrap):
     def __init__(self, app, node, delegate):
         source_hash = node.source_hash
@@ -711,8 +709,6 @@ class NetworkStats(urwid.WidgetWrap):
     def start(self):
         self.w_heard_peers.start()
         self.w_known_nodes.start()
-
-
 
 class NetworkLeftPile(urwid.Pile):
     def keypress(self, size, key):

@@ -1,6 +1,7 @@
 import RNS
-import importlib
+import urwid
 import time
+import os
 
 import nomadnet
 from nomadnet.ui.textui import *
@@ -61,21 +62,22 @@ GLYPHS = {
     ("check",           "=",         "\u2713",      "\u2713"),
     ("cross",           "X",         "\u2715",      "\u2715"),
     ("unknown",         "?",         "?",           "?"),
-    ("lock",            "E",         "\U0001f512",  "\uf023"),
-    ("unlock",          "!",         "\U0001f513",  "\uf09c"),
+    ("encrypted",       "",          "\u26BF",      "\uf023"),
+    ("plaintext",       "!",         "!",           "\uf06e "),
     ("arrow_r",         "->",        "\u2192",      "\u2192"),
     ("arrow_l",         "<-",        "\u2190",      "\u2190"),
     ("arrow_u",         "/\\",       "\u2191",      "\u2191"),
     ("arrow_d",         "\\/",       "\u2193",      "\u2193"),
     ("warning",         "!",         "\u26a0",      "\uf12a"),
     ("info",            "i",         "\u2139",      "\ufb4d"),
-    ("unread",          "N",         "\u2709",      "\uf003 "),
+    ("unread",          "[U]",       "\u2709",      "\uf003 "),
     ("divider1",        "-",         "\u2504",      "\u2504"),
-    ("peer",            "P",         "\U0001F464",  "\uf415"),
-    ("node",            "N",         "\U0001F5A5",  "\uf502"),
-    ("page",            "",          "\U0001F5B9",  "\uf719 "),
-    ("speed",           "",          "\U0001F5B9",  "\uf9c4"),
+    ("peer",            "[P]",       "\u24c5 ",     "\uf415"),
+    ("node",            "[N]",       "\u24c3 ",     "\uf502"),
+    ("page",            "",          "\u25a4",      "\uf719 "),
+    ("speed",           "",          "\u25F7",      "\uf9c4"),
     ("decoration_menu", "",          "",            " \uf93a"),
+    ("globe",           "",          "",            "\uf484"),
 }
 
 class TextUI:
@@ -85,12 +87,13 @@ class TextUI:
         self.app.ui = self
         self.loop = None
 
-        if importlib.util.find_spec("urwid") != None:
-            import urwid
-        else:
-            RNS.log("The text-mode user interface requires Urwid to be installed on your system.", RNS.LOG_ERROR)
-            RNS.log("You can install it with the command: pip3 install urwid", RNS.LOG_ERROR)
-            nomadnet.panic()
+        # TODO: Remove
+        # if importlib.util.find_spec("urwid") != None:
+        #     import urwid
+        # else:
+        #     RNS.log("The text-mode user interface requires Urwid to be installed on your system.", RNS.LOG_ERROR)
+        #     RNS.log("You can install it with the command: pip3 install urwid", RNS.LOG_ERROR)
+        #     nomadnet.panic()
 
         urwid.set_encoding("UTF-8")
 
@@ -130,11 +133,21 @@ class TextUI:
         if intro_timeout > 0:
             self.loop.set_alarm_in(intro_timeout, self.display_main)
 
-        # TODO: Probably remove this at some point when better terminal
-        # color capability detection has been implemented
-        if colormode > 16:
-            RNS.log("Starting Text UI in "+str(colormode)+" color mode. If no UI appears, try adjusting your color settings in "+str(self.app.configdir)+"/config", RNS.LOG_INFO, _override_destination = True)
-        
+        if "KONSOLE_VERSION" in os.environ:
+            if colormode > 16:
+                RNS.log("", RNS.LOG_WARNING, _override_destination = True)
+                RNS.log("", RNS.LOG_WARNING, _override_destination = True)
+                RNS.log("You are using the terminal emulator Konsole.", RNS.LOG_WARNING, _override_destination = True)
+                RNS.log("If you are not seeing the user interface, it is due to a bug in Konsole/urwid.", RNS.LOG_WARNING, _override_destination = True)
+                RNS.log("", RNS.LOG_WARNING, _override_destination = True)
+
+                RNS.log("To circumvent this, use another terminal emulator, or launch nomadnet within a", RNS.LOG_WARNING, _override_destination = True)
+                RNS.log("screen session, using a command like the following:", RNS.LOG_WARNING, _override_destination = True)
+                RNS.log("", RNS.LOG_WARNING, _override_destination = True)
+                RNS.log("screen nomadnet", RNS.LOG_WARNING, _override_destination = True)
+                RNS.log("", RNS.LOG_WARNING, _override_destination = True)
+                RNS.log("Press ctrl-c to exit now and try again.", RNS.LOG_WARNING, _override_destination = True)
+
         self.set_colormode(colormode)
 
         self.loop.run()

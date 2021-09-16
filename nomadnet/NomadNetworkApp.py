@@ -58,6 +58,8 @@ class NomadNetworkApp:
 
         self.firstrun          = False
 
+        self.peer_announce_at_start = True
+
         if not os.path.isdir(self.storagepath):
             os.makedirs(self.storagepath)
 
@@ -170,6 +172,9 @@ class NomadNetworkApp:
         RNS.Transport.register_announce_handler(nomadnet.Conversation)
         RNS.Transport.register_announce_handler(nomadnet.Directory)
 
+        if self.peer_announce_at_start:
+            self.announce_now()
+
         nomadnet.ui.spawn(self.uimode)
 
     def set_display_name(self, display_name):
@@ -262,6 +267,10 @@ class NomadNetworkApp:
                     value = self.config["client"]["downloads_path"]
                     self.downloads_path = os.path.expanduser(value)
 
+                if option == "announce_at_start":
+                    value = self.config["client"].as_bool(option)
+                    self.peer_announce_at_start = value
+
                 if option == "user_interface":
                     value = value.lower()
                     if value == "none":
@@ -347,7 +356,8 @@ class NomadNetworkApp:
             if not "announce_at_start" in self.config["node"]:
                 self.node_announce_at_start = False
             else:
-                self.node_announce_at_start = self.config["node"]["announce_at_start"]
+                value = self.config["node"].as_bool("announce_at_start")
+                self.node_announce_at_start = value
 
             if not "announce_interval" in self.config["node"]:
                 self.node_announce_interval = 720
@@ -400,6 +410,10 @@ destination = file
 enable_client = yes
 user_interface = text
 downloads_path = ~/Downloads
+
+# By default, the peer is announced at startup
+# to let other peers reach it immediately.
+announce_at_start = yes
 
 [textui]
 
