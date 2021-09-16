@@ -121,6 +121,7 @@ class Node:
     def announce(self):
         self.app_data = self.name.encode("utf-8")
         self.last_announce = time.time()
+        self.app.peer_settings["node_last_announce"] = self.last_announce
         self.destination.announce(app_data=self.app_data)
 
     def __jobs(self):

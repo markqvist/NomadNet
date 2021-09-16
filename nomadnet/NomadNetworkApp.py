@@ -125,6 +125,10 @@ class NomadNetworkApp:
                 file = open(self.peersettingspath, "rb")
                 self.peer_settings = msgpack.unpackb(file.read())
                 file.close()
+
+                if not "node_last_announce" in self.peer_settings:
+                    self.peer_settings["node_last_announce"] = None
+                    
             except Exception as e:
                 RNS.log("Could not load local peer settings from "+self.peersettingspath, RNS.LOG_ERROR)
                 RNS.log("The contained exception was: %s" % (str(e)), RNS.LOG_ERROR)
@@ -136,6 +140,7 @@ class NomadNetworkApp:
                     "display_name": "Anonymous Peer",
                     "announce_interval": None,
                     "last_announce": None,
+                    "node_last_announce": None,
                 }
                 self.save_peer_settings()
                 RNS.log("Created new peer settings file")

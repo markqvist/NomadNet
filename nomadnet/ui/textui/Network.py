@@ -535,6 +535,69 @@ class AnnounceTime(urwid.WidgetWrap):
         self.started = False
 
 
+class NodeAnnounceTime(urwid.WidgetWrap):
+    def __init__(self, app):
+        self.started = False
+        self.app = app
+        self.timeout = self.app.config["textui"]["animation_interval"]
+        self.display_widget = urwid.Text("")
+        self.update_time()
+
+        urwid.WidgetWrap.__init__(self, self.display_widget)
+
+    def update_time(self):
+        self.last_announce_string = "Never"
+        if self.app.peer_settings["node_last_announce"] != None:
+            self.last_announce_string = pretty_date(int(self.app.peer_settings["node_last_announce"]))
+
+        self.display_widget.set_text("Last Announce   : "+self.last_announce_string)
+
+    def update_time_callback(self, loop=None, user_data=None):
+        self.update_time()
+        if self.started:
+            self.app.ui.loop.set_alarm_in(self.timeout, self.update_time_callback)
+
+    def start(self):
+        was_started = self.started
+        self.started = True
+        if not was_started:
+            self.update_time_callback()
+
+    def stop(self):
+        self.started = False
+
+class NodeActiveConnections(urwid.WidgetWrap):
+    def __init__(self, app):
+        self.started = False
+        self.app = app
+        self.timeout = self.app.config["textui"]["animation_interval"]
+        self.display_widget = urwid.Text("")
+        self.update_stat()
+
+        urwid.WidgetWrap.__init__(self, self.display_widget)
+
+    def update_stat(self):
+        self.stat_string = "None"
+        if self.app.node != None:
+            self.stat_string = str(len(self.app.node.destination.links))
+
+        self.display_widget.set_text("Connected Peers : "+self.stat_string)
+
+    def update_stat_callback(self, loop=None, user_data=None):
+        self.update_stat()
+        if self.started:
+            self.app.ui.loop.set_alarm_in(self.timeout, self.update_stat_callback)
+
+    def start(self):
+        was_started = self.started
+        self.started = True
+        if not was_started:
+            self.update_stat_callback()
+
+    def stop(self):
+        self.started = False
+
+
 class LocalPeer(urwid.WidgetWrap):
     announce_timer = None
 
@@ -596,9 +659,9 @@ class LocalPeer(urwid.WidgetWrap):
             options = self.parent.left_pile.options(height_type="pack", height_amount=None)
             self.parent.left_pile.contents[2] = (overlay, options)
 
-        def node_settings_query(sender):
+        def node_info_query(sender):
             options = self.parent.left_pile.options(height_type="pack", height_amount=None)
-            self.parent.left_pile.contents[2] = (self.parent.node_settings_display, options)
+            self.parent.left_pile.contents[2] = (self.parent.node_info_display, options)
 
         if LocalPeer.announce_timer == None:
             self.t_last_announce = AnnounceTime(self.app)
@@ -617,7 +680,7 @@ class LocalPeer(urwid.WidgetWrap):
                 self.t_last_announce,
                 announce_button,
                 urwid.Divider(g["divider1"]),
-                urwid.Columns([("weight", 0.45, urwid.Button("Save", on_press=save_query)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Node Cfg", on_press=node_settings_query))])
+                urwid.Columns([("weight", 0.45, urwid.Button("Save", on_press=save_query)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Node Info", on_press=node_info_query))])
             ]
         )
 
@@ -627,26 +690,92 @@ class LocalPeer(urwid.WidgetWrap):
         self.t_last_announce.start()
 
 
-class NodeSettings(urwid.WidgetWrap):
+class NodeInfo(urwid.WidgetWrap):
+    announce_timer = None
+    links_timer = None
+
     def __init__(self, app, parent):
         self.app = app
         self.parent = parent
         g = self.app.ui.glyphs
 
+        self.dialog_open = False
+        display_name = self.app.node.name
+        if display_name == None:
+            display_name = ""
+
+        t_id = urwid.Text("Addr : "+RNS.hexrep(self.app.node.destination.hash, delimit=False))
+        e_name = urwid.Text("Name : "+display_name)
+
+        def announce_query(sender):
+            def dismiss_dialog(sender):
+                self.dialog_open = False
+                options = self.parent.left_pile.options(height_type="pack", height_amount=None)
+                self.parent.left_pile.contents[2] = (NodeInfo(self.app, self.parent), options)
+
+            self.app.node.announce()
+
+            dialog = DialogLineBox(
+                urwid.Pile([
+                    urwid.Text("\n\n\nAnnounce Sent\n\n", align="center"),
+                    urwid.Button("OK", on_press=dismiss_dialog)
+                ]), title=g["info"]
+            )
+            dialog.delegate = self
+            bottom = self
+
+            #overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=4, right=4)
+            overlay = dialog
+            
+            self.dialog_open = True
+            options = self.parent.left_pile.options(height_type="pack", height_amount=None)
+            self.parent.left_pile.contents[2] = (overlay, options)
+
         def show_peer_info(sender):
             options = self.parent.left_pile.options(height_type="pack", height_amount=None)
             self.parent.left_pile.contents[2] = (LocalPeer(self.app, self.parent), options)
 
-        widget_style = "inactive_text"
-        pile = urwid.Pile([
-            urwid.Text("\n"+g["info"], align="center"),
-            urwid.Text("\nNode Hosting currently unavailable\n\n", align="center"),
-            urwid.Padding(urwid.Button("Back", on_press=show_peer_info), "center", "pack")
-        ])
+        if NodeInfo.announce_timer == None:
+            self.t_last_announce = NodeAnnounceTime(self.app)
+            NodeInfo.announce_timer = self.t_last_announce
+        else:
+            self.t_last_announce = NodeInfo.announce_timer
+            self.t_last_announce.update_time()
+
+        if NodeInfo.links_timer == None:
+            self.t_active_links = NodeActiveConnections(self.app)
+            NodeInfo.links_timer = self.t_active_links
+        else:
+            self.t_active_links = NodeInfo.links_timer
+            self.t_active_links.update_stat()
+
+        announce_button = urwid.Button("Announce Now", on_press=announce_query)
+
+        widget_style = ""
+        if self.app.enable_node:
+            pile = urwid.Pile([
+                t_id,
+                e_name,
+                urwid.Divider(g["divider1"]),
+                self.t_last_announce,
+                self.t_active_links,
+                urwid.Divider(g["divider1"]),
+                urwid.Columns([("weight", 0.45, urwid.Button("Back", on_press=show_peer_info)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, announce_button)])
+            ])
+        else:
+            pile = urwid.Pile([
+                urwid.Text("\n"+g["info"], align="center"),
+                urwid.Text("\nThis instance is not hosting a node\n\n", align="center"),
+                urwid.Padding(urwid.Button("Back", on_press=show_peer_info), "center", "pack")
+            ])
 
         self.display_widget = pile
 
-        urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="Node Settings"), widget_style))
+        urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="Local Node Info"), widget_style))
+
+    def start(self):
+        self.t_last_announce.start()
+        self.t_active_links.start()
 
 
 
@@ -733,7 +862,7 @@ class NetworkDisplay():
         self.network_stats_display = NetworkStats(self.app, self)
         self.announce_stream_display = AnnounceStream(self.app, self)
         self.local_peer_display = LocalPeer(self.app, self)
-        self.node_settings_display = NodeSettings(self.app, self)
+        self.node_info_display = NodeInfo(self.app, self)
 
         self.known_nodes_display.delegate = self
 
@@ -789,6 +918,7 @@ class NetworkDisplay():
 
     def start(self):
         self.local_peer_display.start()
+        self.node_info_display.start()
         self.network_stats_display.start()
         self.announce_stream_display.start()
 
