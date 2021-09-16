@@ -51,6 +51,7 @@ class Browser:
         self.last_keypress = None
 
         self.link = None
+        self.loopback = None
         self.status = Browser.DISCONECTED
         self.response_progress = 0
         self.response_size = None
@@ -176,7 +177,11 @@ class Browser:
         else:
             self.display_widget.set_attr_map({None: "body_text"})
             self.browser_header = self.make_control_widget()
-            self.linebox.set_title(self.app.directory.simplest_display_str(self.destination_hash))
+            remote_display_string = self.app.directory.simplest_display_str(self.destination_hash)
+            if remote_display_string == RNS.prettyhexrep(self.loopback):
+                remote_display_string = self.app.node.name
+                
+            self.linebox.set_title(remote_display_string)
 
             if self.status == Browser.DONE:
                 self.browser_footer = self.make_status_widget()
@@ -272,11 +277,14 @@ class Browser:
 
         if destination_hash != None and path != None:
             if path.startswith("/file/"):
-                if destination_hash == self.destination_hash:
-                    self.download_file(destination_hash, path)
+                if destination_hash != self.loopback:
+                    if destination_hash == self.destination_hash:
+                        self.download_file(destination_hash, path)
+                    else:
+                        RNS.log("Cannot request file download from a node that is not currently connected.", RNS.LOG_ERROR)
+                        RNS.log("The requested URL was: "+str(url), RNS.LOG_ERROR)
                 else:
-                    RNS.log("Cannot request file download from a node that is not currently connected.", RNS.LOG_ERROR)
-                    RNS.log("The requested URL was: "+str(url), RNS.LOG_ERROR)
+                    self.download_local_file(path)
             else:
                 self.set_destination_hash(destination_hash)
                 self.set_path(path)
@@ -297,6 +305,35 @@ class Browser:
     def set_timeout(self, timeout):
         self.timeout = timeout
 
+    def download_local_file(self, path):
+        try:
+            file_path = self.app.filespath+path.replace("/file", "", 1)
+            if os.path.isfile(file_path):
+                file_name = os.path.basename(file_path)
+                file_destination = self.app.downloads_path+"/"+file_name
+
+                counter = 0
+                while os.path.isfile(file_destination):
+                    counter += 1
+                    file_destination = self.app.downloads_path+"/"+file_name+"."+str(counter)
+
+                fs = open(file_path, "rb")
+                fd = open(file_destination, "wb")
+                fd.write(fs.read())
+                fd.close()
+                fs.close()
+
+                self.saved_file_name = file_destination.replace(self.app.downloads_path+"/", "", 1)
+                
+                self.update_display()
+            else:
+                RNS.log("The requested local download file does not exist: "+str(file_path), RNS.LOG_ERROR)
+
+            self.status = Browser.DONE
+            self.response_progress = 0
+            
+        except Exception as e:
+            RNS.log("An error occurred while handling file response. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
     def download_file(self, destination_hash, path):
         if self.link != None and self.link.destination.hash == self.destination_hash:
@@ -326,9 +363,28 @@ class Browser:
 
 
     def load_page(self):
-        load_thread = threading.Thread(target=self.__load)
-        load_thread.setDaemon(True)
-        load_thread.start()
+        if self.destination_hash != self.loopback:
+            load_thread = threading.Thread(target=self.__load)
+            load_thread.setDaemon(True)
+            load_thread.start()
+        else:
+            RNS.log("Browser handling local page: "+str(self.path), RNS.LOG_VERBOSE)
+            page_path = self.app.pagespath+self.path.replace("/page", "", 1)
+            RNS.log(page_path)
+
+            page_data = b"The requested local page did not exist in the file system"
+            if os.path.isfile(page_path):
+                file = open(page_path, "rb")
+                page_data = file.read()
+                file.close()
+
+            self.status = Browser.DONE
+            self.page_data = page_data
+            self.markup = self.page_data.decode("utf-8")
+            self.attr_maps = markup_to_attrmaps(self.markup, url_delegate=self)
+            self.response_progress = 0
+
+            self.update_display()
 
 
     def __load(self):

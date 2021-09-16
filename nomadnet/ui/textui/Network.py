@@ -735,6 +735,9 @@ class NodeInfo(urwid.WidgetWrap):
             options = self.parent.left_pile.options(height_type="pack", height_amount=None)
             self.parent.left_pile.contents[2] = (LocalPeer(self.app, self.parent), options)
 
+        def connect_query(sender):
+            self.parent.browser.retrieve_url(RNS.hexrep(self.app.node.destination.hash, delimit=False))
+
         if NodeInfo.announce_timer == None:
             self.t_last_announce = NodeAnnounceTime(self.app)
             NodeInfo.announce_timer = self.t_last_announce
@@ -750,6 +753,7 @@ class NodeInfo(urwid.WidgetWrap):
             self.t_active_links.update_stat()
 
         announce_button = urwid.Button("Announce Now", on_press=announce_query)
+        connect_button = urwid.Button("Browse", on_press=connect_query)
 
         widget_style = ""
         if self.app.enable_node:
@@ -760,7 +764,13 @@ class NodeInfo(urwid.WidgetWrap):
                 self.t_last_announce,
                 self.t_active_links,
                 urwid.Divider(g["divider1"]),
-                urwid.Columns([("weight", 0.45, urwid.Button("Back", on_press=show_peer_info)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, announce_button)])
+                urwid.Columns([
+                    ("weight", 0.3, urwid.Button("Back", on_press=show_peer_info)),
+                    ("weight", 0.1, urwid.Text("")),
+                    ("weight", 0.3, connect_button),
+                    ("weight", 0.1, urwid.Text("")),
+                    ("weight", 0.3, announce_button)
+                ])
             ])
         else:
             pile = urwid.Pile([
@@ -857,6 +867,9 @@ class NetworkDisplay():
         g = self.app.ui.glyphs
 
         self.browser = Browser(self.app, "nomadnetwork", "node", auth_identity = self.app.identity, delegate = self)
+
+        if self.app.node != None:
+            self.browser.loopback = self.app.node.destination.hash
 
         self.known_nodes_display = KnownNodes(self.app)
         self.network_stats_display = NetworkStats(self.app, self)
