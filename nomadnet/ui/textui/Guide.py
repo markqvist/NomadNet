@@ -111,6 +111,7 @@ class TopicList(urwid.WidgetWrap):
             GuideEntry(self.app, self, guide_display, "Hosting a Node"),
             GuideEntry(self.app, self, guide_display, "Markup"),
             self.first_run_entry,
+            GuideEntry(self.app, self, guide_display, "Display Test"),
             GuideEntry(self.app, self, guide_display, "Credits & Licenses"),
         ]
 
@@ -291,6 +292,41 @@ Now go out there and explore. This is still early days. See what you can find an
 <
 
 '''
+
+TOPIC_DISPLAYTEST = '''>Markup & Color Display Test
+
+
+`cYou can use this section to gauge how well your terminal reproduces the various types of formatting used by Nomad Network.
+``
+
+
+>>>>>>>>>>>>>>>>>>>>
+-\u223f
+<
+
+
+>>
+`a`!This line should be bold, and aligned to the left`!
+
+`c`*This one should be italic and centered`*
+
+`r`_And this one should be underlined, aligned right`_
+``
+
+The following line should contain a red gradient bar:
+`B100 `B200 `B300 `B400 `B500 `B600 `B700 `B800 `B900 `Ba00 `Bb00 `Bc00 `Bd00 `Be00 `Bf00`b
+
+The following line should contain a green gradient bar:
+`B010 `B020 `B030 `B040 `B050 `B060 `B070 `B080 `B090 `B0a0 `B0b0 `B0c0 `B0d0 `B0e0 `B0f0`b
+
+The following line should contain a blue gradient bar:
+`B001 `B002 `B003 `B004 `B005 `B006 `B007 `B008 `B009 `B00a `B00b `B00c `B00d `B00e `B00f`b
+
+Unicode Glyphs   : \u2713  \u2715  \u26a0  \u24c3  \u2193
+
+Nerd Font Glyphs : \uf484  \uf9c4 \uf719  \uf502  \uf415  \uf023  \uf06e
+'''
+
 
 TOPIC_LICENSES = '''>Thanks, Acknowledgements and Licenses
 
@@ -596,5 +632,6 @@ TOPICS = {
     "Hosting a Node": TOPIC_HOSTING,
     "Markup": TOPIC_MARKUP,
     "First Run": TOPIC_FIRST_RUN,
+    "Display Test": TOPIC_DISPLAYTEST,
     "Credits & Licenses": TOPIC_LICENSES,
 }
