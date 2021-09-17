@@ -429,6 +429,10 @@ announce_at_start = yes
 # Amount of time to show intro screen
 intro_time = 1
 
+# You can specify the display theme.
+# theme = dark
+theme = light
+
 # Specify the number of colors to use
 # valid colormodes are:
 # monochrome, 16, 88, 256 and 24bit

@@ -5,14 +5,24 @@ from urwid.util import is_mouse_press
 from urwid.text_layout import calc_coords
 import re
 
-DEFAULT_FG = "ddd"
+DEFAULT_FG_DARK  = "ddd"
+DEFAULT_FG_LIGHT = "222"
 DEFAULT_BG = "default"
 
-STYLES = {
-    "plain":    { "fg": DEFAULT_FG, "bg": DEFAULT_BG, "bold": False, "underline": False, "italic": False },
+SELECTED_STYLES = None
+
+STYLES_DARK = {
+    "plain":    { "fg": DEFAULT_FG_DARK, "bg": DEFAULT_BG, "bold": False, "underline": False, "italic": False },
     "heading1": { "fg": "222", "bg": "bbb", "bold": False, "underline": False, "italic": False },
     "heading2": { "fg": "111", "bg": "999", "bold": False, "underline": False, "italic": False },
     "heading3": { "fg": "000", "bg": "777", "bold": False, "underline": False, "italic": False },
+}
+
+STYLES_LIGHT = {
+    "plain":    { "fg": DEFAULT_FG_LIGHT, "bg": DEFAULT_BG, "bold": False, "underline": False, "italic": False },
+    "heading1": { "fg": "000", "bg": "777", "bold": False, "underline": False, "italic": False },
+    "heading2": { "fg": "111", "bg": "aaa", "bold": False, "underline": False, "italic": False },
+    "heading3": { "fg": "222", "bg": "ccc", "bold": False, "underline": False, "italic": False },
 }
 
 SYNTH_STYLES = []
@@ -22,12 +32,18 @@ SECTION_INDENT = 2
 INDENT_RIGHT   = 1
 
 def markup_to_attrmaps(markup, url_delegate = None):
+    global SELECTED_STYLES
+    if nomadnet.NomadNetworkApp.get_shared_instance().config["textui"]["theme"] == nomadnet.ui.TextUI.THEME_DARK:
+        SELECTED_STYLES = STYLES_DARK
+    else:
+        SELECTED_STYLES = STYLES_LIGHT
+
     attrmaps = []
 
     state = {
         "literal": False,
         "depth": 0,
-        "fg_color": DEFAULT_FG,
+        "fg_color": SELECTED_STYLES["plain"]["fg"],
         "bg_color": DEFAULT_BG,
         "formatting": {
             "bold": False,
@@ -90,8 +106,8 @@ def parse_line(line, state, url_delegate):
                 
                     for j in range(1, i+1):
                         wanted_style = "heading"+str(i)
-                        if wanted_style in STYLES:
-                            style = STYLES[wanted_style]
+                        if wanted_style in SELECTED_STYLES:
+                            style = SELECTED_STYLES[wanted_style]
 
                 line = line[state["depth"]:]
                 if len(line) > 0:
@@ -233,7 +249,7 @@ def make_output(state, line, url_delegate):
                             state["fg_color"] = color
                             skip = 3
                     elif c == "f":
-                        state["fg_color"] = DEFAULT_FG
+                        state["fg_color"] = SELECTED_STYLES["plain"]["fg"]
                     elif c == "B":
                         if len(line) >= i+4:
                             color = line[i+1:i+4]
@@ -245,7 +261,7 @@ def make_output(state, line, url_delegate):
                         state["formatting"]["bold"]      = False 
                         state["formatting"]["underline"] = False
                         state["formatting"]["italic"]    = False
-                        state["fg_color"] = DEFAULT_FG
+                        state["fg_color"] = SELECTED_STYLES["plain"]["fg"]
                         state["bg_color"] = DEFAULT_BG
                         state["align"] = state["default_align"]
                     elif c == "c":
