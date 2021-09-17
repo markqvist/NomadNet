@@ -72,6 +72,10 @@ def parse_line(line, state, url_delegate):
             if first_char == "\\":
                 line = line[1:]
 
+            # Check for comments
+            elif first_char == "#":
+                return None
+
             # Check for section heading reset
             elif first_char == "<":
                 state["depth"] = 0

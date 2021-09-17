@@ -33,6 +33,7 @@ class BrowserFrame(urwid.Frame):
 class Browser:
     DEFAULT_PATH       = "/page/index.mu"
     DEFAULT_TIMEOUT    = 10
+    DEFAULT_CACHE_TIME = 12*60*60
 
     NO_PATH            = 0x00
     PATH_REQUESTED     = 0x01
@@ -80,6 +81,7 @@ class Browser:
         self.history_inc = False
         self.history_dec = False
         self.reloading = False
+        self.loaded_from_cache = False
 
         if self.path == None:
             self.path = Browser.DEFAULT_PATH
@@ -96,6 +98,13 @@ class Browser:
             else:
                 path = self.path
             return RNS.hexrep(self.destination_hash, delimit=False)+":"+path
+
+    def url_hash(self, url):
+        if url == None:
+            return None
+        else:
+            url = url.encode("utf-8")
+            return RNS.hexrep(RNS.Identity.full_hash(url), delimit=False)
 
 
     def marked_link(self, link_target):
@@ -411,6 +420,7 @@ class Browser:
     def reload(self):
         if not self.reloading and self.status == Browser.DONE:
             self.reloading = True
+            self.uncache_page(self.current_url())
             self.load_page()
 
     def close_dialogs(self):
@@ -445,22 +455,10 @@ class Browser:
 
 
     def load_page(self):
-        if self.destination_hash != self.loopback:
-            load_thread = threading.Thread(target=self.__load)
-            load_thread.setDaemon(True)
-            load_thread.start()
-        else:
-            RNS.log("Browser handling local page: "+str(self.path), RNS.LOG_DEBUG)
-            page_path = self.app.pagespath+self.path.replace("/page", "", 1)
-
-            page_data = b"The requested local page did not exist in the file system"
-            if os.path.isfile(page_path):
-                file = open(page_path, "rb")
-                page_data = file.read()
-                file.close()
-
+        cached = self.get_cached(self.current_url())
+        if cached:
             self.status = Browser.DONE
-            self.page_data = page_data
+            self.page_data = cached
             self.markup = self.page_data.decode("utf-8")
             self.attr_maps = markup_to_attrmaps(self.markup, url_delegate=self)
             
@@ -468,6 +466,7 @@ class Browser:
             self.response_size = None
             self.response_transfer_size = None
             self.saved_file_name = None
+            self.loaded_from_cache = True
 
             self.update_display()
 
@@ -477,6 +476,41 @@ class Browser:
                 self.history_dec = False
                 self.history_inc = False
                 self.reloading = False
+
+        else:
+            if self.destination_hash != self.loopback:
+                load_thread = threading.Thread(target=self.__load)
+                load_thread.setDaemon(True)
+                load_thread.start()
+            else:
+                RNS.log("Browser handling local page: "+str(self.path), RNS.LOG_DEBUG)
+                page_path = self.app.pagespath+self.path.replace("/page", "", 1)
+
+                page_data = b"The requested local page did not exist in the file system"
+                if os.path.isfile(page_path):
+                    file = open(page_path, "rb")
+                    page_data = file.read()
+                    file.close()
+
+                self.status = Browser.DONE
+                self.page_data = page_data
+                self.markup = self.page_data.decode("utf-8")
+                self.attr_maps = markup_to_attrmaps(self.markup, url_delegate=self)
+                
+                self.response_progress = 0
+                self.response_size = None
+                self.response_transfer_size = None
+                self.saved_file_name = None
+                self.loaded_from_cache = False
+
+                self.update_display()
+
+                if not self.history_inc and not self.history_dec and not self.reloading:
+                    self.write_history()
+                else:
+                    self.history_dec = False
+                    self.history_inc = False
+                    self.reloading = False
 
 
     def __load(self):
@@ -585,6 +619,16 @@ class Browser:
             self.markup = self.page_data.decode("utf-8")
             self.attr_maps = markup_to_attrmaps(self.markup, url_delegate=self)
             self.response_progress = 0
+            self.loaded_from_cache = False
+
+            # Simple header handling. Should be expanded when more
+            # header tags are added.
+            cache_time = Browser.DEFAULT_CACHE_TIME
+            if self.markup[:4] == "#!c=":
+                endpos = self.markup.find("\n")
+                if endpos == -1:
+                    endpos = len(self.markup)
+                cache_time = int(self.markup[4:endpos])
 
             self.update_display()
 
@@ -595,8 +639,77 @@ class Browser:
                 self.history_inc = False
                 self.reloading = False
 
+            if cache_time == 0:
+                RNS.log("Received page "+str(self.current_url())+", not caching due to header.", RNS.LOG_DEBUG)
+            else:
+                RNS.log("Received page "+str(self.current_url())+", caching for %.3f hours." % (cache_time/60/60), RNS.LOG_DEBUG)    
+                self.cache_page(cache_time)
+
         except Exception as e:
             RNS.log("An error occurred while handling response. The contained exception was: "+str(e))
+
+    def uncache_page(self, url):
+        url_hash = self.url_hash(url)
+        files = os.listdir(self.app.cachepath)
+        for file in files:
+            if file.startswith(url_hash):
+                cachefile = self.app.cachepath+"/"+file
+                os.unlink(cachefile)
+                RNS.log("Removed "+str(cachefile)+" from cache.", RNS.LOG_DEBUG)
+
+    def get_cached(self, url):
+        url_hash = self.url_hash(url)
+        files = os.listdir(self.app.cachepath)
+        for file in files:
+            cachepath = self.app.cachepath+"/"+file
+            try:
+                components = file.split("_")
+                if len(components) == 2 and len(components[0]) == 64 and len(components[1]) > 0:
+                    expires = float(components[1])
+
+                    if time.time() > expires:
+                        RNS.log("Removing stale cache entry "+str(file), RNS.LOG_DEBUG)
+                        os.unlink(cachepath)
+                    else:
+                        if file.startswith(url_hash):
+                            RNS.log("Found "+str(file)+" in cache.", RNS.LOG_DEBUG)
+                            RNS.log("Returning cached page", RNS.LOG_DEBUG)
+                            file = open(cachepath, "rb")
+                            data = file.read()
+                            file.close()
+                            return data
+
+            except Exception as e:
+                RNS.log("Error while parsing cache entry "+str(cachepath)+", removing it.", RNS.LOG_ERROR)
+                RNS.log("The contained exception was: "+str(e), RNS.LOG_ERROR)
+                try:
+                    os.unlink(cachepath)
+                except Exception as e:
+                    RNS.log("Additionally, an exception occurred while unlinking the entry: "+str(e), RNS.LOG_ERROR)
+                    RNS.log("You will probably need to remove this entry manually by deleting the file: "+str(cachepath), RNS.LOG_ERROR)
+
+                
+        return None
+
+
+    def cache_page(self, cache_time):
+        url_hash = self.url_hash(self.current_url())
+        if url_hash == None:
+            RNS.log("Could not cache page "+str(self.current_url()), RNS.LOG_ERROR)
+        else:
+            try:
+                self.uncache_page(self.current_url())
+                cache_expires = time.time()+cache_time
+                filename = url_hash+"_"+str(cache_expires)
+                cachefile = self.app.cachepath+"/"+filename
+                file = open(cachefile, "wb")
+                file.write(self.page_data)
+                file.close()
+                RNS.log("Cached page "+str(self.current_url())+" to "+str(cachefile), RNS.LOG_DEBUG)
+
+            except Exception as e:
+                RNS.log("Could not write cache file for page "+str(self.current_url()), RNS.LOG_ERROR)
+                RNS.log("The contained exception was: "+str(e), RNS.LOG_ERROR)
 
 
     def file_received(self, request_receipt):
@@ -620,7 +733,7 @@ class Browser:
 
             self.update_display()
         except Exception as e:
-            RNS.log("An error occurred while handling file response. The contained exception was: "+str(e))
+            RNS.log("An error occurred while handling file response. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
     
     def request_failed(self, request_receipt=None):
@@ -668,6 +781,8 @@ class Browser:
             stats_string = "  "+self.g["page"]+size_str(self.response_size)
             stats_string += "   "+self.g["arrow_d"]+size_str(self.response_transfer_size)+" in "+response_time_str
             stats_string += "s   "+self.g["speed"]+size_str(self.response_transfer_size/self.response_time, suffix="b")+"/s"
+        elif self.loaded_from_cache:
+            stats_string = " (cached)"
         else:
             stats_string = ""
 

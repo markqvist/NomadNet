@@ -232,6 +232,8 @@ Nomad Network nodes can host pages similar to web pages, that other peers can re
 
 To add pages to your node, place micron files in the `*pages`* directory of your Nomad Network programs `*storage`* directory. By default, the path to this will be `!~/.nomadnetwork/storage/pages`!. You should probably create the file `!index.mu`! first, as this is the page that will get served by default to a connecting peer.
 
+You can control how long a peer will cache your pages by including the cache header in a page. To do so, the first line of your page must start with `!#!c=X`!, where `!X`! is the cache time in seconds. To tell the peer to always load the page from your node, and never cache it, set the cache time to zero. You should only do this if there is a real need, for example if your page displays dynamic content that `*must`* be updated at every page view. The default caching time is 12 hours. In most cases, you should not need to include the cache control header in your pages.
+
 Pages are static in this version, but the next release of Nomad Network will add the ability to use a preprocessor such as PHP, bash, Python (or whatever you prefer) to generate dynamic pages.
 
 >>Files
@@ -552,6 +554,29 @@ Here is `F00f`_`[a more visible link`1385edace36466a6b3dd:/page/index.mu]`_`f
 ``
 
 When links like these are displayed in the built-in browser, clicking on them or activating them using the keyboard will cause the browser to load the specified URL.
+
+>Comments
+
+You can insert comments that will not be displayed in the output by starting a line with the # character.
+
+Here's an example:
+
+`Faaa
+`=
+# This line will not be displayed
+This line will
+`=
+``
+
+The above markup produces the following output:
+
+`Faaa`B333
+
+# This line will not be displayed
+This line will
+
+``
+
 
 >Literals
 

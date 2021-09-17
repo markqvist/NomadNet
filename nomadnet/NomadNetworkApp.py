@@ -53,6 +53,7 @@ class NomadNetworkApp:
 
         self.pagespath         = self.configdir+"/storage/pages"
         self.filespath         = self.configdir+"/storage/files"
+        self.cachepath         = self.configdir+"/storage/cache"
 
         self.downloads_path    = os.path.expanduser("~/Downloads")
 
@@ -77,6 +78,9 @@ class NomadNetworkApp:
 
         if not os.path.isdir(self.filespath):
             os.makedirs(self.filespath)
+
+        if not os.path.isdir(self.cachepath):
+            os.makedirs(self.cachepath)
 
         if os.path.isfile(self.configpath):
             try:
@@ -128,7 +132,7 @@ class NomadNetworkApp:
 
                 if not "node_last_announce" in self.peer_settings:
                     self.peer_settings["node_last_announce"] = None
-                    
+
             except Exception as e:
                 RNS.log("Could not load local peer settings from "+self.peersettingspath, RNS.LOG_ERROR)
                 RNS.log("The contained exception was: %s" % (str(e)), RNS.LOG_ERROR)
