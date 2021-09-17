@@ -17,6 +17,8 @@ class BrowserFrame(urwid.Frame):
             self.delegate.forward()
         elif key == "ctrl r":
             self.delegate.reload()
+        elif key == "ctrl u":
+            self.delegate.url_dialog()
         elif self.get_focus() == "body":
             return super(BrowserFrame, self).keypress(size, key)
             # if key == "up" and self.delegate.messagelist.top_is_visible:
@@ -411,6 +413,37 @@ class Browser:
             self.reloading = True
             self.load_page()
 
+    def close_dialogs(self):
+        options = self.delegate.columns.options("weight", self.delegate.right_area_width)
+        self.delegate.columns.contents[1] = (self.display_widget, options)
+
+    def url_dialog(self):
+        e_url = urwid.Edit(caption="URL : ", edit_text=self.current_url())
+
+        def dismiss_dialog(sender):
+            self.close_dialogs()
+
+        def confirmed(sender):
+            self.retrieve_url(e_url.get_edit_text())
+            self.close_dialogs()
+
+        dialog = UrlDialogLineBox(
+            urwid.Pile([
+                e_url,
+                urwid.Columns([("weight", 0.45, urwid.Button("Cancel", on_press=dismiss_dialog)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Go", on_press=confirmed))])
+            ]), title="Enter URL"
+        )
+        dialog.confirmed = confirmed
+        dialog.delegate = self
+        bottom = self.display_widget
+
+        overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 65), valign="middle", height="pack", left=2, right=2)
+
+        options = self.delegate.columns.options("weight", self.delegate.right_area_width)
+        self.delegate.columns.contents[1] = (overlay, options)
+        self.delegate.columns.focus_position = 1
+
+
     def load_page(self):
         if self.destination_hash != self.loopback:
             load_thread = threading.Thread(target=self.__load)
@@ -693,3 +726,12 @@ def size_str(num, suffix='B'):
         num /= 1000.0
 
     return "%.2f%s%s" % (num, last_unit, suffix)
+
+class UrlDialogLineBox(urwid.LineBox):
+        def keypress(self, size, key):
+            if key == "esc":
+                self.delegate.close_dialogs()
+            if key == "enter":
+                self.confirmed(self)
+            else:
+                return super(UrlDialogLineBox, self).keypress(size, key)

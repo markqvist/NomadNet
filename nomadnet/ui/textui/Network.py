@@ -13,7 +13,7 @@ class NetworkDisplayShortcuts():
         self.app = app
         g = app.ui.glyphs
 
-        self.widget = urwid.AttrMap(urwid.Text("[C-l] Toggle Nodes/Announces view  [C-x] Remove entry  [C-w] Disconnect [C-d] Back  [C-f] Forward  [C-r] Reload"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-l] Toggle Nodes/Announces view  [C-x] Remove entry  [C-w] Disconnect [C-d] Back  [C-f] Forward  [C-r] Reload  [C-u] Enter URL"), "shortcutbar")
         #   "[C-"+g["arrow_u"]+g["arrow_d"]+"] Navigate Lists"
 
 
@@ -855,6 +855,8 @@ class NetworkLeftPile(urwid.Pile):
             self.parent.toggle_list()
         elif key == "ctrl w":
             self.parent.browser.disconnect()
+        elif key == "ctrl u":
+            self.parent.browser.url_dialog()
         else:
             return super(NetworkLeftPile, self).keypress(size, key)
 
@@ -890,11 +892,12 @@ class NetworkDisplay():
 
         self.left_area = self.left_pile
         self.right_area = self.browser.display_widget
+        self.right_area_width = 1-NetworkDisplay.list_width
 
         self.columns = urwid.Columns(
             [
                 ("weight", NetworkDisplay.list_width, self.left_area),
-                ("weight", 1-NetworkDisplay.list_width, self.right_area)
+                ("weight", self.right_area_width, self.right_area)
             ],
             dividechars=0, focus_column=0
         )
