@@ -2,6 +2,7 @@ import os
 import RNS
 import time
 import threading
+import subprocess
 import RNS.vendor.umsgpack as msgpack
 
 class Node:
@@ -87,10 +88,14 @@ class Node:
         file_path = path.replace("/page", self.app.pagespath, 1)
         try:
             RNS.log("Serving page: "+file_path, RNS.LOG_VERBOSE)
-            fh = open(file_path, "rb")
-            response_data = fh.read()
-            fh.close()
-            return response_data
+            if os.access(file_path, os.X_OK):
+                generated = subprocess.run([file_path], stdout=subprocess.PIPE)
+                return generated.stdout
+            else:
+                fh = open(file_path, "rb")
+                response_data = fh.read()
+                fh.close()
+                return response_data
 
         except Exception as e:
             RNS.log("Error occurred while handling request "+RNS.prettyhexrep(request_id)+" for: "+str(path), RNS.LOG_ERROR)

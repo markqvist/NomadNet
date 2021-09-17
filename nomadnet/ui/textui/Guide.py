@@ -234,7 +234,7 @@ To add pages to your node, place micron files in the `*pages`* directory of your
 
 You can control how long a peer will cache your pages by including the cache header in a page. To do so, the first line of your page must start with `!#!c=X`!, where `!X`! is the cache time in seconds. To tell the peer to always load the page from your node, and never cache it, set the cache time to zero. You should only do this if there is a real need, for example if your page displays dynamic content that `*must`* be updated at every page view. The default caching time is 12 hours. In most cases, you should not need to include the cache control header in your pages.
 
-Pages are static in this version, but the next release of Nomad Network will add the ability to use a preprocessor such as PHP, bash, Python (or whatever you prefer) to generate dynamic pages.
+You can use a preprocessor such as PHP, bash, Python (or whatever you prefer) to generate dynamic pages. To do so, just set executable permissions on the relevant page file, and be sure to include the interpreter at the beginning of the file, for example `!#!/usr/bin/python3`!.
 
 >>Files
 

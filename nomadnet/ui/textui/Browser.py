@@ -3,6 +3,7 @@ import os
 import time
 import urwid
 import nomadnet
+import subprocess
 import threading
 from .MicronParser import markup_to_attrmaps
 from nomadnet.vendor.Scrollable import *
@@ -488,9 +489,13 @@ class Browser:
 
                 page_data = b"The requested local page did not exist in the file system"
                 if os.path.isfile(page_path):
-                    file = open(page_path, "rb")
-                    page_data = file.read()
-                    file.close()
+                    if os.access(page_path, os.X_OK):
+                        generated = subprocess.run([page_path], stdout=subprocess.PIPE)
+                        page_data = generated.stdout
+                    else:
+                        file = open(page_path, "rb")
+                        page_data = file.read()
+                        file.close()
 
                 self.status = Browser.DONE
                 self.page_data = page_data
