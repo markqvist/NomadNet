@@ -11,6 +11,12 @@ class BrowserFrame(urwid.Frame):
     def keypress(self, size, key):
         if key == "ctrl w":
             self.delegate.disconnect()
+        elif key == "ctrl d":
+            self.delegate.back()
+        elif key == "ctrl f":
+            self.delegate.forward()
+        elif key == "ctrl r":
+            self.delegate.reload()
         elif self.get_focus() == "body":
             return super(BrowserFrame, self).keypress(size, key)
             # if key == "up" and self.delegate.messagelist.top_is_visible:
@@ -66,6 +72,12 @@ class Browser:
         self.frame = None
         self.attr_maps = []
         self.build_display()
+
+        self.history = []
+        self.history_ptr = 0
+        self.history_inc = False
+        self.history_dec = False
+        self.reloading = False
 
         if self.path == None:
             self.path = Browser.DEFAULT_PATH
@@ -180,7 +192,7 @@ class Browser:
             remote_display_string = self.app.directory.simplest_display_str(self.destination_hash)
             if remote_display_string == RNS.prettyhexrep(self.loopback):
                 remote_display_string = self.app.node.name
-                
+
             self.linebox.set_title(remote_display_string)
 
             if self.status == Browser.DONE:
@@ -231,6 +243,11 @@ class Browser:
         self.response_progress = 0
         self.response_size = None
         self.response_transfer_size = None
+
+        self.history = []
+        self.history_ptr = 0
+        self.history_inc = False
+        self.history_dec = False
 
         self.update_display()
 
@@ -361,6 +378,38 @@ class Browser:
             else:
                 self.link.teardown()
 
+    def write_history(self):
+        entry = [self.destination_hash, self.path]
+        self.history.insert(self.history_ptr, entry)
+        self.history_ptr += 1
+
+        if len(self.history) > self.history_ptr:
+            self.history = self.history[:self.history_ptr]
+
+    def back(self):
+        target_ptr = self.history_ptr-1
+        if not self.history_inc and not self.history_dec:
+            if target_ptr > 0:
+                self.history_dec = True
+                entry = self.history[target_ptr-1]
+                url = RNS.hexrep(entry[0], delimit=False)+":"+entry[1]
+                self.history_ptr = target_ptr
+                self.retrieve_url(url)
+
+    def forward(self):
+        target_ptr = self.history_ptr+1
+        if not self.history_inc and not self.history_dec:
+            if target_ptr <= len(self.history):
+                self.history_dec = True
+                entry = self.history[target_ptr-1]
+                url = RNS.hexrep(entry[0], delimit=False)+":"+entry[1]
+                self.history_ptr = target_ptr
+                self.retrieve_url(url)
+
+    def reload(self):
+        if not self.reloading and self.status == Browser.DONE:
+            self.reloading = True
+            self.load_page()
 
     def load_page(self):
         if self.destination_hash != self.loopback:
@@ -368,9 +417,8 @@ class Browser:
             load_thread.setDaemon(True)
             load_thread.start()
         else:
-            RNS.log("Browser handling local page: "+str(self.path), RNS.LOG_VERBOSE)
+            RNS.log("Browser handling local page: "+str(self.path), RNS.LOG_DEBUG)
             page_path = self.app.pagespath+self.path.replace("/page", "", 1)
-            RNS.log(page_path)
 
             page_data = b"The requested local page did not exist in the file system"
             if os.path.isfile(page_path):
@@ -382,9 +430,20 @@ class Browser:
             self.page_data = page_data
             self.markup = self.page_data.decode("utf-8")
             self.attr_maps = markup_to_attrmaps(self.markup, url_delegate=self)
+            
             self.response_progress = 0
+            self.response_size = None
+            self.response_transfer_size = None
+            self.saved_file_name = None
 
             self.update_display()
+
+            if not self.history_inc and not self.history_dec and not self.reloading:
+                self.write_history()
+            else:
+                self.history_dec = False
+                self.history_inc = False
+                self.reloading = False
 
 
     def __load(self):
@@ -495,6 +554,14 @@ class Browser:
             self.response_progress = 0
 
             self.update_display()
+
+            if not self.history_inc and not self.history_dec and not self.reloading:
+                self.write_history()
+            else:
+                self.history_dec = False
+                self.history_inc = False
+                self.reloading = False
+
         except Exception as e:
             RNS.log("An error occurred while handling response. The contained exception was: "+str(e))
 
