@@ -24,6 +24,8 @@ The current version of the program should be considered a beta release. The prog
 ### Feature roadmap
  - Access control and authentication for nodes, pages and files
  - Network-wide propagated messaging and discussion threads
+ - Geospatial information sharing
+ - Distributed Marketplace
 
 ## Dependencies:
  - Python 3
