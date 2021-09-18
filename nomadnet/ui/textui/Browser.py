@@ -202,7 +202,7 @@ class Browser:
             self.display_widget.set_attr_map({None: "body_text"})
             self.browser_header = self.make_control_widget()
             remote_display_string = self.app.directory.simplest_display_str(self.destination_hash)
-            if remote_display_string == RNS.prettyhexrep(self.loopback):
+            if self.loopback != None and remote_display_string == RNS.prettyhexrep(self.loopback):
                 remote_display_string = self.app.node.name
 
             self.linebox.set_title(remote_display_string)
