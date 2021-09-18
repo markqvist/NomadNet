@@ -429,7 +429,7 @@ class Browser:
         self.delegate.columns.contents[1] = (self.display_widget, options)
 
     def url_dialog(self):
-        e_url = urwid.Edit(caption="URL : ", edit_text=self.current_url())
+        e_url = UrlEdit(caption="URL : ", edit_text=self.current_url())
 
         def dismiss_dialog(sender):
             self.close_dialogs()
@@ -444,6 +444,7 @@ class Browser:
                 urwid.Columns([("weight", 0.45, urwid.Button("Cancel", on_press=dismiss_dialog)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Go", on_press=confirmed))])
             ]), title="Enter URL"
         )
+        e_url.confirmed = confirmed
         dialog.confirmed = confirmed
         dialog.delegate = self
         bottom = self.display_widget
@@ -848,10 +849,15 @@ def size_str(num, suffix='B'):
     return "%.2f%s%s" % (num, last_unit, suffix)
 
 class UrlDialogLineBox(urwid.LineBox):
-        def keypress(self, size, key):
-            if key == "esc":
-                self.delegate.close_dialogs()
-            if key == "enter":
-                self.confirmed(self)
-            else:
-                return super(UrlDialogLineBox, self).keypress(size, key)
+    def keypress(self, size, key):
+        if key == "esc":
+            self.delegate.close_dialogs()
+        else:
+            return super(UrlDialogLineBox, self).keypress(size, key)
+
+class UrlEdit(urwid.Edit):
+    def keypress(self, size, key):
+        if key == "enter":
+            self.confirmed(self)
+        else:
+            return super(UrlEdit, self).keypress(size, key)    
