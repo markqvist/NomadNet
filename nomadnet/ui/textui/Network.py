@@ -700,67 +700,69 @@ class NodeInfo(urwid.WidgetWrap):
         g = self.app.ui.glyphs
 
         self.dialog_open = False
-        if self.app.node != None:
-            display_name = self.app.node.name
-        else:
-            display_name = None
-    
-        if display_name == None:
-            display_name = ""
 
-        t_id = urwid.Text("Addr : "+RNS.hexrep(self.app.node.destination.hash, delimit=False))
-        e_name = urwid.Text("Name : "+display_name)
-
-        def announce_query(sender):
-            def dismiss_dialog(sender):
-                self.dialog_open = False
-                options = self.parent.left_pile.options(height_type="pack", height_amount=None)
-                self.parent.left_pile.contents[2] = (NodeInfo(self.app, self.parent), options)
-
-            self.app.node.announce()
-
-            dialog = DialogLineBox(
-                urwid.Pile([
-                    urwid.Text("\n\n\nAnnounce Sent\n\n", align="center"),
-                    urwid.Button("OK", on_press=dismiss_dialog)
-                ]), title=g["info"]
-            )
-            dialog.delegate = self
-            bottom = self
-
-            #overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=4, right=4)
-            overlay = dialog
-            
-            self.dialog_open = True
-            options = self.parent.left_pile.options(height_type="pack", height_amount=None)
-            self.parent.left_pile.contents[2] = (overlay, options)
+        widget_style = ""
 
         def show_peer_info(sender):
             options = self.parent.left_pile.options(height_type="pack", height_amount=None)
             self.parent.left_pile.contents[2] = (LocalPeer(self.app, self.parent), options)
-
-        def connect_query(sender):
-            self.parent.browser.retrieve_url(RNS.hexrep(self.app.node.destination.hash, delimit=False))
-
-        if NodeInfo.announce_timer == None:
-            self.t_last_announce = NodeAnnounceTime(self.app)
-            NodeInfo.announce_timer = self.t_last_announce
-        else:
-            self.t_last_announce = NodeInfo.announce_timer
-            self.t_last_announce.update_time()
-
-        if NodeInfo.links_timer == None:
-            self.t_active_links = NodeActiveConnections(self.app)
-            NodeInfo.links_timer = self.t_active_links
-        else:
-            self.t_active_links = NodeInfo.links_timer
-            self.t_active_links.update_stat()
-
-        announce_button = urwid.Button("Announce Now", on_press=announce_query)
-        connect_button = urwid.Button("Browse", on_press=connect_query)
-
-        widget_style = ""
+        
         if self.app.enable_node:
+            if self.app.node != None:
+                display_name = self.app.node.name
+            else:
+                display_name = None
+        
+            if display_name == None:
+                display_name = ""
+
+            t_id = urwid.Text("Addr : "+RNS.hexrep(self.app.node.destination.hash, delimit=False))
+            e_name = urwid.Text("Name : "+display_name)
+
+            def announce_query(sender):
+                def dismiss_dialog(sender):
+                    self.dialog_open = False
+                    options = self.parent.left_pile.options(height_type="pack", height_amount=None)
+                    self.parent.left_pile.contents[2] = (NodeInfo(self.app, self.parent), options)
+
+                self.app.node.announce()
+
+                dialog = DialogLineBox(
+                    urwid.Pile([
+                        urwid.Text("\n\n\nAnnounce Sent\n\n", align="center"),
+                        urwid.Button("OK", on_press=dismiss_dialog)
+                    ]), title=g["info"]
+                )
+                dialog.delegate = self
+                bottom = self
+
+                #overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=4, right=4)
+                overlay = dialog
+                
+                self.dialog_open = True
+                options = self.parent.left_pile.options(height_type="pack", height_amount=None)
+                self.parent.left_pile.contents[2] = (overlay, options)
+
+            def connect_query(sender):
+                self.parent.browser.retrieve_url(RNS.hexrep(self.app.node.destination.hash, delimit=False))
+
+            if NodeInfo.announce_timer == None:
+                self.t_last_announce = NodeAnnounceTime(self.app)
+                NodeInfo.announce_timer = self.t_last_announce
+            else:
+                self.t_last_announce = NodeInfo.announce_timer
+                self.t_last_announce.update_time()
+
+            if NodeInfo.links_timer == None:
+                self.t_active_links = NodeActiveConnections(self.app)
+                NodeInfo.links_timer = self.t_active_links
+            else:
+                self.t_active_links = NodeInfo.links_timer
+                self.t_active_links.update_stat()
+
+            announce_button = urwid.Button("Announce Now", on_press=announce_query)
+            connect_button = urwid.Button("Browse", on_press=connect_query)
+
             pile = urwid.Pile([
                 t_id,
                 e_name,
@@ -788,8 +790,9 @@ class NodeInfo(urwid.WidgetWrap):
         urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="Local Node Info"), widget_style))
 
     def start(self):
-        self.t_last_announce.start()
-        self.t_active_links.start()
+        if self.app.node != None:
+            self.t_last_announce.start()
+            self.t_active_links.start()
 
 
 
