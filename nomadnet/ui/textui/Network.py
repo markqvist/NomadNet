@@ -936,7 +936,10 @@ class NetworkDisplay():
         self.local_peer_display.start()
         self.node_info_display.start()
         self.network_stats_display.start()
-        self.announce_stream_display.start()
+        # There seems to be an intermittent memory leak somewhere
+        # in the periodic updating here. The periodic updater should
+        # not be needed anymore, so dis
+        #self.announce_stream_display.start()
 
     def shortcuts(self):
         return self.shortcuts_display

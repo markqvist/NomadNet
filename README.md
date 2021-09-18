@@ -15,17 +15,17 @@ Nomad Network does not need any connections to the public internet to work. In f
  - Encrypted messaging over packet-radio, LoRa, WiFi or anything else [Reticulum](https://github.com/markqvist/Reticulum) supports.
  - Zero-configuration, minimal-infrastructure mesh communication
  - Connectable nodes that can host pages and files
+ - Node-side generated pages with PHP, Python, bash or others
  - Built-in text-based browser for interacting with contents on nodes
  - An easy to use and bandwidth efficient markup language for writing pages
+ - Page caching in browser
 
 ## Current Status
 The current version of the program should be considered a beta release. The program works well, but there will most probably be bugs and possibly sub-optimal performance in some scenarios. On the other hand, this is the ideal time to have an influence on the direction of the development of Nomad Network. To do so, join the discussion, report bugs and request features here on the GitHub project.
 
 ### Feature roadmap
- - Page caching in browser
- - Node-side generated pages with PHP, Python, bash or others
- - Access control and authentication for pages and files
- - Propagated messaging and discussion threads
+ - Access control and authentication for nodes, pages and files
+ - Network-wide propagated messaging and discussion threads
 
 ## Dependencies:
  - Python 3
@@ -43,7 +43,9 @@ pip3 install nomadnet
 nomadnet
 ```
 
+The first time the program is running, you will be presented with the guide section, which contains all the information you need to start using Nomad Network.
+
 To use Nomad Network on packet radio or LoRa, you will need to configure your Reticulum installation to use any relevant packet radio TNCs or LoRa devices on your system. See the Reticulum documentation for info.
 
 ## Caveat Emptor
-Nomad Network is experimental software, and should be considered as such. While it has been built with cryptography best-practices very foremost in mind, it _has not_ been externally security audited, and there could very well be privacy-breaking bugs. If you want to help out, or help sponsor an audit, please do get in touch.
+Nomad Network is beta software, and should be considered as such. While it has been built with cryptography best-practices very foremost in mind, it _has not_ been externally security audited, and there could very well be privacy-breaking bugs. If you want to help out, or help sponsor an audit, please do get in touch.
