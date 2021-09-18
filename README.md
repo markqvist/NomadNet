@@ -1,7 +1,5 @@
-Nomad Network
+Nomad Network - Communicate Freely
 ==========
-
-Communicate Freely.
 
 ![Screenshot](https://github.com/markqvist/NomadNet/raw/master/docs/screenshots/1.png)
 
