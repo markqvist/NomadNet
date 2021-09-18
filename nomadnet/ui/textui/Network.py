@@ -700,7 +700,11 @@ class NodeInfo(urwid.WidgetWrap):
         g = self.app.ui.glyphs
 
         self.dialog_open = False
-        display_name = self.app.node.name
+        if self.app.node != None:
+            display_name = self.app.node.name
+        else:
+            display_name = None
+    
         if display_name == None:
             display_name = ""
 
