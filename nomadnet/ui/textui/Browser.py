@@ -90,6 +90,8 @@ class Browser:
         if self.destination_hash != None:
             self.load_page()
 
+        self.clean_cache()
+
     def current_url(self):
         if self.destination_hash == None:
             return ""
@@ -696,6 +698,22 @@ class Browser:
 
                 
         return None
+
+    def clean_cache(self):
+        files = os.listdir(self.app.cachepath)
+        for file in files:
+            cachepath = self.app.cachepath+"/"+file
+            try:
+                components = file.split("_")
+                if len(components) == 2 and len(components[0]) == 64 and len(components[1]) > 0:
+                    expires = float(components[1])
+
+                    if time.time() > expires:
+                        RNS.log("Removing stale cache entry "+str(file), RNS.LOG_DEBUG)
+                        os.unlink(cachepath)
+
+            except Exception as e:
+                pass
 
 
     def cache_page(self, cache_time):
