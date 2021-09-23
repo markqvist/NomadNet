@@ -236,6 +236,7 @@ class ConversationMessage:
             self.lxm = LXMF.LXMessage.unpack_from_file(open(self.file_path, "rb"))
             self.loaded = True
             self.timestamp = self.lxm.timestamp
+            self.sort_timestamp = os.path.getmtime(self.file_path)
 
             if self.lxm.state > LXMF.LXMessage.DRAFT and self.lxm.state < LXMF.LXMessage.SENT:
                 found = False

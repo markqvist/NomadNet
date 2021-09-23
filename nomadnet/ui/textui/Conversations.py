@@ -665,7 +665,7 @@ class ConversationWidget(urwid.WidgetWrap):
                 message_widget = LXMessageWidget(message)
                 self.message_widgets.append(message_widget)
         
-        self.message_widgets.sort(key=lambda m: m.timestamp, reverse=False)
+        self.message_widgets.sort(key=lambda m: m.sort_timestamp, reverse=False)
 
         from nomadnet.vendor.additional_urwid_widgets import IndicativeListBox
         self.messagelist = IndicativeListBox(self.message_widgets, position = len(self.message_widgets)-1)
@@ -699,6 +699,7 @@ class LXMessageWidget(urwid.WidgetWrap):
         app = nomadnet.NomadNetworkApp.get_shared_instance()
         g = app.ui.glyphs
         self.timestamp = message.get_timestamp()
+        self.sort_timestamp = message.sort_timestamp
         time_format = app.time_format
         message_time = datetime.fromtimestamp(self.timestamp)
         encryption_string = ""
