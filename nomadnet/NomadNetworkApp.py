@@ -223,6 +223,12 @@ class NomadNetworkApp:
     def conversations(self):
         return nomadnet.Conversation.conversation_list(self)
 
+    def has_unread_conversations(self):
+        if len(nomadnet.Conversation.unread_conversations) > 0:
+            return True
+        else:
+            return False
+
     def conversation_is_unread(self, source_hash):
         if bytes.fromhex(source_hash) in nomadnet.Conversation.unread_conversations:
             return True

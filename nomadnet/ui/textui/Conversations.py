@@ -316,14 +316,15 @@ class ConversationsDisplay():
             self.ilb.select_item(ilb_position)
         nomadnet.NomadNetworkApp.get_shared_instance().ui.loop.draw_screen()
 
-        if self.currently_displayed_conversation != None:
-            if self.app.conversation_is_unread(self.currently_displayed_conversation):
-                self.app.mark_conversation_read(self.currently_displayed_conversation)
-                try:
-                    if os.path.isfile(self.app.conversationpath + "/" + self.currently_displayed_conversation + "/unread"):
-                        os.unlink(self.app.conversationpath + "/" + self.currently_displayed_conversation + "/unread")
-                except Exception as e:
-                    raise e
+        if self.app.ui.main_display.sub_displays.active_display == self.app.ui.main_display.sub_displays.conversations_display:
+            if self.currently_displayed_conversation != None:
+                if self.app.conversation_is_unread(self.currently_displayed_conversation):
+                    self.app.mark_conversation_read(self.currently_displayed_conversation)
+                    try:
+                        if os.path.isfile(self.app.conversationpath + "/" + self.currently_displayed_conversation + "/unread"):
+                            os.unlink(self.app.conversationpath + "/" + self.currently_displayed_conversation + "/unread")
+                    except Exception as e:
+                        raise e
 
 
 

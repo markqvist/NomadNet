@@ -103,13 +103,14 @@ GLYPHS = {
     ("arrow_d",         "\\/",       "\u2193",      "\u2193"),
     ("warning",         "!",         "\u26a0",      "\uf12a"),
     ("info",            "i",         "\u2139",      "\ufb4d"),
-    ("unread",          "[U]",       "\u2709",      "\uf003 "),
+    ("unread",          "[!]",       "\u2709",      "\uf003 "),
     ("divider1",        "-",         "\u2504",      "\u2504"),
     ("peer",            "[P]",       "\u24c5 ",     "\uf415"),
     ("node",            "[N]",       "\u24c3 ",     "\uf502"),
     ("page",            "",          "\u25a4",      "\uf719 "),
     ("speed",           "",          "\u25F7",      "\uf9c4"),
-    ("decoration_menu", "",          "",            " \uf93a"),
+    ("decoration_menu", " +",         " +",           " \uf93a"),
+    ("unread_menu",     " !",         " \u2709",      " \uf003 "),
     ("globe",           "",          "",            "\uf484"),
 }
 
@@ -183,6 +184,7 @@ class TextUI:
 
         self.set_colormode(colormode)
 
+        self.main_display.start()
         self.loop.run()
 
     def set_colormode(self, colormode):

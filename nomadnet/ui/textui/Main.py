@@ -135,6 +135,9 @@ class MainDisplay():
     def redraw_now(self, sender=None, data=None):
         self.app.ui.loop.draw_screen()
 
+    def start(self):
+        self.menu_display.start()
+
     def quit(self, sender=None):
         raise urwid.ExitMainLoop
 
@@ -147,11 +150,16 @@ class MenuColumns(urwid.Columns):
         return super(MenuColumns, self).keypress(size, key)
 
 class MenuDisplay():
+    UPDATE_INTERVAL = 2
+
     def __init__(self, app, handler):
         self.app = app
-        g = self.app.ui.glyphs
+        self.update_interval = MenuDisplay.UPDATE_INTERVAL
+        self.g = self.app.ui.glyphs
 
-        menu_text            = ("pack", urwid.Text(g["decoration_menu"]))
+        self.menu_indicator  = urwid.Text("")
+
+        menu_text            = ("pack", self.menu_indicator)
         button_network       = (11, MenuButton("Network", on_press=handler.show_network))
         button_conversations = (17, MenuButton("Conversations", on_press=handler.show_conversations))
         button_directory     = (13, MenuButton("Directory", on_press=handler.show_directory))
@@ -170,4 +178,25 @@ class MenuDisplay():
         columns = MenuColumns(buttons, dividechars=1)
         columns.handler = handler
 
+        self.update_display()
+
         self.widget = urwid.AttrMap(columns, "menubar")
+
+    def start(self):
+        self.update_display_job()
+
+    def update_display_job(self, event = None, sender = None):
+        self.update_display()
+        self.app.ui.loop.set_alarm_in(self.update_interval, self.update_display_job)
+
+    def update_display(self):
+        if self.app.has_unread_conversations():
+            self.indicate_unread()
+        else:
+            self.indicate_normal()
+
+    def indicate_normal(self):
+        self.menu_indicator.set_text(self.g["decoration_menu"])
+
+    def indicate_unread(self):
+        self.menu_indicator.set_text(self.g["unread_menu"])
