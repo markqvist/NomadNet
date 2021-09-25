@@ -13,7 +13,7 @@ class NetworkDisplayShortcuts():
         self.app = app
         g = app.ui.glyphs
 
-        self.widget = urwid.AttrMap(urwid.Text("[C-l] Toggle Nodes/Announces view  [C-x] Remove entry  [C-w] Disconnect [C-d] Back  [C-f] Forward  [C-r] Reload  [C-u] Enter URL"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-l] Nodes/Announces  [C-x] Remove  [C-w] Disconnect  [C-d] Back  [C-f] Forward  [C-r] Reload  [C-u] URL"), "shortcutbar")
         #   "[C-"+g["arrow_u"]+g["arrow_d"]+"] Navigate Lists"
 
 
