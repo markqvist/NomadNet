@@ -2,6 +2,7 @@ import RNS
 import urwid
 import time
 import os
+import platform
 
 import nomadnet
 from nomadnet.ui.textui import *
@@ -90,6 +91,11 @@ GLYPHSETS = {
     "nerdfont": 3
 }
 
+if platform.system() == "Darwin":
+    urm_char = " \uf0e0 "
+else:
+    urm_char = " \uf003 "
+
 GLYPHS = {
     # Glyph name        # Plain      # Unicode      # Nerd Font
     ("check",           "=",         "\u2713",      "\u2713"),
@@ -110,7 +116,7 @@ GLYPHS = {
     ("page",            "",          "\u25a4",      "\uf719 "),
     ("speed",           "",          "\u25F7",      "\uf9c4"),
     ("decoration_menu", " +",         " +",           " \uf93a"),
-    ("unread_menu",     " !",         " \u2709",      " \uf003 "),
+    ("unread_menu",     " !",         " \u2709",      urm_char),
     ("globe",           "",          "",            "\uf484"),
 }
 
