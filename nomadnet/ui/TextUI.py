@@ -93,8 +93,10 @@ GLYPHSETS = {
 
 if platform.system() == "Darwin":
     urm_char = " \uf0e0 "
+    ur_char = "\uf0e0 "
 else:
     urm_char = " \uf003 "
+    ur_char = "\uf003 "
 
 GLYPHS = {
     # Glyph name        # Plain      # Unicode      # Nerd Font
@@ -109,7 +111,7 @@ GLYPHS = {
     ("arrow_d",         "\\/",       "\u2193",      "\u2193"),
     ("warning",         "!",         "\u26a0",      "\uf12a"),
     ("info",            "i",         "\u2139",      "\ufb4d"),
-    ("unread",          "[!]",       "\u2709",      "\uf003 "),
+    ("unread",          "[!]",       "\u2709",      ur_char),
     ("divider1",        "-",         "\u2504",      "\u2504"),
     ("peer",            "[P]",       "\u24c5 ",     "\uf415"),
     ("node",            "[N]",       "\u24c3 ",     "\uf502"),
