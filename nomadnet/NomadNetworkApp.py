@@ -436,8 +436,8 @@ announce_at_start = yes
 intro_time = 1
 
 # You can specify the display theme.
-# theme = dark
-theme = light
+# theme = light
+theme = dark
 
 # Specify the number of colors to use
 # valid colormodes are:
@@ -492,12 +492,12 @@ enable_node = no
 node_name = None
 
 # Automatic announce interval in minutes.
-# 12 hours by default.
+# 6 hours by default.
 
-announce_interval = 720
+announce_interval = 360
 
 # Whether to announce when the node starts
 
-announce_at_start = No
+announce_at_start = Yes
 
 '''.splitlines()

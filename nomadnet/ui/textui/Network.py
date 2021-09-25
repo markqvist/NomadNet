@@ -110,6 +110,12 @@ class AnnounceInfo(urwid.WidgetWrap):
             self.parent.browser.retrieve_url(RNS.hexrep(source_hash, delimit=False))
             show_announce_stream(None)
 
+        def save_node(sender):
+            node_entry = DirectoryEntry(source_hash, display_name=data_str, trust_level=trust_level, hosts_node=True)
+            self.app.directory.remember(node_entry)
+            self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
+            show_announce_stream(None)
+
         def converse(sender):
             show_announce_stream(None)
             try:
@@ -133,8 +139,15 @@ class AnnounceInfo(urwid.WidgetWrap):
 
         if is_node:
             type_button = ("weight", 0.45, urwid.Button("Connect", on_press=connect))
+            save_button = ("weight", 0.45, urwid.Button("Save", on_press=save_node))
         else:
             type_button = ("weight", 0.45, urwid.Button("Converse", on_press=converse))
+            save_button = None
+
+        if is_node:
+            button_columns = urwid.Columns([("weight", 0.45, urwid.Button("Back", on_press=show_announce_stream)), ("weight", 0.1, urwid.Text("")), save_button, ("weight", 0.1, urwid.Text("")), type_button])
+        else:
+            button_columns = urwid.Columns([("weight", 0.45, urwid.Button("Back", on_press=show_announce_stream)), ("weight", 0.1, urwid.Text("")), type_button])
 
         pile_widgets = [
             urwid.Text("Time  : "+ts_string, align="left"),
@@ -145,7 +158,7 @@ class AnnounceInfo(urwid.WidgetWrap):
             urwid.Divider(g["divider1"]),
             urwid.Text(["Announce Data: \n", (data_style, data_str)], align="left"),
             urwid.Divider(g["divider1"]),
-            urwid.Columns([("weight", 0.45, urwid.Button("Back", on_press=show_announce_stream)), ("weight", 0.1, urwid.Text("")), type_button])
+            button_columns
         ]
 
         if is_node:

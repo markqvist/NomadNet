@@ -423,7 +423,8 @@ class ConversationsDisplay():
 
         if trust_level != DirectoryEntry.TRUSTED:
             display_text += " <"+source_hash+">"
-        else:
+        
+        if trust_level != DirectoryEntry.UNTRUSTED:
             if unread:
                 if source_hash != self.currently_displayed_conversation:
                     display_text += " "+g["unread"]
