@@ -203,7 +203,11 @@ class Browser:
         else:
             self.display_widget.set_attr_map({None: "body_text"})
             self.browser_header = self.make_control_widget()
-            remote_display_string = self.app.directory.simplest_display_str(self.destination_hash)
+            if self.destination_hash != None:
+                remote_display_string = self.app.directory.simplest_display_str(self.destination_hash)
+            else:
+                remote_display_string = ""
+
             if self.loopback != None and remote_display_string == RNS.prettyhexrep(self.loopback):
                 remote_display_string = self.app.node.name
 
@@ -878,4 +882,4 @@ class UrlEdit(urwid.Edit):
         if key == "enter":
             self.confirmed(self)
         else:
-            return super(UrlEdit, self).keypress(size, key)    
+            return super(UrlEdit, self).keypress(size, key)
