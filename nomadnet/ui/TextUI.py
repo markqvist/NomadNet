@@ -117,9 +117,10 @@ GLYPHS = {
     ("node",            "[N]",       "\u24c3 ",     "\uf502"),
     ("page",            "",          "\u25a4",      "\uf719 "),
     ("speed",           "",          "\u25F7",      "\uf9c4"),
-    ("decoration_menu", " +",         " +",           " \uf93a"),
-    ("unread_menu",     " !",         " \u2709",      urm_char),
+    ("decoration_menu", " +",        " +",          " \uf93a"),
+    ("unread_menu",     " !",        " \u2709",     urm_char),
     ("globe",           "",          "",            "\uf484"),
+    ("sent",            "/\\",       "\u2191",      "\ufbf4")
 }
 
 class TextUI:

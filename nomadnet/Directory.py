@@ -17,6 +17,7 @@ class Directory:
         associated_peer = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", announced_identity)
 
         app.directory.node_announce_received(destination_hash, app_data, associated_peer)
+        app.autoselect_propagation_node()
 
 
     def __init__(self, app):
@@ -31,7 +32,7 @@ class Directory:
             packed_list = []
             for source_hash in self.directory_entries:
                 e = self.directory_entries[source_hash]
-                packed_list.append((e.source_hash, e.display_name, e.trust_level, e.hosts_node))
+                packed_list.append((e.source_hash, e.display_name, e.trust_level, e.hosts_node, e.preferred_delivery))
 
             directory = {
                 "entry_list": packed_list,
@@ -59,7 +60,12 @@ class Directory:
                     else:
                         hosts_node = False
 
-                    entries[e[0]] = DirectoryEntry(e[0], e[1], e[2], hosts_node)
+                    if len(e) > 4:
+                        preferred_delivery = e[4]
+                    else:
+                        preferred_delivery = None
+
+                    entries[e[0]] = DirectoryEntry(e[0], e[1], e[2], hosts_node, preferred_delivery=preferred_delivery)
 
                 self.directory_entries = entries
 
@@ -130,6 +136,12 @@ class Directory:
         else:
             return DirectoryEntry.UNKNOWN
 
+    def preferred_delivery(self, source_hash):
+        if source_hash in self.directory_entries:
+            return self.directory_entries[source_hash].preferred_delivery
+        else:
+            return DirectoryEntry.DIRECT
+
     def remember(self, entry):
         self.directory_entries[entry.source_hash] = entry
 
@@ -189,12 +201,20 @@ class DirectoryEntry:
     UNKNOWN   = 0x02
     TRUSTED   = 0xFF
 
-    def __init__(self, source_hash, display_name=None, trust_level=UNKNOWN, hosts_node=False):
+    DIRECT     = 0x01
+    PROPAGATED = 0x02
+
+    def __init__(self, source_hash, display_name=None, trust_level=UNKNOWN, hosts_node=False, preferred_delivery=None):
         if len(source_hash) == RNS.Identity.TRUNCATED_HASHLENGTH//8:
             self.source_hash  = source_hash
             self.display_name = display_name
             if display_name  == None:
                 display_name  = source_hash
+
+            if preferred_delivery == None:
+                self.preferred_delivery = DirectoryEntry.DIRECT
+            else:
+                self.preferred_delivery = preferred_delivery
 
             self.trust_level  = trust_level
             self.hosts_node   = hosts_node

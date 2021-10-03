@@ -196,9 +196,18 @@ class Conversation:
         if self.send_destination:
             dest = self.send_destination
             source = self.app.lxmf_destination
-            lxm = LXMF.LXMessage(dest, source, content, title=title, desired_method=LXMF.LXMessage.DIRECT)
+            desired_method = LXMF.LXMessage.DIRECT
+            if self.app.directory.preferred_delivery(dest.hash) == DirectoryEntry.PROPAGATED:
+                if self.app.message_router.get_outbound_propagation_node() != None:
+                    desired_method = LXMF.LXMessage.PROPAGATED
+
+            lxm = LXMF.LXMessage(dest, source, content, title=title, desired_method=desired_method)
             lxm.register_delivery_callback(self.message_notification)
             lxm.register_failed_callback(self.message_notification)
+
+            if self.app.message_router.get_outbound_propagation_node() != None:
+                lxm.try_propagation_on_fail = self.app.try_propagation_on_fail
+
             self.app.message_router.handle_outbound(lxm)
 
             message_path = Conversation.ingest(lxm, self.app, originator=True)
@@ -210,7 +219,16 @@ class Conversation:
             return False
 
     def message_notification(self, message):
-        message_path = Conversation.ingest(message, self.app, originator=True)
+        if message.state == LXMF.LXMessage.FAILED and hasattr(message, "try_propagation_on_fail") and message.try_propagation_on_fail:
+            RNS.log("Direct delivery of "+str(message)+" failed. Retrying as propagated message.", RNS.LOG_VERBOSE)
+            message.try_propagation_on_fail = None
+            message.delivery_attempts = 0
+            del message.next_delivery_attempt
+            message.packed = None
+            message.desired_method = LXMF.LXMessage.PROPAGATED
+            self.app.message_router.handle_outbound(message)
+        else:
+            message_path = Conversation.ingest(message, self.app, originator=True)
 
     def __str__(self):
         string = self.source_hash

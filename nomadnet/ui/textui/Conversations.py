@@ -140,9 +140,12 @@ class ConversationsDisplay():
 
         selected_id_widget = t_id
 
-        untrusted_selected = False
-        unknown_selected   = True
-        trusted_selected   = False
+        untrusted_selected  = False
+        unknown_selected    = True
+        trusted_selected    = False
+
+        direct_selected     = True
+        propagated_selected = False
 
         try:
             if self.app.directory.find(bytes.fromhex(source_hash_text)):
@@ -159,6 +162,11 @@ class ConversationsDisplay():
                     untrusted_selected = False
                     unknown_selected   = False
                     trusted_selected   = True
+
+                if self.app.directory.preferred_delivery(bytes.fromhex(source_hash_text)) == DirectoryEntry.PROPAGATED:
+                    direct_selected = False
+                    propagated_selected = True
+                    
         except Exception as e:
             pass
 
@@ -166,6 +174,10 @@ class ConversationsDisplay():
         r_untrusted = urwid.RadioButton(trust_button_group, "Untrusted", state=untrusted_selected)
         r_unknown   = urwid.RadioButton(trust_button_group, "Unknown", state=unknown_selected)
         r_trusted   = urwid.RadioButton(trust_button_group, "Trusted", state=trusted_selected)
+
+        method_button_group = []
+        r_direct     = urwid.RadioButton(method_button_group, "Deliver directly", state=direct_selected)
+        r_propagated = urwid.RadioButton(method_button_group, "Use propagation nodes", state=propagated_selected)
 
         def dismiss_dialog(sender):
             self.update_conversation_list()
@@ -181,7 +193,11 @@ class ConversationsDisplay():
                 elif r_trusted.state == True:
                     trust_level = DirectoryEntry.TRUSTED
 
-                entry = DirectoryEntry(source_hash, display_name, trust_level)
+                delivery = DirectoryEntry.DIRECT
+                if r_propagated.state == True:
+                    delivery = DirectoryEntry.PROPAGATED
+
+                entry = DirectoryEntry(source_hash, display_name, trust_level, preferred_delivery=delivery)
                 self.app.directory.remember(entry)
                 self.update_conversation_list()
                 self.dialog_open = False
@@ -216,6 +232,9 @@ class ConversationsDisplay():
             r_untrusted,
             r_unknown,
             r_trusted,
+            urwid.Divider(g["divider1"]),
+            r_direct,
+            r_propagated,
             known_section,
             urwid.Columns([("weight", 0.45, urwid.Button("Save", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Back", on_press=dismiss_dialog))])
         ])
@@ -718,6 +737,9 @@ class LXMessageWidget(urwid.WidgetWrap):
             elif message.lxm.state == LXMF.LXMessage.FAILED:
                 header_style = "msg_header_failed"
                 title_string = g["cross"]+" "+title_string
+            elif message.lxm.state == LXMF.LXMessage.SENT:
+                header_style = "msg_header_sent"
+                title_string = g["sent"]+" "+title_string
             else:
                 header_style = "msg_header_sent"
                 title_string = g["arrow_r"]+" "+title_string

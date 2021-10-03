@@ -6,6 +6,8 @@ import RNS
 import LXMF
 import nomadnet
 
+from nomadnet.Directory import DirectoryEntry
+
 import RNS.vendor.umsgpack as msgpack
 
 from ._version import __version__
@@ -59,7 +61,8 @@ class NomadNetworkApp:
 
         self.firstrun          = False
 
-        self.peer_announce_at_start = True
+        self.peer_announce_at_start  = True
+        self.try_propagation_on_fail = True
 
         if not os.path.isdir(self.storagepath):
             os.makedirs(self.storagepath)
@@ -154,9 +157,9 @@ class NomadNetworkApp:
                 nomadnet.panic()
 
 
-        atexit.register(self.exit_handler)
+        self.directory = nomadnet.Directory(self)
 
-        self.message_router = LXMF.LXMRouter()
+        self.message_router = LXMF.LXMRouter(identity = self.identity, autopeer = True)
         self.message_router.register_delivery_callback(self.lxmf_delivery)
 
         self.lxmf_destination = self.message_router.register_delivery_identity(self.identity, display_name=self.peer_settings["display_name"])
@@ -171,9 +174,9 @@ class NomadNetworkApp:
 
         RNS.log("LXMF Router ready to receive on: "+RNS.prettyhexrep(self.lxmf_destination.hash))
 
-        self.directory = nomadnet.Directory(self)
-
         if self.enable_node:
+            self.message_router.enable_propagation(self.storagepath)
+            RNS.log("LXMF Propagation Node started on: "+RNS.prettyhexrep(self.message_router.propagation_destination.hash))
             self.node = nomadnet.Node(self)
         else:
             self.node = None
@@ -181,8 +184,12 @@ class NomadNetworkApp:
         RNS.Transport.register_announce_handler(nomadnet.Conversation)
         RNS.Transport.register_announce_handler(nomadnet.Directory)
 
+        self.autoselect_propagation_node()
+
         if self.peer_announce_at_start:
             self.announce_now()
+
+        atexit.register(self.exit_handler)
 
         nomadnet.ui.spawn(self.uimode)
 
@@ -201,6 +208,30 @@ class NomadNetworkApp:
         self.lxmf_destination.announce()
         self.peer_settings["last_announce"] = time.time()
         self.save_peer_settings()
+
+    def autoselect_propagation_node(self):
+        nodes = self.directory.known_nodes()
+        trusted_nodes = []
+
+        selected_node = None
+        best_hops = RNS.Transport.PATHFINDER_M+1
+
+        for node in nodes:
+            if node.trust_level == DirectoryEntry.TRUSTED:
+                hops = RNS.Transport.hops_to(node.source_hash)
+
+                if hops < best_hops:
+                    best_hops = hops
+                    selected_node = node
+
+        if selected_node == None:
+            RNS.log("Could not autoselect a prepagation node! LXMF propagation will not be available until a trusted node announces on the network.", RNS.LOG_WARNING)
+        else:
+            node_identity = RNS.Identity.recall(selected_node.source_hash)
+            propagation_hash = RNS.Destination.hash_from_name_and_identity("lxmf.propagation", node_identity)
+            RNS.log("Selecting "+selected_node.display_name+" "+RNS.prettyhexrep(propagation_hash)+" as default LXMF propagation node", RNS.LOG_INFO)
+            self.message_router.set_outbound_propagation_node(propagation_hash)
+                
 
     def save_peer_settings(self):
         file = open(self.peersettingspath, "wb")
@@ -285,6 +316,10 @@ class NomadNetworkApp:
                 if option == "announce_at_start":
                     value = self.config["client"].as_bool(option)
                     self.peer_announce_at_start = value
+
+                if option == "try_propagation_on_send_fail":
+                    value = self.config["client"].as_bool(option)
+                    self.try_propagation_on_fail = value
 
                 if option == "user_interface":
                     value = value.lower()
@@ -429,6 +464,12 @@ downloads_path = ~/Downloads
 # By default, the peer is announced at startup
 # to let other peers reach it immediately.
 announce_at_start = yes
+
+# By default, the client will try to deliver a
+# message via the LXMF propagation network, if
+# a direct delivery to the recipient is not
+# possible.
+try_propagation_on_send_fail = yes
 
 [textui]
 
