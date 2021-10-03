@@ -128,6 +128,7 @@ class Node:
         self.last_announce = time.time()
         self.app.peer_settings["node_last_announce"] = self.last_announce
         self.destination.announce(app_data=self.app_data)
+        self.app.message_router.announce_propagation_node()
 
     def __jobs(self):
         while self.should_run_jobs:
