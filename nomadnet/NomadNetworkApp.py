@@ -279,9 +279,14 @@ class NomadNetworkApp:
             RNS.log("Could not autoselect a prepagation node! LXMF propagation will not be available until a trusted node announces on the network.", RNS.LOG_WARNING)
         else:
             node_identity = RNS.Identity.recall(selected_node.source_hash)
-            propagation_hash = RNS.Destination.hash_from_name_and_identity("lxmf.propagation", node_identity)
-            RNS.log("Selecting "+selected_node.display_name+" "+RNS.prettyhexrep(propagation_hash)+" as default LXMF propagation node", RNS.LOG_INFO)
-            self.message_router.set_outbound_propagation_node(propagation_hash)
+            if node_identity != None:
+                propagation_hash = RNS.Destination.hash_from_name_and_identity("lxmf.propagation", node_identity)
+                RNS.log("Selecting "+selected_node.display_name+" "+RNS.prettyhexrep(propagation_hash)+" as default LXMF propagation node", RNS.LOG_INFO)
+                self.message_router.set_outbound_propagation_node(propagation_hash)
+            else:
+                RNS.log("Could not recall identity for autoselected LXMF propagation node "+RNS.prettyhexrep(selected_node.source_hash), RNS.LOG_WARNING)
+                RNS.log("LXMF propagation will not be available until a trusted node announces on the network.", RNS.LOG_WARNING)
+
                 
 
     def save_peer_settings(self):

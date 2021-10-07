@@ -33,6 +33,7 @@ THEMES = {
             ("msg_header_ok",               "black", "light green",                 "standout",                 "#111", "#6b2"),
             ("msg_header_caution",          "black", "yellow",                      "standout",                 "#111", "#fd3"),
             ("msg_header_sent",             "black", "light gray",                  "standout",                 "#111", "#ddd"),
+            ("msg_header_propagated",       "black", "light blue",                  "standout",                 "#111", "#28b"),
             ("msg_header_delivered",        "black", "light blue",                  "standout",                 "#111", "#28b"),
             ("msg_header_failed",           "black", "dark gray",                   "standout",                 "#000", "#777"),
             ("msg_warning_untrusted",       "black", "dark red",                    "standout",                 "#111", "dark red"),

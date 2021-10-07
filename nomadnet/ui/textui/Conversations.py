@@ -813,6 +813,9 @@ class LXMessageWidget(urwid.WidgetWrap):
             elif message.lxm.state == LXMF.LXMessage.FAILED:
                 header_style = "msg_header_failed"
                 title_string = g["cross"]+" "+title_string
+            elif message.lxm.method == LXMF.LXMessage.PROPAGATED and message.lxm.state == LXMF.LXMessage.SENT:
+                header_style = "msg_header_propagated"
+                title_string = g["sent"]+" "+title_string
             elif message.lxm.state == LXMF.LXMessage.SENT:
                 header_style = "msg_header_sent"
                 title_string = g["sent"]+" "+title_string
