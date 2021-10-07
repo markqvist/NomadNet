@@ -204,6 +204,57 @@ class NomadNetworkApp:
     def get_display_name_bytes(self):
         return self.peer_settings["display_name"].encode("utf-8")
 
+    def get_sync_status(self):
+        if self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_IDLE:
+            return "Idle"
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_PATH_REQUESTED:
+            return "Path requested"
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_LINK_ESTABLISHING:
+            return "Establishing link"
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_LINK_ESTABLISHED:
+            return "Link established"
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_REQUEST_SENT:
+            return "Receiving messages"
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_RESPONSE_RECEIVED:
+            return "Messages received"
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_COMPLETE:
+            new_msgs = self.message_router.propagation_transfer_last_result
+            if new_msgs == 0:
+                return "Done, no new messages"
+            else:
+                return "Downloaded "+str(new_msgs)+" new messages"
+        else:
+            return "Unknown"
+
+    def sync_status_show_percent(self):
+        if self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_IDLE:
+            return False
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_PATH_REQUESTED:
+            return True
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_LINK_ESTABLISHING:
+            return True
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_LINK_ESTABLISHED:
+            return True
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_REQUEST_SENT:
+            return True
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_RESPONSE_RECEIVED:
+            return True
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_COMPLETE:
+            return False
+        else:
+            return False
+
+    def get_sync_progress(self):
+        return self.message_router.propagation_transfer_progress
+
+    def request_lxmf_sync(self):
+        if self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_IDLE or self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_COMPLETE:
+            self.message_router.request_messages_from_propagation_node(self.identity)
+
+    def cancel_lxmf_sync(self):
+        if self.message_router.propagation_transfer_state != LXMF.LXMRouter.PR_IDLE:
+            self.message_router.cancel_propagation_node_requests()
+
     def announce_now(self):
         self.lxmf_destination.announce()
         self.peer_settings["last_announce"] = time.time()

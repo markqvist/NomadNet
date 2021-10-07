@@ -14,7 +14,7 @@ class ConversationListDisplayShortcuts():
     def __init__(self, app):
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("[Enter] Open  [C-e] Peer Info  [C-x] Delete  [C-n] New"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[Enter] Open  [C-e] Peer Info  [C-x] Delete  [C-r] Sync  [C-n] New"), "shortcutbar")
 
 class ConversationDisplayShortcuts():
     def __init__(self, app):
@@ -30,6 +30,8 @@ class ConversationsArea(urwid.LineBox):
             self.delegate.delete_selected_conversation()
         elif key == "ctrl n":
             self.delegate.new_conversation()
+        elif key == "ctrl r":
+            self.delegate.sync_conversations()
         elif key == "tab":
             self.delegate.app.ui.main_display.frame.set_focus("header")
         elif key == "up" and (self.delegate.ilb.first_item_is_selected() or self.delegate.ilb.body_is_empty()):
@@ -51,6 +53,7 @@ class ConversationsDisplay():
     def __init__(self, app):
         self.app = app
         self.dialog_open = False
+        self.sync_dialog = None
         self.currently_displayed_conversation = None
 
         def disp_list_shortcuts(sender, arg1, arg2):
@@ -323,6 +326,73 @@ class ConversationsDisplay():
             conversation = ConversationsDisplay.cached_conversation_widgets[source_hash]
             self.close_conversation(conversation)
 
+    def sync_conversations(self):
+        self.dialog_open = True
+        
+        def dismiss_dialog(sender):
+            self.dialog_open = False
+            self.sync_dialog = None
+            self.update_conversation_list()
+            if self.app.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_COMPLETE:
+                self.app.cancel_lxmf_sync()
+
+
+        def sync_now(sender):
+            self.app.request_lxmf_sync()
+            self.update_sync_dialog()
+
+        def cancel_sync(sender):
+            self.app.cancel_lxmf_sync()
+
+        cancel_button = urwid.Button("Close", on_press=dismiss_dialog)
+        sync_progress = SyncProgressBar("progress_empty" , "progress_full", current=self.app.get_sync_progress(), done=1.0, satt=None)
+
+        real_sync_button = urwid.Button("Sync Now", on_press=sync_now)
+        hidden_sync_button = urwid.Button("Cancel Sync", on_press=cancel_sync)
+
+        if self.app.get_sync_status() == "Idle" or self.app.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_COMPLETE:
+            sync_button = real_sync_button
+        else:
+            sync_button = hidden_sync_button
+
+        button_columns = urwid.Columns([("weight", 0.45, sync_button), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, cancel_button)])
+        real_sync_button.bc = button_columns
+
+        dialog = DialogLineBox(
+            urwid.Pile([
+                urwid.Text(""),
+                sync_progress,
+                urwid.Text(""),
+                button_columns
+            ]), title="Message Sync"
+        )
+        dialog.delegate = self
+        dialog.sync_progress = sync_progress
+        dialog.cancel_button = cancel_button
+        dialog.real_sync_button = real_sync_button
+        dialog.hidden_sync_button = hidden_sync_button
+        dialog.bc = button_columns
+
+        self.sync_dialog = dialog
+        bottom = self.listbox
+
+        overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+
+        options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
+        self.columns_widget.contents[0] = (overlay, options)
+
+    def update_sync_dialog(self, loop = None, sender = None):
+        if self.dialog_open and self.sync_dialog != None:
+            self.sync_dialog.sync_progress.set_completion(self.app.get_sync_progress())
+
+            if self.app.get_sync_status() == "Idle" or self.app.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_COMPLETE:
+                self.sync_dialog.bc.contents[0] = (self.sync_dialog.real_sync_button, self.sync_dialog.bc.options("weight", 0.45))
+            else:
+                self.sync_dialog.bc.contents[0] = (self.sync_dialog.hidden_sync_button, self.sync_dialog.bc.options("weight", 0.45))
+
+            self.app.ui.loop.set_alarm_in(0.2, self.update_sync_dialog)
+
+
     def conversation_list_selection(self, arg1, arg2):
         pass
 
@@ -330,7 +400,13 @@ class ConversationsDisplay():
         ilb_position = self.ilb.get_selected_position()
         self.update_listbox()
         options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
-        self.columns_widget.contents[0] = (self.listbox, options)
+        if not (self.dialog_open and self.sync_dialog != None):
+            self.columns_widget.contents[0] = (self.listbox, options)
+        else:
+            bottom = self.listbox
+            overlay = urwid.Overlay(self.sync_dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+            self.columns_widget.contents[0] = (overlay, options)
+
         if ilb_position != None:
             self.ilb.select_item(ilb_position)
         nomadnet.NomadNetworkApp.get_shared_instance().ui.loop.draw_screen()
@@ -763,3 +839,12 @@ class LXMessageWidget(urwid.WidgetWrap):
         ])
 
         urwid.WidgetWrap.__init__(self, display_widget)
+
+class SyncProgressBar(urwid.ProgressBar):
+    def get_text(self):
+        status = nomadnet.NomadNetworkApp.get_shared_instance().get_sync_status()
+        show_percent = nomadnet.NomadNetworkApp.get_shared_instance().sync_status_show_percent()
+        if show_percent:
+            return status+" "+super().get_text()
+        else:
+            return status
