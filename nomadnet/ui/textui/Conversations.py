@@ -373,11 +373,6 @@ class ConversationsDisplay():
             node_hash = RNS.Destination.hash_from_name_and_identity("nomadnetwork.node", pn_ident)
             pn_entry = self.app.directory.find(node_hash)
 
-            # TODO: Remove
-            RNS.log(str(self.app.get_default_propagation_node()))
-            RNS.log(RNS.prettyhexrep(self.app.get_default_propagation_node()))
-            RNS.log(str(pn_entry))
-
             dialog = DialogLineBox(
                 urwid.Pile([
                     urwid.Text(""+g["node"]+" "+str(pn_entry.display_name), align="center"),
