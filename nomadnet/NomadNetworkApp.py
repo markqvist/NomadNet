@@ -251,9 +251,9 @@ class NomadNetworkApp:
     def get_sync_progress(self):
         return self.message_router.propagation_transfer_progress
 
-    def request_lxmf_sync(self):
+    def request_lxmf_sync(self, limit = None):
         if self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_IDLE or self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_COMPLETE:
-            self.message_router.request_messages_from_propagation_node(self.identity)
+            self.message_router.request_messages_from_propagation_node(self.identity, max_messages = limit)
 
     def cancel_lxmf_sync(self):
         if self.message_router.propagation_transfer_state != LXMF.LXMRouter.PR_IDLE:

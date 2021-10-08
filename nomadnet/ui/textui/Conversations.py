@@ -327,6 +327,7 @@ class ConversationsDisplay():
             self.close_conversation(conversation)
 
     def sync_conversations(self):
+        g = self.app.ui.glyphs
         self.dialog_open = True
         
         def dismiss_dialog(sender):
@@ -336,9 +337,17 @@ class ConversationsDisplay():
             if self.app.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_COMPLETE:
                 self.app.cancel_lxmf_sync()
 
+        max_messages_group = []
+        r_mall = urwid.RadioButton(max_messages_group, "Download all", state=True)
+        r_mlim = urwid.RadioButton(max_messages_group, "Limit to", state=False)
+        ie_lim = urwid.IntEdit("", 5)
+        rbs = urwid.GridFlow([r_mlim, ie_lim], 12, 1, 0, align="left")
 
         def sync_now(sender):
-            self.app.request_lxmf_sync()
+            limit = None
+            if r_mlim.get_state():
+                limit = ie_lim.value()
+            self.app.request_lxmf_sync(limit)
             self.update_sync_dialog()
 
         def cancel_sync(sender):
@@ -359,10 +368,24 @@ class ConversationsDisplay():
         real_sync_button.bc = button_columns
 
         if self.app.get_default_propagation_node() != None:
+            pn_hash = self.app.get_default_propagation_node()
+            pn_ident = RNS.Identity.recall(pn_hash)
+            node_hash = RNS.Destination.hash_from_name_and_identity("nomadnetwork.node", pn_ident)
+            pn_entry = self.app.directory.find(node_hash)
+
+            # TODO: Remove
+            RNS.log(str(self.app.get_default_propagation_node()))
+            RNS.log(RNS.prettyhexrep(self.app.get_default_propagation_node()))
+            RNS.log(str(pn_entry))
+
             dialog = DialogLineBox(
                 urwid.Pile([
-                    urwid.Text(""),
+                    urwid.Text(""+g["node"]+" "+str(pn_entry.display_name), align="center"),
+                    urwid.Divider(g["divider1"]),
                     sync_progress,
+                    urwid.Divider(g["divider1"]),
+                    r_mall,
+                    rbs,
                     urwid.Text(""),
                     button_columns
                 ]), title="Message Sync"
