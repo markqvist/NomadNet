@@ -371,7 +371,12 @@ class KnownNodeInfo(urwid.WidgetWrap):
         time_format  = self.app.time_format
         trust_level  = self.app.directory.trust_level(source_hash)
         trust_str    = ""
-        display_str  = self.app.directory.simplest_display_str(source_hash)
+        node_entry   = self.app.directory.find(source_hash)
+        if node_entry == None:
+            display_str = self.app.directory.simplest_display_str(source_hash)
+        else:
+            display_str = node_entry.display_name
+
         addr_str     = "<"+RNS.hexrep(source_hash, delimit=False)+">"
 
         if node_ident != None:
@@ -403,6 +408,26 @@ class KnownNodeInfo(urwid.WidgetWrap):
             symbol        = g["warning"]
             style         = "list_untrusted"
 
+        if trust_level == DirectoryEntry.UNTRUSTED:
+            untrusted_selected = True
+            unknown_selected   = False
+            trusted_selected   = False
+        elif trust_level == DirectoryEntry.UNKNOWN:
+            untrusted_selected = False
+            unknown_selected   = True
+            trusted_selected   = False
+        elif trust_level == DirectoryEntry.TRUSTED:
+            untrusted_selected = False
+            unknown_selected   = False
+            trusted_selected   = True
+
+        trust_button_group = []
+        r_untrusted = urwid.RadioButton(trust_button_group, "Untrusted", state=untrusted_selected)
+        r_unknown   = urwid.RadioButton(trust_button_group, "Unknown", state=unknown_selected)
+        r_trusted   = urwid.RadioButton(trust_button_group, "Trusted", state=trusted_selected)
+
+        e_name = urwid.Edit(caption="Name      : ",edit_text=display_str)
+
         def show_known_nodes(sender):
             options = self.parent.left_pile.options(height_type="weight", height_amount=1)
             self.parent.left_pile.contents[0] = (self.parent.known_nodes_display, options)
@@ -423,6 +448,15 @@ class KnownNodeInfo(urwid.WidgetWrap):
                 else:
                     self.app.set_user_selected_propagation_node(None)
 
+            trust_level = DirectoryEntry.UNTRUSTED
+            if r_unknown.get_state() == True:
+                trust_level = DirectoryEntry.UNKNOWN
+            
+            if r_trusted.get_state() == True:
+                trust_level = DirectoryEntry.TRUSTED
+
+            display_str = e_name.get_edit_text()
+
             node_entry = DirectoryEntry(source_hash, display_name=display_str, trust_level=trust_level, hosts_node=True)
             self.app.directory.remember(node_entry)
             self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
@@ -434,12 +468,17 @@ class KnownNodeInfo(urwid.WidgetWrap):
 
         pile_widgets = [
             urwid.Text("Type      : "+type_string, align="left"),
-            urwid.Text("Name      : "+display_str, align="left"),
+            # urwid.Text("Name      : "+display_str, align="left"),
+            e_name,
             urwid.Text("Node Addr : "+addr_str, align="left"),
             urwid.Text("LXMF Addr : "+lxmf_addr_str, align="left"),
-            urwid.Text(["Trust     : ", (style, trust_str)], align="left"),
+            # urwid.Text(["Trust     : ", (style, trust_str)], align="left"),
             urwid.Divider(g["divider1"]),
             propagation_node_checkbox,
+            urwid.Divider(g["divider1"]),
+            r_untrusted,
+            r_unknown,
+            r_trusted,
             urwid.Divider(g["divider1"]),
             button_columns
         ]

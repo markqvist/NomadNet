@@ -91,8 +91,10 @@ class Directory:
                 self.announce_stream.pop()
 
             if self.trust_level(associated_peer) == DirectoryEntry.TRUSTED:
-                node_entry = DirectoryEntry(source_hash, display_name=app_data.decode("utf-8"), trust_level=DirectoryEntry.TRUSTED, hosts_node=True)
-                self.remember(node_entry)
+                existing_entry = self.find(source_hash)
+                if not existing_entry:
+                    node_entry = DirectoryEntry(source_hash, display_name=app_data.decode("utf-8"), trust_level=DirectoryEntry.TRUSTED, hosts_node=True)
+                    self.remember(node_entry)
             
             self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
 
