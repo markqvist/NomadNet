@@ -136,6 +136,9 @@ class NomadNetworkApp:
                 if not "node_last_announce" in self.peer_settings:
                     self.peer_settings["node_last_announce"] = None
 
+                if not "propagation_node" in self.peer_settings:
+                    self.peer_settings["propagation_node"] = None
+
             except Exception as e:
                 RNS.log("Could not load local peer settings from "+self.peersettingspath, RNS.LOG_ERROR)
                 RNS.log("The contained exception was: %s" % (str(e)), RNS.LOG_ERROR)
@@ -148,6 +151,7 @@ class NomadNetworkApp:
                     "announce_interval": None,
                     "last_announce": None,
                     "node_last_announce": None,
+                    "propagation_node": None
                 }
                 self.save_peer_settings()
                 RNS.log("Created new peer settings file")
@@ -261,19 +265,23 @@ class NomadNetworkApp:
         self.save_peer_settings()
 
     def autoselect_propagation_node(self):
-        nodes = self.directory.known_nodes()
-        trusted_nodes = []
-
         selected_node = None
-        best_hops = RNS.Transport.PATHFINDER_M+1
 
-        for node in nodes:
-            if node.trust_level == DirectoryEntry.TRUSTED:
-                hops = RNS.Transport.hops_to(node.source_hash)
+        if "propagation_node" in self.peer_settings and self.directory.find(self.peer_settings["propagation_node"]):
+            selected_node = self.directory.find(self.peer_settings["propagation_node"])
+        else:
+            nodes = self.directory.known_nodes()
+            trusted_nodes = []
 
-                if hops < best_hops:
-                    best_hops = hops
-                    selected_node = node
+            best_hops = RNS.Transport.PATHFINDER_M+1
+
+            for node in nodes:
+                if node.trust_level == DirectoryEntry.TRUSTED:
+                    hops = RNS.Transport.hops_to(node.source_hash)
+
+                    if hops < best_hops:
+                        best_hops = hops
+                        selected_node = node
 
         if selected_node == None:
             RNS.log("Could not autoselect a prepagation node! LXMF propagation will not be available until a trusted node announces on the network.", RNS.LOG_WARNING)
@@ -287,6 +295,17 @@ class NomadNetworkApp:
                 RNS.log("Could not recall identity for autoselected LXMF propagation node "+RNS.prettyhexrep(selected_node.source_hash), RNS.LOG_WARNING)
                 RNS.log("LXMF propagation will not be available until a trusted node announces on the network.", RNS.LOG_WARNING)
 
+    def get_user_selected_propagation_node(self):
+        if "propagation_node" in self.peer_settings:
+            return self.peer_settings["propagation_node"]
+        else:
+            return None
+
+    def set_user_selected_propagation_node(self, node_hash):
+        self.peer_settings["propagation_node"] = node_hash
+        self.save_peer_settings()
+        self.autoselect_propagation_node()
+    
     def get_default_propagation_node(self):
         return self.message_router.get_outbound_propagation_node()
 

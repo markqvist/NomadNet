@@ -359,6 +359,104 @@ class ListDialogLineBox(urwid.LineBox):
         else:
             return super(ListDialogLineBox, self).keypress(size, key)
 
+class KnownNodeInfo(urwid.WidgetWrap):
+    def __init__(self, node_hash):
+        self.app = nomadnet.NomadNetworkApp.get_shared_instance()
+        self.parent = self.app.ui.main_display.sub_displays.network_display
+        self.pn_changed = False
+        g = self.app.ui.glyphs
+
+        source_hash  = node_hash
+        node_ident   = RNS.Identity.recall(node_hash)
+        time_format  = self.app.time_format
+        trust_level  = self.app.directory.trust_level(source_hash)
+        trust_str    = ""
+        display_str  = self.app.directory.simplest_display_str(source_hash)
+        addr_str     = "<"+RNS.hexrep(source_hash, delimit=False)+">"
+
+        if node_ident != None:
+            lxmf_addr_str = RNS.prettyhexrep(RNS.Destination.hash_from_name_and_identity("lxmf.propagation", node_ident))
+        else:
+            lxmf_addr_str = "Unknown"
+
+
+        type_string = "Node " + g["node"]
+
+        if trust_level == DirectoryEntry.UNTRUSTED:
+            trust_str     = "Untrusted"
+            symbol        = g["cross"]
+            style         = "list_untrusted"
+        elif trust_level == DirectoryEntry.UNKNOWN:
+            trust_str     = "Unknown"
+            symbol        = g["unknown"]
+            style         = "list_unknown"
+        elif trust_level == DirectoryEntry.TRUSTED:
+            trust_str     = "Trusted"
+            symbol        = g["check"]
+            style         = "list_trusted"
+        elif trust_level == DirectoryEntry.WARNING:
+            trust_str     = "Warning"
+            symbol        = g["warning"]
+            style         = "list_warning"
+        else:
+            trust_str     = "Warning"
+            symbol        = g["warning"]
+            style         = "list_untrusted"
+
+        def show_known_nodes(sender):
+            options = self.parent.left_pile.options(height_type="weight", height_amount=1)
+            self.parent.left_pile.contents[0] = (self.parent.known_nodes_display, options)
+
+        def connect(sender):
+            self.parent.browser.retrieve_url(RNS.hexrep(source_hash, delimit=False))
+            show_known_nodes(None)
+
+        def pn_change(sender, userdata):
+            self.pn_changed = True
+
+        propagation_node_checkbox = urwid.CheckBox("Use as default propagation node", state=(self.app.get_user_selected_propagation_node() == source_hash), on_state_change=pn_change)
+
+        def save_node(sender):
+            if self.pn_changed:
+                if propagation_node_checkbox.get_state():
+                    self.app.set_user_selected_propagation_node(source_hash)
+                else:
+                    self.app.set_user_selected_propagation_node(None)
+
+            node_entry = DirectoryEntry(source_hash, display_name=display_str, trust_level=trust_level, hosts_node=True)
+            self.app.directory.remember(node_entry)
+            self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
+            show_known_nodes(None)
+
+        type_button = ("weight", 0.45, urwid.Button("Connect", on_press=connect))
+        save_button = ("weight", 0.45, urwid.Button("Save", on_press=save_node))
+        button_columns = urwid.Columns([("weight", 0.45, urwid.Button("Back", on_press=show_known_nodes)), ("weight", 0.1, urwid.Text("")), save_button, ("weight", 0.1, urwid.Text("")), type_button])
+
+        pile_widgets = [
+            urwid.Text("Type      : "+type_string, align="left"),
+            urwid.Text("Name      : "+display_str, align="left"),
+            urwid.Text("Node Addr : "+addr_str, align="left"),
+            urwid.Text("LXMF Addr : "+lxmf_addr_str, align="left"),
+            urwid.Text(["Trust     : ", (style, trust_str)], align="left"),
+            urwid.Divider(g["divider1"]),
+            propagation_node_checkbox,
+            urwid.Divider(g["divider1"]),
+            button_columns
+        ]
+
+        node_ident = RNS.Identity.recall(source_hash)
+        op_hash = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", node_ident)
+        op_str = self.app.directory.simplest_display_str(op_hash)
+        operator_entry = urwid.Text("Operator  : "+op_str, align="left")
+        pile_widgets.insert(4, operator_entry)
+
+        pile = urwid.Pile(pile_widgets)
+
+        self.display_widget = urwid.Filler(pile, valign="top", height="pack")
+
+        urwid.WidgetWrap.__init__(self, urwid.LineBox(self.display_widget, title="Node Info"))
+
+
 class KnownNodes(urwid.WidgetWrap):
     def __init__(self, app):
         self.app = app
@@ -404,6 +502,8 @@ class KnownNodes(urwid.WidgetWrap):
         trust_level  = self.app.directory.trust_level(source_hash)
         display_str = self.app.directory.simplest_display_str(source_hash)
 
+        parent = self.app.ui.main_display.sub_displays.network_display
+
         def dismiss_dialog(sender):
             self.delegate.close_list_dialogs()
 
@@ -411,11 +511,21 @@ class KnownNodes(urwid.WidgetWrap):
             self.delegate.browser.retrieve_url(RNS.hexrep(source_hash, delimit=False))
             self.delegate.close_list_dialogs()
 
+        def show_info(sender):
+            info_widget = KnownNodeInfo(source_hash)
+            options = parent.left_pile.options(height_type="weight", height_amount=1)
+            parent.left_pile.contents[0] = (info_widget, options)
+
 
         dialog = ListDialogLineBox(
             urwid.Pile([
                 urwid.Text("Connect to node\n"+self.app.directory.simplest_display_str(source_hash)+"\n", align="center"),
-                urwid.Columns([("weight", 0.45, urwid.Button("Yes", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("No", on_press=dismiss_dialog))])
+                urwid.Columns([
+                    ("weight", 0.45, urwid.Button("Yes", on_press=confirmed)),
+                    ("weight", 0.1, urwid.Text("")),
+                    ("weight", 0.45, urwid.Button("No", on_press=dismiss_dialog)),
+                    ("weight", 0.1, urwid.Text("")),
+                    ("weight", 0.45, urwid.Button("Info", on_press=show_info))])
             ]), title="?"
         )
         dialog.delegate = self.delegate
