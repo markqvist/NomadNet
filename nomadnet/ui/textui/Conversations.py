@@ -20,7 +20,7 @@ class ConversationDisplayShortcuts():
     def __init__(self, app):
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("[C-d] Send  [C-k] Clear Editor  [C-w] Close  [C-t] Editor Type  [C-p] Purge  [C-x] Clear History"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-d] Send  [C-k] Clear Editor  [C-w] Close  [C-t] Editor Type  [C-p] Purge  [C-x] Clear History  [C-o] Sort"), "shortcutbar")
 
 class ConversationsArea(urwid.LineBox):
     def keypress(self, size, key):
@@ -654,6 +654,7 @@ class ConversationWidget(urwid.WidgetWrap):
                 self.source_hash = source_hash
                 self.conversation = nomadnet.Conversation(source_hash, nomadnet.NomadNetworkApp.get_shared_instance())
                 self.message_widgets = []
+                self.sort_by_timestamp = False
                 self.updating_message_widgets = False
 
                 self.update_message_widgets()
@@ -778,6 +779,9 @@ class ConversationWidget(urwid.WidgetWrap):
             self.toggle_editor()
         elif key == "ctrl x":
             self.clear_history_dialog()
+        elif key == "ctrl o":
+            self.sort_by_timestamp ^= True
+            self.conversation_changed(None)
         else:
             return super(ConversationWidget, self).keypress(size, key)
 
@@ -798,7 +802,10 @@ class ConversationWidget(urwid.WidgetWrap):
                 message_widget = LXMessageWidget(message)
                 self.message_widgets.append(message_widget)
         
-        self.message_widgets.sort(key=lambda m: m.sort_timestamp, reverse=False)
+        if self.sort_by_timestamp:
+            self.message_widgets.sort(key=lambda m: m.timestamp, reverse=False)
+        else:
+            self.message_widgets.sort(key=lambda m: m.sort_timestamp, reverse=False)
 
         from nomadnet.vendor.additional_urwid_widgets import IndicativeListBox
         self.messagelist = IndicativeListBox(self.message_widgets, position = len(self.message_widgets)-1)
