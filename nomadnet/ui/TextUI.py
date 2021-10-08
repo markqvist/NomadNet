@@ -131,14 +131,6 @@ class TextUI:
         self.app.ui = self
         self.loop = None
 
-        # TODO: Remove
-        # if importlib.util.find_spec("urwid") != None:
-        #     import urwid
-        # else:
-        #     RNS.log("The text-mode user interface requires Urwid to be installed on your system.", RNS.LOG_ERROR)
-        #     RNS.log("You can install it with the command: pip3 install urwid", RNS.LOG_ERROR)
-        #     nomadnet.panic()
-
         urwid.set_encoding("UTF-8")
 
         intro_timeout  = self.app.config["textui"]["intro_time"]
