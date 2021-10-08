@@ -159,7 +159,7 @@ class NomadNetworkApp:
 
         self.directory = nomadnet.Directory(self)
 
-        self.message_router = LXMF.LXMRouter(identity = self.identity, autopeer = True)
+        self.message_router = LXMF.LXMRouter(identity = self.identity, storagepath = self.storagepath, autopeer = True)
         self.message_router.register_delivery_callback(self.lxmf_delivery)
 
         self.lxmf_destination = self.message_router.register_delivery_identity(self.identity, display_name=self.peer_settings["display_name"])
@@ -175,7 +175,7 @@ class NomadNetworkApp:
         RNS.log("LXMF Router ready to receive on: "+RNS.prettyhexrep(self.lxmf_destination.hash))
 
         if self.enable_node:
-            self.message_router.enable_propagation(self.storagepath)
+            self.message_router.enable_propagation()
             RNS.log("LXMF Propagation Node started on: "+RNS.prettyhexrep(self.message_router.propagation_destination.hash))
             self.node = nomadnet.Node(self)
         else:
