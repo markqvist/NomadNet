@@ -367,9 +367,16 @@ class ConversationsDisplay():
         button_columns = urwid.Columns([("weight", 0.45, sync_button), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, cancel_button)])
         real_sync_button.bc = button_columns
 
+        pn_ident = None
         if self.app.get_default_propagation_node() != None:
             pn_hash = self.app.get_default_propagation_node()
             pn_ident = RNS.Identity.recall(pn_hash)
+
+            if pn_ident == None:
+                RNS.log("Propagation node identity is unknown, requesting from network...", RNS.LOG_DEBUG)
+                RNS.Transport.request_path(pn_hash)
+
+        if pn_ident != None:
             node_hash = RNS.Destination.hash_from_name_and_identity("nomadnetwork.node", pn_ident)
             pn_entry = self.app.directory.find(node_hash)
 
