@@ -146,10 +146,11 @@ class Directory:
         self.directory_entries[entry.source_hash] = entry
 
         identity = RNS.Identity.recall(entry.source_hash)
-        associated_node = RNS.Destination.hash_from_name_and_identity("nomadnetwork.node", identity)
-        if associated_node in self.directory_entries:
-            node_entry = self.directory_entries[associated_node]
-            node_entry.trust_level = entry.trust_level
+        if identity != None:
+            associated_node = RNS.Destination.hash_from_name_and_identity("nomadnetwork.node", identity)
+            if associated_node in self.directory_entries:
+                node_entry = self.directory_entries[associated_node]
+                node_entry.trust_level = entry.trust_level
 
     def forget(self, source_hash):
         if source_hash in self.directory_entries:
