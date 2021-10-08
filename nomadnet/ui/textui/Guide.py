@@ -108,9 +108,11 @@ class TopicList(urwid.WidgetWrap):
 
         self.topic_list = [
             GuideEntry(self.app, self, guide_display, "Introduction"),
+            GuideEntry(self.app, self, guide_display, "Concepts & Terminology"),
             GuideEntry(self.app, self, guide_display, "Hosting a Node"),
             GuideEntry(self.app, self, guide_display, "Markup"),
             self.first_run_entry,
+            GuideEntry(self.app, self, guide_display, "Network Configuration"),
             GuideEntry(self.app, self, guide_display, "Display Test"),
             GuideEntry(self.app, self, guide_display, "Credits & Licenses"),
         ]
@@ -187,9 +189,11 @@ Nomad Network is build on LXMF and Reticulum, which together provides the crypto
 
 Nomad Network does not need any connections to the public internet to work. In fact, it doesn't even need an IP or Ethernet network. You can use it entirely over packet radio, LoRa or even serial lines. But if you wish, you can bridge islanded Reticulum networks over the Internet or private ethernet networks, or you can build networks running completely over the Internet. The choice is yours.
 
-The current version of the program should be considered an alpha release. The program works well, but there will most probably be bugs and possibly sub-optimal performance in some scenarios. On the other hand, this is the best time to have an influence on the direction of the development of Nomad Network. To do so, join the discussion on the Nomad Network project on GitHub.
+The current version of the program should be considered a beta release. The program works well, but there will most probably be bugs and possibly sub-optimal performance in some scenarios. On the other hand, this is the best time to have an influence on the direction of the development of Nomad Network. To do so, join the discussion on the Nomad Network project on GitHub.
 
->Concepts and Terminology
+'''
+
+TOPIC_CONCEPTS = '''>Concepts and Terminology
 
 The following section will briefly introduce various concepts and terms used in the program.
 
@@ -197,9 +201,20 @@ The following section will briefly introduce various concepts and terms used in 
 
 A `*peer`* refers to another Nomad Network client, which will generally be operated by another person. But since Nomad Network is a general LXMF client, it could also be any other LXMF client, program, automated system or machine that can communicate over LXMF.
 
+All peers (and nodes) are identified by their `*address`* (which is, technically speaking, a Reticulum destination hash). An address consist of 20 hexadecimal characters, and looks like this:
+
+`c<b8ea8f92541c9a275f0e>
+`l
+
+Anyone can choose whatever display name they want, but addresses are always unique, and generated from the unique cryptographic keys of the peer. This is an important point to understand. Since there is not anyone controlling naming or address spaces in Nomad Network, you can easily come across another user with the same display name as you.
+
+Your addresses will always be unique though, and you must always verify that the address you are communicating with is matching the address of the peer you expect to be in the other end.
+
+To make this easier, Nomad Network allows you to mark peers and nodes as either `*trusted`*, `*unknown`* or `*untrusted`*. In this way, you can mark the peers and nodes that you know to be legitimate, and easily spot peers with similar names as unrelated.
+
 >>Announces
 
-An `*announce`* can be sent by any peer on the network, which will notify other peers of its existence, and contains the cryptographic keys that allows other peers to communicate with it.
+An `*announce`* can be sent by any peer or node on the network, which will notify other peers of its existence, and contains the cryptographic keys that allows other peers to communicate with it.
 
 In the `![ Network ]`! section of the program, you can monitor announces on the network, initiate conversations with announced peers, and announce your own peer on the network. You can also connect to nodes on the network and browse information shared by them.
 
@@ -207,17 +222,27 @@ In the `![ Network ]`! section of the program, you can monitor announces on the 
 
 Nomad Network uses the term `*conversation`* to signify both direct peer-to-peer messaging threads, and also discussion threads with an arbitrary number of participants that might change over time.
 
-Both things like discussion forums and chat threads can be encapsulated as conversations in Nomad Network. The user interface will indicate the different characteristics a conversation can take, and also what form of transport encryption messages within used.
+Both things like discussion forums and chat threads can be encapsulated as conversations in Nomad Network. The user interface will indicate the different characteristics a conversation can take, and also what form of transport encryption was used for messages within.
 
-In the `![ Conversations ]`! part of the program you can view and interact with all currently active conversations. You can also edit nickname and trust settings for peers here.
+In the `![ Conversations ]`! part of the program you can view and interact with all currently active conversations. You can also edit nickname and trust settings for peers belonging to these conversations here. To edit settings for a peer, select it in the conversation list, and press `!Ctrl-E`!.
+
+By default, Nomad Network will attempt to deliver messages to a peer directly. This happens by first establishing an encrypted link directly to the peer, and then delivering the message over it.
+
+If the desired peer is not available because it has disconnected from the network, this method will obviously fail. In this case, Nomad Network will attempt to deliver the message to a node, which will store and forward it over the network, for later retrieval by the destination peer. The message is encrypted with an ephemeral key before being transmitted to the network, and is only readable by the intended recipient.
+
+For propagated delivery to work, one or more nodes must be available on the network. If one or more trusted nodes are available, Nomad Network will automatically select the most suitable node to send the message via, but you can also manually specify what node to use.
+
+To select a node manually, go to the `![ Network ]`! part of the program, choose the desired node in the `*Known Nodes`* list, and select the `!< Info >`! button. In the `!Node Info`! dialog, you can specify the selected node as the default propagation node.
 
 >>Node
 
 A Nomad Network `*node`* is an instance of the Nomad Network program that has been configured to host information for other peers and help propagate messages and information on the network.
 
-Nodes can host pages (similar to webpages) written in a markup-language called `*micron`*, as well as make files and other resources available for download for peers on the network. Nodes are also integral in allowing forum/discussion threads to exist and propagate on the network.
+Nodes can host pages (similar to webpages) written in a markup-language called `*micron`*, as well as make files and other resources available for download for peers on the network. Nodes also form a distributed message store for offline users, and allows messages to be exchanged between peers that are not online at the same time.
 
-If no nodes exist on a network, all peers will still be able to communicate directly peer-to-peer, but both endpoints of a conversation will need to be online at the same time to converse. When nodes exist on the network, messages will be held and syncronised between nodes for deferred delivery if the destination peer is unavailable.
+If no nodes exist on a network, all peers will still be able to communicate directly peer-to-peer, but both endpoints of a conversation will need to be available at the same time to converse. When nodes exist on the network, messages will be held and syncronised between nodes for deferred delivery if the destination peer is unavailable. Nodes will automatically discover and peer with each other, and handle synchronisation of message stores.
+
+To learn how to host your own node, read the `*Hosting a Node`* section of this guide.
 
 '''
 
@@ -279,7 +304,7 @@ To get the most out of Nomad Network, you will need a terminal that supports UTF
 
 If you don't already have a Nerd Font installed (see https://www.nerdfonts.com/), I also highly recommend to do so, since it will greatly expand the amount of glyphs, icons and graphics that Nomad Network can use. Once you have your terminal set up with a Nerd Font, go to the `![ Config ]`! menu item and enable Nerd Fonts in the configuration instead of normal unicode glyphs.
 
-Nomad Network expects that you are already connected to some form of Reticulum network. That could be as simple as the default UDP-based demo interface on your local ethernet network. This short guide won't go into any details on building, but you will find other entries in the guide that deal with network setup and configuration.
+Nomad Network expects that you are already connected to some form of Reticulum network. That could be as simple as the default UDP-based demo interface on your local ethernet network. This short guide won't go into any details on building networks, but you will find other entries in the guide that deal with network setup and configuration.
 
 At least, if Nomad Network launches, it means that it is connected to a running Reticulum instance, that should in turn be connected to `*something`*, which should get you started.
 
@@ -290,6 +315,44 @@ Now go out there and explore. This is still early days. See what you can find an
 >>>>>>>>>>>>>>>
 -\u223f
 <
+
+'''
+
+TOPIC_NETWORKS = '''>Network Configuration
+
+Nomad Network uses the Reticulum Network Stack for communication and encryption. This means that it will use any interfaces and communications channels already defined in your Reticulum configuration.
+
+Reticulum supports using many kinds of devices as networking interfaces, and allows you to mix and match them in any way you choose. The number of distinct network topologies you can create with Reticulum is more or less endless, but common to them all is that you will need to define one or more interfaces for Reticulum to use.
+
+If you have not changed the default Reticulum configuration, which should be located at `!~/.reticulum/config`!, you will have one interface active right now. With it, you should be able to communicate with any other peers and nodes that exist on your local ethernet or WiFi network, if your system is connected to one, and most probably nothing else outside of that.
+
+To learn how to configure your Reticulum setup to use LoRa radios, packet radio or other interfaces, or connect to other Reticulum networks via the Internet, the best places to start is to read the relevant parts of the Reticulum Manual, which can be found on GitHub:
+
+`c`_https://markqvist.github.io/Reticulum/manual/interfaces.html`_
+`l
+
+If you don't currently have access to the Internet, the default Reticulum configuration file is also full of examples of all the supported interface types, and it should be relatively simple to get a working setup going just from those examples.
+
+For future reference, you can download the Reticulum Manual in PDF format here:
+
+`c`_https://github.com/markqvist/Reticulum/raw/master/docs/Reticulum%20Manual.pdf`_
+`l
+
+It might be nice to keep that handy when you are not connected to the Internet, as it is full of information and examples that are also very relevant to Nomad Network.
+
+>The Unsigned.io Testnet
+
+If you have Internet access, and just want to get started experimenting, you are welcome to join the Unsigned.io RNS Testnet. The testnet is just that, an informal network for testing and experimenting. It will be up most of the time, and anyone can join, but it also means that there's no guarantees for service availability.
+
+The Testnet also runs the latest version of Reticulum, often even a short while before it is publicly released, which means strange behaviour might occur. If none of that scares you, add the following interface to your Reticulum configuration file to join:
+
+>>
+[[RNS Testnet Frankfurt]]
+  type = TCPClientInterface
+  interface_enabled = yes
+  outgoing = True
+  target_host = frankfurt.rns.unsigned.io
+  target_port = 4965
 
 '''
 
@@ -628,10 +691,12 @@ TOPIC_MARKUP += "\n`=\n\n>Closing Remarks\n\nIf you made it all the way here, yo
 
 TOPICS = {
     "Introduction": TOPIC_INTRODUCTION,
+    "Concepts & Terminology": TOPIC_CONCEPTS,
     "Conversations": TOPIC_CONVERSATIONS,
     "Hosting a Node": TOPIC_HOSTING,
     "Markup": TOPIC_MARKUP,
     "First Run": TOPIC_FIRST_RUN,
     "Display Test": TOPIC_DISPLAYTEST,
+    "Network Configuration": TOPIC_NETWORKS,
     "Credits & Licenses": TOPIC_LICENSES,
 }
