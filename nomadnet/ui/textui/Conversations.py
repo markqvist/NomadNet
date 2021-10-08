@@ -358,14 +358,26 @@ class ConversationsDisplay():
         button_columns = urwid.Columns([("weight", 0.45, sync_button), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, cancel_button)])
         real_sync_button.bc = button_columns
 
-        dialog = DialogLineBox(
-            urwid.Pile([
-                urwid.Text(""),
-                sync_progress,
-                urwid.Text(""),
-                button_columns
-            ]), title="Message Sync"
-        )
+        if self.app.get_default_propagation_node() != None:
+            dialog = DialogLineBox(
+                urwid.Pile([
+                    urwid.Text(""),
+                    sync_progress,
+                    urwid.Text(""),
+                    button_columns
+                ]), title="Message Sync"
+            )
+        else:
+            button_columns = urwid.Columns([("weight", 0.45, urwid.Text("" )), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, cancel_button)])
+            dialog = DialogLineBox(
+                urwid.Pile([
+                    urwid.Text(""),
+                    urwid.Text("No trusted nodes found, cannot sync", align="center"),
+                    urwid.Text(""),
+                    button_columns
+                ]), title="Message Sync"
+            )
+
         dialog.delegate = self
         dialog.sync_progress = sync_progress
         dialog.cancel_button = cancel_button

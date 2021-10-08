@@ -287,7 +287,8 @@ class NomadNetworkApp:
                 RNS.log("Could not recall identity for autoselected LXMF propagation node "+RNS.prettyhexrep(selected_node.source_hash), RNS.LOG_WARNING)
                 RNS.log("LXMF propagation will not be available until a trusted node announces on the network.", RNS.LOG_WARNING)
 
-                
+    def get_default_propagation_node(self):
+        return self.message_router.get_outbound_propagation_node()
 
     def save_peer_settings(self):
         file = open(self.peersettingspath, "wb")
