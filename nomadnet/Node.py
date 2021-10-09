@@ -31,6 +31,10 @@ class Node:
         if self.app.node_announce_at_start:
             self.announce()
 
+        job_thread = threading.Thread(target=self.__jobs)
+        job_thread.setDaemon(True)
+        job_thread.start()
+
 
     def register_pages(self):
         self.servedpages = []
