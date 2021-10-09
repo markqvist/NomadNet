@@ -576,30 +576,32 @@ class KnownNodes(urwid.WidgetWrap):
         self.delegate.left_pile.contents[0] = (overlay, options)
 
     def delete_selected_entry(self):
-        source_hash = self.ilb.get_selected_item().original_widget.source_hash
+        si = self.ilb.get_selected_item()
+        if si != None:
+            source_hash = si.original_widget.source_hash
 
-        def dismiss_dialog(sender):
-            self.delegate.close_list_dialogs()
+            def dismiss_dialog(sender):
+                self.delegate.close_list_dialogs()
 
-        def confirmed(sender):
-            self.app.directory.forget(source_hash)
-            self.rebuild_widget_list()
-            self.delegate.close_list_dialogs()
+            def confirmed(sender):
+                self.app.directory.forget(source_hash)
+                self.rebuild_widget_list()
+                self.delegate.close_list_dialogs()
 
 
-        dialog = ListDialogLineBox(
-            urwid.Pile([
-                urwid.Text("Delete Node\n"+self.app.directory.simplest_display_str(source_hash)+"\n", align="center"),
-                urwid.Columns([("weight", 0.45, urwid.Button("Yes", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("No", on_press=dismiss_dialog))])
-            ]), title="?"
-        )
-        dialog.delegate = self.delegate
-        bottom = self
+            dialog = ListDialogLineBox(
+                urwid.Pile([
+                    urwid.Text("Delete Node\n"+self.app.directory.simplest_display_str(source_hash)+"\n", align="center"),
+                    urwid.Columns([("weight", 0.45, urwid.Button("Yes", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("No", on_press=dismiss_dialog))])
+                ]), title="?"
+            )
+            dialog.delegate = self.delegate
+            bottom = self
 
-        overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+            overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
 
-        options = self.delegate.left_pile.options("weight", 1)
-        self.delegate.left_pile.contents[0] = (overlay, options)
+            options = self.delegate.left_pile.options("weight", 1)
+            self.delegate.left_pile.contents[0] = (overlay, options)
 
 
     def rebuild_widget_list(self):
@@ -1181,10 +1183,12 @@ class LXMFPeers(urwid.WidgetWrap):
         pass
 
     def delete_selected_entry(self):
-        destination_hash = self.ilb.get_selected_item().original_widget.destination_hash
-        self.app.message_router.unpeer(destination_hash)
-        self.delegate.reinit_lxmf_peers()
-        self.delegate.show_peers()
+        si = self.ilb.get_selected_item()
+        if si != None:
+            destination_hash = si.original_widget.destination_hash
+            self.app.message_router.unpeer(destination_hash)
+            self.delegate.reinit_lxmf_peers()
+            self.delegate.show_peers()
 
 
     def rebuild_widget_list(self):
