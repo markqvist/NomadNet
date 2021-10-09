@@ -1022,6 +1022,9 @@ class NetworkLeftPile(urwid.Pile):
     def keypress(self, size, key):
         if key == "ctrl l":
             self.parent.toggle_list()
+        elif key == "ctrl p":
+            self.parent.reinit_lxmf_peers()
+            self.parent.show_peers()
         elif key == "ctrl w":
             self.parent.browser.disconnect()
         elif key == "ctrl u":
@@ -1043,6 +1046,7 @@ class NetworkDisplay():
             self.browser.loopback = self.app.node.destination.hash
 
         self.known_nodes_display = KnownNodes(self.app)
+        self.lxmf_peers_display = LXMFPeers(self.app)
         self.network_stats_display = NetworkStats(self.app, self)
         self.announce_stream_display = AnnounceStream(self.app, self)
         self.local_peer_display = LocalPeer(self.app, self)
@@ -1084,6 +1088,15 @@ class NetworkDisplay():
             self.left_pile.contents[0] = (self.known_nodes_display, options)
             self.list_display = 1
 
+    def show_peers(self):
+        options = self.left_pile.options(height_type="weight", height_amount=1)
+        self.left_pile.contents[0] = (self.lxmf_peers_display, options)
+
+        if self.list_display != 0:
+            self.list_display = 0
+        else:
+            self.list_display = 1
+
     def focus_lists(self):
         self.columns.focus_position = 0
 
@@ -1092,6 +1105,11 @@ class NetworkDisplay():
         self.known_nodes_display.delegate = self
         self.close_list_dialogs()
         self.announce_stream_display.rebuild_widget_list()
+
+    def reinit_lxmf_peers(self):
+        self.lxmf_peers_display = LXMFPeers(self.app)
+        self.lxmf_peers_display.delegate = self
+        self.close_list_dialogs()
 
     def close_list_dialogs(self):
         if self.list_display == 0:
@@ -1120,6 +1138,95 @@ class NetworkDisplay():
         else:
             self.known_nodes_display.rebuild_widget_list()
 
+
+class LXMFPeers(urwid.WidgetWrap):
+    def __init__(self, app):
+        self.app = app
+        self.peer_list = app.message_router.peers
+        # self.peer_list = {}
+
+        g = self.app.ui.glyphs
+
+        self.widget_list = self.make_peer_widgets()
+
+        self.ilb = IndicativeListBox(
+            self.widget_list,
+            on_selection_change=self.node_list_selection,
+            initialization_is_selection_change=False,
+            highlight_offFocus="list_off_focus"
+        )
+
+        if len(self.peer_list) > 0:
+            self.display_widget = self.ilb
+            widget_style = None
+            self.no_content = False
+        else:
+            self.no_content = True
+            widget_style = "inactive_text"
+            self.pile = urwid.Pile([urwid.Text(("warning_text", g["info"]+"\n"), align="center"), SelectText(("warning_text", "Currently, no LXMF nodes are peered\n\n"), align="center")])
+            self.display_widget = urwid.Filler(self.pile, valign="top", height="pack")
+
+        urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="LXMF Peers"), widget_style))
+
+    def keypress(self, size, key):
+        if key == "up" and (self.no_content or self.ilb.first_item_is_selected()):
+            nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.set_focus("header")
+        elif key == "ctrl x":
+            self.delete_selected_entry()
+            
+        return super(LXMFPeers, self).keypress(size, key)
+
+
+    def node_list_selection(self, arg1, arg2):
+        pass
+
+    def delete_selected_entry(self):
+        destination_hash = self.ilb.get_selected_item().original_widget.destination_hash
+        self.app.message_router.unpeer(destination_hash)
+        self.delegate.reinit_lxmf_peers()
+        self.delegate.show_peers()
+
+
+    def rebuild_widget_list(self):
+        self.peer_list = self.app.message_router.peers
+        self.widget_list = self.make_peer_widgets()
+        self.ilb.set_body(self.widget_list)
+        if len(self.widget_list) > 0:
+            self.no_content = False
+        else:
+            self.no_content = True
+            self.delegate.reinit_lxmf_peers()
+
+    def make_peer_widgets(self):
+        widget_list = []
+        for peer_id in self.peer_list:
+            peer = self.peer_list[peer_id]
+            pe = LXMFPeerEntry(self.app, peer, self)
+            pe.destination_hash = peer.destination_hash
+            widget_list.append(pe)
+
+        # TODO: Sort list
+        return widget_list
+
+class LXMFPeerEntry(urwid.WidgetWrap):
+    def __init__(self, app, peer, delegate):
+        destination_hash = peer.destination_hash
+
+        self.app = app
+        g = self.app.ui.glyphs
+
+        display_str = RNS.prettyhexrep(destination_hash)
+
+        sym = g["sent"]
+        style         = "list_unknown"
+        focus_style   = "list_focus"
+
+        widget = ListEntry(sym+" "+display_str+"\n   Last heard "+pretty_date(int(peer.last_heard))+"\n   "+str(len(peer.unhandled_messages))+" unhandled")
+        # urwid.connect_signal(widget, "click", delegate.connect_node, node)
+
+        self.display_widget = urwid.AttrMap(widget, style, focus_style)
+        self.display_widget.destination_hash = destination_hash
+        urwid.WidgetWrap.__init__(self, self.display_widget)
 
 
 def pretty_date(time=False):
