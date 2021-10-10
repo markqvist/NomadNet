@@ -138,7 +138,7 @@ class Node:
         while self.should_run_jobs:
             now = time.time()
             
-            if now > self.last_announce + self.announce_interval:
+            if now > self.last_announce + self.announce_interval*60:
                 self.announce()
 
             time.sleep(self.job_interval)
