@@ -49,6 +49,13 @@ The first time the program is running, you will be presented with the guide sect
 
 To use Nomad Network on packet radio or LoRa, you will need to configure your Reticulum installation to use any relevant packet radio TNCs or LoRa devices on your system. See the [Reticulum documentation](https://markqvist.github.io/Reticulum/manual/interfaces.html) for info.
 
+## Support Nomad Network
+You can help support the continued development of open, free and private communications systems by donating via one of the following channels:
+
+- Ethereum: 0x81F7B979fEa6134bA9FD5c701b3501A2e61E897a
+- Bitcoin: 3CPmacGm34qYvR6XWLVEJmi2aNe3PZqUuq
+- Ko-Fi: https://ko-fi.com/markqvist
+
 ## Caveat Emptor
 Nomad Network is beta software, and should be considered as such. While it has been built with cryptography best-practices very foremost in mind, it _has not_ been externally security audited, and there could very well be privacy-breaking bugs. If you want to help out, or help sponsor an audit, please do get in touch.
 
