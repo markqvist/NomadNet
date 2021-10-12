@@ -243,6 +243,8 @@ class NomadNetworkApp:
             return True
         elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_REQUEST_SENT:
             return True
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_RECEIVING:
+            return True
         elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_RESPONSE_RECEIVED:
             return True
         elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_COMPLETE:

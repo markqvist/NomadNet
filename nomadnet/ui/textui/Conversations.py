@@ -352,6 +352,7 @@ class ConversationsDisplay():
 
         def cancel_sync(sender):
             self.app.cancel_lxmf_sync()
+            self.update_sync_dialog()
 
         cancel_button = urwid.Button("Close", on_press=dismiss_dialog)
         sync_progress = SyncProgressBar("progress_empty" , "progress_full", current=self.app.get_sync_progress(), done=1.0, satt=None)
