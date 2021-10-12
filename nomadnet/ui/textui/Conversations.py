@@ -20,7 +20,7 @@ class ConversationDisplayShortcuts():
     def __init__(self, app):
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("[C-d] Send  [C-k] Clear Editor  [C-w] Close  [C-t] Editor Type  [C-p] Purge  [C-x] Clear History  [C-o] Sort"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-d] Send  [C-k] Clear  [C-w] Close  [C-t] Title  [C-p] Purge  [C-x] Clear History  [C-o] Sort"), "shortcutbar")
 
 class ConversationsArea(urwid.LineBox):
     def keypress(self, size, key):
