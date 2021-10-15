@@ -129,11 +129,12 @@ class MainDisplay():
     def update_active_shortcuts(self):
         self.frame.contents["footer"] = (self.sub_displays.active().shortcuts().widget, None)
 
-    def request_redraw(self):
-        self.app.ui.loop.set_alarm_in(0.25, self.redraw_now)
+    def request_redraw(self, extra_delay=0.0):
+        self.app.ui.loop.set_alarm_in(0.25+extra_delay, self.redraw_now)
     
     def redraw_now(self, sender=None, data=None):
-        self.app.ui.loop.draw_screen()
+        self.app.ui.loop.screen.clear()
+        #self.app.ui.loop.draw_screen()
 
     def start(self):
         self.menu_display.start()
