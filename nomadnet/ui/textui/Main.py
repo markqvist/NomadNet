@@ -125,6 +125,7 @@ class MainDisplay():
     def update_active_sub_display(self):
         self.frame.contents["body"] = (self.sub_displays.active().widget, None)
         self.update_active_shortcuts()
+        self.app.ui.main_display.request_redraw(extra_delay=0.0)
 
     def update_active_shortcuts(self):
         self.frame.contents["footer"] = (self.sub_displays.active().shortcuts().widget, None)

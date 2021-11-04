@@ -98,7 +98,7 @@ class ConversationsDisplay():
             highlight_offFocus="list_off_focus"
         )
 
-        self.listbox = ConversationsArea(urwid.Filler(self.ilb, height=("relative", 100)))
+        self.listbox = ConversationsArea(urwid.Filler(self.ilb, height=("relative", 100)), title="Conversations")
         self.listbox.delegate = self
 
     def delete_selected_conversation(self):

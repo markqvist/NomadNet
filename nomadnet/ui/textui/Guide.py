@@ -302,6 +302,8 @@ You're currently located in the guide section of the program. I'm sorry I had to
 
 To get the most out of Nomad Network, you will need a terminal that supports UTF-8 and at least 256 colors, ideally true-color. If your terminal supports true-color, you can go to the `![ Config ]`! menu item, launch the editor and change the configuration.
 
+It is recommended to use a terminal size of at least 122x32. Nomad Network will work with smaller terminal sizes, but the interface might feel a bit cramped.
+
 If you don't already have a Nerd Font installed (see https://www.nerdfonts.com/), I also highly recommend to do so, since it will greatly expand the amount of glyphs, icons and graphics that Nomad Network can use. Once you have your terminal set up with a Nerd Font, go to the `![ Config ]`! menu item and enable Nerd Fonts in the configuration instead of normal unicode glyphs.
 
 Nomad Network expects that you are already connected to some form of Reticulum network. That could be as simple as the default UDP-based demo interface on your local ethernet network. This short guide won't go into any details on building networks, but you will find other entries in the guide that deal with network setup and configuration.

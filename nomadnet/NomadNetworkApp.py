@@ -1,6 +1,8 @@
 import os
+import sys
 import time
 import atexit
+import traceback
 
 import RNS
 import LXMF
@@ -24,6 +26,18 @@ class NomadNetworkApp:
         RNS.log("Saving directory...", RNS.LOG_VERBOSE)
         self.directory.save_to_disk()
         RNS.log("Nomad Network Client exiting now", RNS.LOG_VERBOSE)
+
+    def exception_handler(self, e_type, e_value, e_traceback):
+        RNS.log("An unhandled exception occurred, the details of which will be dumped below", RNS.LOG_ERROR)
+        RNS.log("Type  : "+str(e_type), RNS.LOG_ERROR)
+        RNS.log("Value : "+str(e_value), RNS.LOG_ERROR)
+        t_string = ""
+        for line in traceback.format_tb(e_traceback):
+            t_string += line
+        RNS.log("Trace : \n"+t_string, RNS.LOG_ERROR)
+
+        if issubclass(e_type, KeyboardInterrupt):
+            sys.__excepthook__(e_type, e_value, e_traceback)
 
     def __init__(self, configdir = None, rnsconfigdir = None):
         self.version       = __version__
@@ -194,6 +208,7 @@ class NomadNetworkApp:
             self.announce_now()
 
         atexit.register(self.exit_handler)
+        sys.excepthook = self.exception_handler
 
         nomadnet.ui.spawn(self.uimode)
 

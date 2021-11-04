@@ -107,7 +107,7 @@ class AnnounceInfo(urwid.WidgetWrap):
             self.parent.left_pile.contents[0] = (self.parent.announce_stream_display, options)
 
         def connect(sender):
-            self.app.ui.main_display.request_redraw(extra_delay=0.75)
+            self.app.ui.main_display.request_redraw(extra_delay=0.15)
             self.parent.browser.retrieve_url(RNS.hexrep(source_hash, delimit=False))
             show_announce_stream(None)
 
@@ -255,7 +255,7 @@ class AnnounceStream(urwid.WidgetWrap):
         self.widget_list = []
         self.update_widget_list()
 
-        self.ilb = IndicativeListBox(
+        self.ilb = ExceptionHandlingListBox(
             self.widget_list,
             on_selection_change=self.list_selection,
             initialization_is_selection_change=False,
@@ -434,7 +434,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
             self.parent.left_pile.contents[0] = (self.parent.known_nodes_display, options)
 
         def connect(sender):
-            self.app.ui.main_display.request_redraw(extra_delay=0.75)
+            self.app.ui.main_display.request_redraw(extra_delay=0.15)
             self.parent.browser.retrieve_url(RNS.hexrep(source_hash, delimit=False))
             show_known_nodes(None)
 
@@ -498,6 +498,21 @@ class KnownNodeInfo(urwid.WidgetWrap):
         urwid.WidgetWrap.__init__(self, urwid.LineBox(self.display_widget, title="Node Info"))
 
 
+# Yes, this is weird. There is a bug in Urwid/ILB that causes
+# an indexing exception when the list is very small vertically.
+# This mitigates it.
+class ExceptionHandlingListBox(IndicativeListBox):
+    def keypress(self, size, key):
+        try:
+            return super(ExceptionHandlingListBox, self).keypress(size, key)
+
+        except Exception as e:
+            if key == "up":
+                nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.set_focus("header")
+            elif key == "down":
+                nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.sub_displays.network_display.left_pile.set_focus(1)
+
+
 class KnownNodes(urwid.WidgetWrap):
     def __init__(self, app):
         self.app = app
@@ -506,7 +521,7 @@ class KnownNodes(urwid.WidgetWrap):
 
         self.widget_list = self.make_node_widgets()
         
-        self.ilb = IndicativeListBox(
+        self.ilb = ExceptionHandlingListBox(
             self.widget_list,
             on_selection_change=self.node_list_selection,
             initialization_is_selection_change=False,
@@ -684,7 +699,7 @@ class AnnounceTime(urwid.WidgetWrap):
         if self.app.peer_settings["last_announce"] != None:
             self.last_announce_string = pretty_date(int(self.app.peer_settings["last_announce"]))
 
-        self.display_widget.set_text("Last Announce : "+self.last_announce_string)
+        self.display_widget.set_text("Announced : "+self.last_announce_string)
 
     def update_time_callback(self, loop=None, user_data=None):
         self.update_time()
@@ -1006,7 +1021,7 @@ class NetworkStats(urwid.WidgetWrap):
         def get_num_nodes():
             return self.app.directory.number_of_known_nodes()
 
-        self.w_heard_peers = UpdatingText(self.app, "Heard Peers: ", get_num_peers, append_text=" (last 30m)")
+        self.w_heard_peers = UpdatingText(self.app, "Heard Peers: ", get_num_peers, append_text=" (30m)")
         self.w_known_nodes = UpdatingText(self.app, "Known Nodes: ", get_num_nodes)
 
         pile = urwid.Pile([
