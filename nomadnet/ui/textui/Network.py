@@ -941,7 +941,7 @@ class NodeInfo(urwid.WidgetWrap):
                 self.t_active_links = NodeInfo.links_timer
                 self.t_active_links.update_stat()
 
-            announce_button = urwid.Button("Announce Now", on_press=announce_query)
+            announce_button = urwid.Button("Announce", on_press=announce_query)
             connect_button = urwid.Button("Browse", on_press=connect_query)
 
             pile = urwid.Pile([
@@ -954,9 +954,9 @@ class NodeInfo(urwid.WidgetWrap):
                 urwid.Columns([
                     ("weight", 0.3, urwid.Button("Back", on_press=show_peer_info)),
                     ("weight", 0.1, urwid.Text("")),
-                    ("weight", 0.3, connect_button),
+                    ("weight", 0.4, connect_button),
                     ("weight", 0.1, urwid.Text("")),
-                    ("weight", 0.3, announce_button)
+                    ("weight", 0.5, announce_button)
                 ])
             ])
         else:
@@ -1236,13 +1236,19 @@ class LXMFPeerEntry(urwid.WidgetWrap):
         self.app = app
         g = self.app.ui.glyphs
 
+        node_identity = RNS.Identity.recall(destination_hash)
         display_str = RNS.prettyhexrep(destination_hash)
+        if node_identity != None:            
+            node_hash = RNS.Destination.hash_from_name_and_identity("nomadnetwork.node", node_identity)
+            display_name = self.app.directory.alleged_display_str(node_hash)
+            if display_name != None:
+                display_str += "\n   "+str(display_name)
 
         sym = g["sent"]
         style         = "list_unknown"
         focus_style   = "list_focus"
 
-        widget = ListEntry(sym+" "+display_str+"\n   Last heard "+pretty_date(int(peer.last_heard))+"\n   "+str(len(peer.unhandled_messages))+" unhandled")
+        widget = ListEntry(sym+" "+display_str+"\n   Last heard "+pretty_date(int(peer.last_heard))+"\n   "+str(len(peer.unhandled_messages))+" unhandled messages")
         # urwid.connect_signal(widget, "click", delegate.connect_node, node)
 
         self.display_widget = urwid.AttrMap(widget, style, focus_style)

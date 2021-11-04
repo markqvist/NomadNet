@@ -123,6 +123,13 @@ class Directory:
             else:
                 return "<"+RNS.hexrep(source_hash, delimit=False)+">"
 
+    def alleged_display_str(self, source_hash):
+        if source_hash in self.directory_entries:
+            return self.directory_entries[source_hash].display_name
+        else:
+            return None
+
+
     def trust_level(self, source_hash, announced_display_name=None):
         if source_hash in self.directory_entries:
             if announced_display_name == None:
