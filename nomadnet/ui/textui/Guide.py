@@ -248,9 +248,19 @@ To learn how to host your own node, read the `*Hosting a Node`* section of this 
 
 TOPIC_HOSTING = '''>Hosting a Node
 
-To host a node on the network, you must enable it in the configuration file, by setting `*enable_node`* directive to `*yes`*. You should also configure the other node-related parameters such as the node name and announce interval settings. Once node hosting has been enabled in the configuration, Nomad Network will start hosting your node as soon as the program is lauched, and other peers on the network will be able to connect and interact with content on your node.
+To host a node on the network, you must enable it in the configuration file, by setting `*enable_node`* directive to `*yes`*. You should also configure the other node-related parameters such as the node name and announce interval settings. Once node hosting has been enabled in the configuration, Nomad Network will start hosting your node as soon as the program is launched, and other peers on the network will be able to connect and interact with content on your node.
 
 By default, no content is defined, apart from a short placeholder home page. To learn how to add your own content, read on.
+
+>>Distributed Message Store
+
+All nodes on the network automatically form a distributed message store that allows users to exchange messages, even when they are not available at the same time.
+
+When Nomad Network is configured to host a node, it also configures itself as an LXMF Propagation Node, and automatically discovers and peers with other propagation nodes on the network. This process is completely automatic and requires no configuration from the node operator.
+
+To view LXMF Propagation nodes that are currently peered with your node, go to the `![ Network ]`! part of the program and press `!Ctrl-P`!.
+
+The distributed message store is resilient to intermittency, and will remain functional as long as at least one node remains on the network. Nodes that were offline for a time will automatically be synced up to date when they regain connectivity.
 
 >>Pages
 
