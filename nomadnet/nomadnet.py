@@ -2,6 +2,7 @@
 
 from ._version import __version__
 
+import io
 import argparse
 import nomadnet
 

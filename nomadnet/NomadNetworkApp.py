@@ -1,8 +1,10 @@
 import os
+import io
 import sys
 import time
 import atexit
 import traceback
+import contextlib
 
 import RNS
 import LXMF
@@ -59,6 +61,7 @@ class NomadNetworkApp:
 
         self.configpath        = self.configdir+"/config"
         self.logfilepath       = self.configdir+"/logfile"
+        self.errorfilepath     = self.configdir+"/errors"
         self.storagepath       = self.configdir+"/storage"
         self.identitypath      = self.configdir+"/storage/identity"
         self.cachepath         = self.configdir+"/storage/cache"
@@ -210,7 +213,26 @@ class NomadNetworkApp:
         atexit.register(self.exit_handler)
         sys.excepthook = self.exception_handler
 
-        nomadnet.ui.spawn(self.uimode)
+        # This stderr redirect is needed to stop urwid
+        # from spewing KeyErrors to the console and thus,
+        # messing up the UI. A pull request to fix the
+        # bug in urwid was submitted, but until it is
+        # merged, this hack will mitigate it.
+        strio = io.StringIO()
+        with contextlib.redirect_stderr(strio):
+            nomadnet.ui.spawn(self.uimode)
+
+        if strio.tell() > 0:
+            try:
+                strio.seek(0)
+                err_file = open(self.errorfilepath, "w")
+                err_file.write(strio.read())
+                err_file.close()
+
+            except Exception as e:
+                RNS.log("Could not write stderr output to error log file at "+str(self.errorfilepath)+".", RNS.LOG_ERROR)
+                RNS.log("The contained exception was: "+str(e), RNS.LOG_ERROR)
+
 
     def set_display_name(self, display_name):
         self.peer_settings["display_name"] = display_name
