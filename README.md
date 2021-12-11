@@ -27,7 +27,8 @@ The current version of the program should be considered a beta release. The prog
 ### Feature roadmap
  - Access control and authentication for nodes, pages and files
  - Network-wide propagated bulletins and discussion threads
- - Geospatial information sharing and collaborative maps
+ - Collaborative maps
+ - Facilitation of trade and barter
 
 ## Dependencies:
  - Python 3
