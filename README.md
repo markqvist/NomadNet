@@ -49,6 +49,9 @@ The first time the program is running, you will be presented with the guide sect
 
 To use Nomad Network on packet radio or LoRa, you will need to configure your Reticulum installation to use any relevant packet radio TNCs or LoRa devices on your system. See the [Reticulum documentation](https://markqvist.github.io/Reticulum/manual/interfaces.html) for info.
 
+### Installing on Android
+You can install Nomad Network on Android using Termux, but there's a few extra commands involved than the above one-liner. The process is documented in the [Android Installation](https://markqvist.github.io/Reticulum/manual/gettingstartedfast.html#reticulum-on-android) section of the Reticulum Manual. Once the Reticulum has been installed according to the linked documentation, Nomad Network can be installed as usual with pip.
+
 ## Support Nomad Network
 You can help support the continued development of open, free and private communications systems by donating via one of the following channels:
 
