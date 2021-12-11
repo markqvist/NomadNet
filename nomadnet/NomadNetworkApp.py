@@ -3,6 +3,7 @@ import io
 import sys
 import time
 import atexit
+import threading
 import traceback
 import contextlib
 
@@ -22,6 +23,8 @@ class NomadNetworkApp:
     _shared_instance = None
 
     configdir = os.path.expanduser("~")+"/.nomadnetwork"
+
+    START_ANNOUNCE_DELAY = 3
 
     def exit_handler(self):
         RNS.log("Nomad Network Client exit handler executing...", RNS.LOG_VERBOSE)
@@ -208,7 +211,13 @@ class NomadNetworkApp:
         self.autoselect_propagation_node()
 
         if self.peer_announce_at_start:
-            self.announce_now()
+            def delayed_announce():
+                time.sleep(NomadNetworkApp.START_ANNOUNCE_DELAY)
+                self.announce_now()
+
+            da_thread = threading.Thread(target=delayed_announce)
+            da_thread.setDaemon(True)
+            da_thread.start()
 
         atexit.register(self.exit_handler)
         sys.excepthook = self.exception_handler

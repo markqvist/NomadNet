@@ -7,13 +7,14 @@ import RNS.vendor.umsgpack as msgpack
 
 class Node:
     JOB_INTERVAL = 5
+    START_ANNOUNCE_DELAY = 6
 
     def __init__(self, app):
         RNS.log("Nomad Network Node starting...", RNS.LOG_VERBOSE)
         self.app = app
         self.identity = self.app.identity
         self.destination = RNS.Destination(self.identity, RNS.Destination.IN, RNS.Destination.SINGLE, "nomadnetwork", "node")
-        self.last_announce = None
+        self.last_announce = time.time()
         self.announce_interval = self.app.node_announce_interval
         self.job_interval = Node.JOB_INTERVAL
         self.should_run_jobs = True
@@ -29,7 +30,13 @@ class Node:
         RNS.log("Node \""+self.name+"\" ready for incoming connections on "+RNS.prettyhexrep(self.destination.hash), RNS.LOG_VERBOSE)
 
         if self.app.node_announce_at_start:
-            self.announce()
+            def delayed_announce():
+                time.sleep(Node.START_ANNOUNCE_DELAY)
+                self.announce()
+
+            da_thread = threading.Thread(target=delayed_announce)
+            da_thread.setDaemon(True)
+            da_thread.start()
 
         job_thread = threading.Thread(target=self.__jobs)
         job_thread.setDaemon(True)
