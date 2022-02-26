@@ -185,14 +185,155 @@ def style_to_state(style, state):
 def make_style(state):
     def mono_color(fg, bg):
         return "default"
+
     def low_color(color):
-        # TODO: Implement low-color mapper
-        return "default"
+        try:
+            result = "default"
+            if color == "default":
+                result = "default"
+
+            elif len(color) == 6:
+                r = str(color[0])
+                g = str(color[2])
+                b = str(color[4])
+                color = r+g+b
+
+            if len(color) == 3:
+                t = 7
+
+                if color[0] == "g":
+                    val = int(color[1:2])
+                    if val < 25:
+                        result = "black"
+                    elif val < 50:
+                        result = "dark gray"
+                    elif val < 75:
+                        result = "light gray"
+                    else:
+                        result = "white"
+                else:
+                    r = int(color[0], 16)
+                    g = int(color[1], 16)
+                    b = int(color[2], 16)
+
+                    if r == g == b:
+                        val = int(color[0], 16)*6
+                        if val < 12:
+                            result = "black"
+                        elif val < 50:
+                            result = "dark gray"
+                        elif val < 80:
+                            result = "light gray"
+                        else:
+                            result = "white"
+
+                    else:
+                        if r == b:
+                            if r > g:
+                                if r > t:
+                                    result = "light magenta"
+                                else:
+                                    result = "dark magenta"
+                            else:
+                                if g > t:
+                                    result = "light green"
+                                else:
+                                    result = "dark green"
+                        if b == g:
+                            if b > r:
+                                if b > t:
+                                    result = "light cyan"
+                                else:
+                                    result = "dark cyan"
+                            else:
+                                if r > t:
+                                    result = "light red"
+                                else:
+                                    result = "dark red"
+                        if g == r:
+                            if g > b:
+                                if g > t:
+                                    result = "yellow"
+                                else:
+                                    result = "brown"
+                            else:
+                                if b > t:
+                                    result = "light blue"
+                                else:
+                                    result = "dark blue"
+
+                        if r > g and r > b:
+                            if r > t:
+                                result = "light red"
+                            else:
+                                result = "dark red"
+                        if g > r and g > b:
+                            if g > t:
+                                result = "light green"
+                            else:
+                                result = "dark green"
+                        if b > g and b > r:
+                            if b > t:
+                                result = "light blue"
+                            else:
+                                result = "dark blue"
+
+        except Exception as e:
+            result = "default"
+
+        return result
+
     def high_color(color):
+        def parseval_hex(char):
+            return hex(max(0,min(int(char, 16),16)))[2:]
+
+        def parseval_dec(char):
+            return str(max(0,min(int(char), 9)))
+
         if color == "default":
-            return color
+            return "default"
         else:
-            return "#"+color
+            if len(color) == 6:
+                try:
+                    v1 = parseval_hex(color[0])
+                    v2 = parseval_hex(color[1])
+                    v3 = parseval_hex(color[2])
+                    v4 = parseval_hex(color[3])
+                    v5 = parseval_hex(color[4])
+                    v6 = parseval_hex(color[5])
+                    color = "#"+v1+v2+v3+v4+v5+v6
+
+                except Exception as e:
+                    return "default"
+
+                return color
+
+            elif len(color) == 3:
+                if color[0] == "g":
+                    try:
+                        v1 = parseval_dec(color[1])
+                        v2 = parseval_dec(color[2])
+
+                    except Exception as e:
+                        return "default"
+
+                    return "g"+v1+v2
+                
+                else:
+                    try:
+                        v1 = parseval_hex(color[0])
+                        v2 = parseval_hex(color[1])
+                        v3 = parseval_hex(color[2])
+                        color = v1+v2+v3
+                        
+                    except Exception as e:
+                        return "default"
+
+                    r = color[0]
+                    g = color[1]
+                    b = color[2]
+                    return "#"+r+r+g+g+b+b
+
 
     bold      = state["formatting"]["bold"]
     underline = state["formatting"]["underline"]
