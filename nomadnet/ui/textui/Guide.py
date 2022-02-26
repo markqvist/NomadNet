@@ -397,6 +397,9 @@ The following line should contain a green gradient bar:
 The following line should contain a blue gradient bar:
 `B001 `B002 `B003 `B004 `B005 `B006 `B007 `B008 `B009 `B00a `B00b `B00c `B00d `B00e `B00f`b
 
+The following line should contain a grayscale gradient bar:
+`Bg06 `Bg13 `Bg20 `Bg26 `Bg33 `Bg40 `Bg46 `Bg53 `Bg59 `Bg66 `Bg73 `Bg79 `Bg86 `Bg92 `Bg99`b
+
 Unicode Glyphs   : \u2713  \u2715  \u26a0  \u24c3  \u2193
 
 Nerd Font Glyphs : \uf484  \uf9c4 \uf719  \uf502  \uf415  \uf023  \uf06e
