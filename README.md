@@ -30,6 +30,10 @@ The current version of the program should be considered a beta release. The prog
  - Collaborative maps
  - Facilitation of trade and barter
 
+## Help & Discussion
+
+For help requests, discussion, sharing ideas or anything else related to Nomad Network, please have a look at the [Nomad Network discussions pages](https://github.com/markqvist/Reticulum/discussions/categories/nomad-network).
+
 ## Dependencies:
  - Python 3
  - RNS
