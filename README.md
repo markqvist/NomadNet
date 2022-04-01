@@ -34,11 +34,6 @@ The current version of the program should be considered a beta release. The prog
 
 For help requests, discussion, sharing ideas or anything else related to Nomad Network, please have a look at the [Nomad Network discussions pages](https://github.com/markqvist/Reticulum/discussions/categories/nomad-network).
 
-## Dependencies:
- - Python 3
- - RNS
- - LXMF
-
 ## How do I get started?
 The easiest way to install Nomad Network is via pip:
 
@@ -52,7 +47,9 @@ nomadnet
 
 The first time the program is running, you will be presented with the guide section, which contains all the information you need to start using Nomad Network.
 
-To use Nomad Network on packet radio or LoRa, you will need to configure your Reticulum installation to use any relevant packet radio TNCs or LoRa devices on your system. See the [Reticulum documentation](https://markqvist.github.io/Reticulum/manual/interfaces.html) for info.
+To use Nomad Network on packet radio or LoRa, you will need to configure your Reticulum installation to use any relevant packet radio TNCs or LoRa devices on your system. See the [Reticulum documentation](https://markqvist.github.io/Reticulum/manual/interfaces.html) for info. For a general introduction on how to set up such a system, take a look at [this post](https://unsigned.io/private-messaging-over-lora/).
+
+If you want to try Nomad Network without building your own physical network, you can try to connect to the [Unsigned.io RNS Testnet](https://github.com/markqvist/Reticulum#public-testnet) over the Internet, where there is already some Nomad Network and LXMF activity.
 
 **Please Note**: If this is the very first time you use pip to install a program on your system, you might need to reboot your system for the program to become available. If you get a "command not found" error or similar when running the program, reboot your system and try again.
 
