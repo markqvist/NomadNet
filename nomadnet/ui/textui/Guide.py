@@ -276,6 +276,26 @@ You can control how long a peer will cache your pages by including the cache hea
 
 You can use a preprocessor such as PHP, bash, Python (or whatever you prefer) to generate dynamic pages. To do so, just set executable permissions on the relevant page file, and be sure to include the interpreter at the beginning of the file, for example `!#!/usr/bin/python3`!.
 
+>>Authenticating Users
+
+Sometimes, you don't want everyone to be able to view certain pages or execute certain scripts. In such cases, you can use `*authentication`* to control who gets to run certain requests.
+
+To enable authentication for any page, simply add a new file to your pages directory with ".allowed" added to the file-name of the page. If your page is named "secret_page.mu", just add a file named "secret_page.mu.allowed".
+
+For each user allowed to access the page, add a line to this file, containing the hash of that users primary identity. Users can find their own identity hash in the `![ Network ]`! part of the program, under `!Local Peer Info`!. If you want to allow access for three different users, your file would look like this:
+
+`Faaa
+`=
+24c2dc2248953e0a3c21
+564a476410f4fca2ae93
+8bb864743f12f53395a1
+`=
+``
+
+You can also dynamically generate this list, by making the file executable, and writing a script (in whatever language you want), that prints the list to stdout. Every time someone tries to request the page, Nomad Network will check the allowed identities list, and only grant access to allowed users.
+
+By default, Nomad Network connects anonymously to all nodes. To be able to identify, and access restricted pages, you must allow identifying on a per-node basis. To allow identifying when connecting to a node, you must go to the `!Known Nodes`! list in the `![ Network ]`! part of the program, and enable the `!Identify When Connecting`! checkbox under `!Node Info`!.
+
 >>Files
 
 Like pages, you can place files you want to make available in the `!~/.nomadnetwork/storage/files`! directory. To let a peer download a file, you should create a link to it in one of your pages.
