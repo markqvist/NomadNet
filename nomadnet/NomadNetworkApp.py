@@ -28,6 +28,8 @@ class NomadNetworkApp:
 
     def exit_handler(self):
         RNS.log("Nomad Network Client exit handler executing...", RNS.LOG_VERBOSE)
+        self.should_run_jobs = False
+
         RNS.log("Saving directory...", RNS.LOG_VERBOSE)
         self.directory.save_to_disk()
         RNS.log("Nomad Network Client exiting now", RNS.LOG_VERBOSE)
@@ -80,9 +82,16 @@ class NomadNetworkApp:
         self.downloads_path    = os.path.expanduser("~/Downloads")
 
         self.firstrun          = False
+        self.should_run_jobs   = True
+        self.job_interval      = 5
+        self.defer_jobs        = 90
 
         self.peer_announce_at_start  = True
         self.try_propagation_on_fail = True
+
+        self.periodic_lxmf_sync = True
+        self.lxmf_sync_interval = 360*60
+        self.lxmf_sync_limit    = 8
 
         if not os.path.isdir(self.storagepath):
             os.makedirs(self.storagepath)
@@ -159,6 +168,9 @@ class NomadNetworkApp:
                 if not "propagation_node" in self.peer_settings:
                     self.peer_settings["propagation_node"] = None
 
+                if not "last_lxmf_sync" in self.peer_settings:
+                    self.peer_settings["last_lxmf_sync"] = 0
+
             except Exception as e:
                 RNS.log("Could not load local peer settings from "+self.peersettingspath, RNS.LOG_ERROR)
                 RNS.log("The contained exception was: %s" % (str(e)), RNS.LOG_ERROR)
@@ -171,7 +183,8 @@ class NomadNetworkApp:
                     "announce_interval": None,
                     "last_announce": None,
                     "node_last_announce": None,
-                    "propagation_node": None
+                    "propagation_node": None,
+                    "last_lxmf_sync": 0,
                 }
                 self.save_peer_settings()
                 RNS.log("Created new peer settings file")
@@ -222,6 +235,10 @@ class NomadNetworkApp:
         atexit.register(self.exit_handler)
         sys.excepthook = self.exception_handler
 
+        job_thread = threading.Thread(target=self.__jobs)
+        job_thread.setDaemon(True)
+        job_thread.start()
+
         # This stderr redirect is needed to stop urwid
         # from spewing KeyErrors to the console and thus,
         # messing up the UI. A pull request to fix the
@@ -242,6 +259,20 @@ class NomadNetworkApp:
                 RNS.log("Could not write stderr output to error log file at "+str(self.errorfilepath)+".", RNS.LOG_ERROR)
                 RNS.log("The contained exception was: "+str(e), RNS.LOG_ERROR)
 
+
+    def __jobs(self):
+        RNS.log("Deferring scheduled jobs for "+str(self.defer_jobs)+" seconds...", RNS.LOG_DEBUG)
+        time.sleep(self.defer_jobs)
+
+        RNS.log("Starting job scheduler now", RNS.LOG_DEBUG)
+        while self.should_run_jobs:
+            now = time.time()
+            
+            if now > self.peer_settings["last_lxmf_sync"] + self.lxmf_sync_interval:
+                RNS.log("Initiating automatic LXMF sync", RNS.LOG_VERBOSE)
+                self.request_lxmf_sync(limit=self.lxmf_sync_limit)
+
+            time.sleep(self.job_interval)
 
     def set_display_name(self, display_name):
         self.peer_settings["display_name"] = display_name
@@ -303,6 +334,8 @@ class NomadNetworkApp:
 
     def request_lxmf_sync(self, limit = None):
         if self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_IDLE or self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_COMPLETE:
+            self.peer_settings["last_lxmf_sync"] = time.time()
+            self.save_peer_settings()
             self.message_router.request_messages_from_propagation_node(self.identity, max_messages = limit)
 
     def cancel_lxmf_sync(self):
@@ -446,6 +479,24 @@ class NomadNetworkApp:
                 if option == "try_propagation_on_send_fail":
                     value = self.config["client"].as_bool(option)
                     self.try_propagation_on_fail = value
+
+                if option == "periodic_lxmf_sync":
+                    value = self.config["client"].as_bool(option)
+                    self.periodic_lxmf_sync = value
+
+                if option == "lxmf_sync_interval":
+                    value = self.config["client"].as_int(option)*60
+
+                    if value >= 60:
+                        self.lxmf_sync_interval = value
+
+                if option == "lxmf_sync_limit":
+                    value = self.config["client"].as_int(option)    
+
+                    if value > 0:
+                        self.lxmf_sync_limit = value
+                    else:
+                        self.lxmf_sync_limit = None
 
                 if option == "user_interface":
                     value = value.lower()
@@ -596,6 +647,22 @@ announce_at_start = yes
 # a direct delivery to the recipient is not
 # possible.
 try_propagation_on_send_fail = yes
+
+# Nomadnet will periodically sync messages from
+# LXMF propagation nodes by default, if any are
+# present. You can disable this if you want to
+# only sync when manually initiated.
+periodic_lxmf_sync = yes
+
+# The sync interval in minutes. This value is
+# equal to 6 hours (360 minutes) by default.
+lxmf_sync_interval = 360
+
+# By default, automatic LXMF syncs will only
+# download 8 messages at a time. You can change
+# this number, or set the option to 0 to disable
+# the limit, and download everything every time.
+lxmf_sync_limit = 8
 
 [textui]
 
