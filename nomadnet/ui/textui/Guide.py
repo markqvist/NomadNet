@@ -234,6 +234,10 @@ For propagated delivery to work, one or more nodes must be available on the netw
 
 To select a node manually, go to the `![ Network ]`! part of the program, choose the desired node in the `*Known Nodes`* list, and select the `!< Info >`! button. In the `!Node Info`! dialog, you can specify the selected node as the default propagation node.
 
+By default, Nomad Network will check in with propagation nodes, and download any available messages every 6 hours. You can change this interval, or disable automatic synchronisation completely, by editing the configuration file.
+
+You can always initiate a sync manually, by pressing `!Ctrl-R`! in the `![ Conversations ]`! part of the program, which will open the syncronisation window.
+
 >>Node
 
 A Nomad Network `*node`* is an instance of the Nomad Network program that has been configured to host information for other peers and help propagate messages and information on the network.
@@ -316,7 +320,7 @@ It is recommended to use a terminal size of at least 122x32. Nomad Network will 
 
 If you don't already have a Nerd Font installed (see https://www.nerdfonts.com/), I also highly recommend to do so, since it will greatly expand the amount of glyphs, icons and graphics that Nomad Network can use. Once you have your terminal set up with a Nerd Font, go to the `![ Config ]`! menu item and enable Nerd Fonts in the configuration instead of normal unicode glyphs.
 
-Nomad Network expects that you are already connected to some form of Reticulum network. That could be as simple as the default UDP-based demo interface on your local ethernet network. This short guide won't go into any details on building networks, but you will find other entries in the guide that deal with network setup and configuration.
+Nomad Network expects that you are already connected to some form of Reticulum network. That could be as simple as the default one that Reticulum auto-generates on your local ethernet/WiFi network, or something much more complex. This short guide won't go into any details on building networks, but you will find other entries in the guide that deal with network setup and configuration.
 
 At least, if Nomad Network launches, it means that it is connected to a running Reticulum instance, that should in turn be connected to `*something`*, which should get you started.
 
@@ -336,14 +340,14 @@ Nomad Network uses the Reticulum Network Stack for communication and encryption.
 
 Reticulum supports using many kinds of devices as networking interfaces, and allows you to mix and match them in any way you choose. The number of distinct network topologies you can create with Reticulum is more or less endless, but common to them all is that you will need to define one or more interfaces for Reticulum to use.
 
-If you have not changed the default Reticulum configuration, which should be located at `!~/.reticulum/config`!, you will have one interface active right now. With it, you should be able to communicate with any other peers and nodes that exist on your local ethernet or WiFi network, if your system is connected to one, and most probably nothing else outside of that.
+If you have not changed the default Reticulum configuration, which should be located at `!~/.reticulum/config`!, you will have one interface active right now. With it, you should be able to communicate with any other peers and systems that exist on your local ethernet or WiFi network, if your computer is connected to one, and most probably nothing else outside of that.
 
 To learn how to configure your Reticulum setup to use LoRa radios, packet radio or other interfaces, or connect to other Reticulum networks via the Internet, the best places to start is to read the relevant parts of the Reticulum Manual, which can be found on GitHub:
 
 `c`_https://markqvist.github.io/Reticulum/manual/interfaces.html`_
 `l
 
-If you don't currently have access to the Internet, the default Reticulum configuration file is also full of examples of all the supported interface types, and it should be relatively simple to get a working setup going just from those examples.
+If you don't currently have access to the Internet, you can generate a configuration file full of examples of all the supported interface types, by using the command `!rnsd --exampleconfig`!. Using those examples, it should be possible to get a working setup going.
 
 For future reference, you can download the Reticulum Manual in PDF format here:
 
