@@ -643,6 +643,10 @@ class Browser:
     def link_established(self, link):
         self.status = Browser.LINK_ESTABLISHED
 
+        if self.app.directory.should_identify_on_connect(self.destination_hash):
+            RNS.log("Link established, identifying to remote system...", RNS.LOG_VERBOSE)
+            self.link.identify(self.app.identity)
+
 
     def link_closed(self, link):
         if self.status == Browser.DISCONECTED or self.status == Browser.DONE:

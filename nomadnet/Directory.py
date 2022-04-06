@@ -32,7 +32,7 @@ class Directory:
             packed_list = []
             for source_hash in self.directory_entries:
                 e = self.directory_entries[source_hash]
-                packed_list.append((e.source_hash, e.display_name, e.trust_level, e.hosts_node, e.preferred_delivery))
+                packed_list.append((e.source_hash, e.display_name, e.trust_level, e.hosts_node, e.preferred_delivery, e.identify))
 
             directory = {
                 "entry_list": packed_list,
@@ -65,7 +65,12 @@ class Directory:
                     else:
                         preferred_delivery = None
 
-                    entries[e[0]] = DirectoryEntry(e[0], e[1], e[2], hosts_node, preferred_delivery=preferred_delivery)
+                    if len(e) > 5:
+                        identify = e[5]
+                    else:
+                        identify = False
+
+                    entries[e[0]] = DirectoryEntry(e[0], e[1], e[2], hosts_node, preferred_delivery=preferred_delivery, identify_on_connect=identify)
 
                 self.directory_entries = entries
 
@@ -183,6 +188,18 @@ class Directory:
         except Exception as e:
             return False
 
+    def should_identify_on_connect(self, source_hash):
+        if source_hash in self.directory_entries:
+            entry = self.directory_entries[source_hash]
+            return entry.identify
+        else:
+            return False
+
+    def set_identify_on_connect(self, source_hash, state):
+        if source_hash in self.directory_entries:
+            entry = self.directory_entries[source_hash]
+            entry.identify = state
+    
     def known_nodes(self):
         node_list = []
         for eh in self.directory_entries:
@@ -214,7 +231,7 @@ class DirectoryEntry:
     DIRECT     = 0x01
     PROPAGATED = 0x02
 
-    def __init__(self, source_hash, display_name=None, trust_level=UNKNOWN, hosts_node=False, preferred_delivery=None):
+    def __init__(self, source_hash, display_name=None, trust_level=UNKNOWN, hosts_node=False, preferred_delivery=None, identify_on_connect=False):
         if len(source_hash) == RNS.Identity.TRUNCATED_HASHLENGTH//8:
             self.source_hash  = source_hash
             self.display_name = display_name
@@ -228,5 +245,6 @@ class DirectoryEntry:
 
             self.trust_level  = trust_level
             self.hosts_node   = hosts_node
+            self.identify     = identify_on_connect
         else:
             raise TypeError("Attempt to add invalid source hash to directory")

@@ -443,7 +443,11 @@ class KnownNodeInfo(urwid.WidgetWrap):
         def pn_change(sender, userdata):
             self.pn_changed = True
 
+        def ident_change(sender, userdata):
+            pass
+
         propagation_node_checkbox = urwid.CheckBox("Use as default propagation node", state=(self.app.get_user_selected_propagation_node() == source_hash), on_state_change=pn_change)
+        connect_identify_checkbox = urwid.CheckBox("Identify when connecting", state=self.app.directory.should_identify_on_connect(source_hash), on_state_change=ident_change)
 
         def save_node(sender):
             if self.pn_changed:
@@ -461,7 +465,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
 
             display_str = e_name.get_edit_text()
 
-            node_entry = DirectoryEntry(source_hash, display_name=display_str, trust_level=trust_level, hosts_node=True)
+            node_entry = DirectoryEntry(source_hash, display_name=display_str, trust_level=trust_level, hosts_node=True, identify_on_connect=connect_identify_checkbox.get_state())
             self.app.directory.remember(node_entry)
             self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
             show_known_nodes(None)
@@ -479,6 +483,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
             # urwid.Text(["Trust     : ", (style, trust_str)], align="left"),
             urwid.Divider(g["divider1"]),
             propagation_node_checkbox,
+            connect_identify_checkbox,
             urwid.Divider(g["divider1"]),
             r_untrusted,
             r_unknown,
@@ -793,8 +798,9 @@ class LocalPeer(urwid.WidgetWrap):
         if display_name == None:
             display_name = ""
 
-        t_id = urwid.Text("Addr : "+RNS.hexrep(self.app.lxmf_destination.hash, delimit=False))
-        e_name = urwid.Edit(caption="Name : ", edit_text=display_name)
+        t_id =           urwid.Text("LXMF Addr : "+RNS.prettyhexrep(self.app.lxmf_destination.hash))
+        i_id =           urwid.Text("Identity  : "+RNS.prettyhexrep(self.app.identity.hash))
+        e_name = urwid.Edit(caption="Name      : ", edit_text=display_name)
 
         def save_query(sender):
             def dismiss_dialog(sender):
@@ -858,6 +864,7 @@ class LocalPeer(urwid.WidgetWrap):
         self.display_widget = urwid.Pile(
             [
                 t_id,
+                i_id,
                 e_name,
                 urwid.Divider(g["divider1"]),
                 self.t_last_announce,
