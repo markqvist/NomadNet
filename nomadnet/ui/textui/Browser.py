@@ -371,6 +371,46 @@ class Browser:
             RNS.log("An error occurred while handling file response. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
     def download_file(self, destination_hash, path):
+        if self.link == None or self.link.destination.hash != self.destination_hash:
+            if not RNS.Transport.has_path(self.destination_hash):
+                self.status = Browser.NO_PATH
+                self.update_display()
+
+                RNS.Transport.request_path(self.destination_hash)
+                self.status = Browser.PATH_REQUESTED
+                self.update_display()
+
+                pr_time = time.time()
+                while not RNS.Transport.has_path(self.destination_hash):
+                    now = time.time()
+                    if now > pr_time+self.timeout:
+                        self.request_timeout()
+                        return
+
+                    time.sleep(0.25)
+
+            self.status = Browser.ESTABLISHING_LINK
+            self.update_display()
+
+            identity = RNS.Identity.recall(self.destination_hash)
+            destination = RNS.Destination(
+                identity,
+                RNS.Destination.OUT,
+                RNS.Destination.SINGLE,
+                self.app_name,
+                self.aspects
+            )
+
+            self.link = RNS.Link(destination, established_callback = self.link_established, closed_callback = self.link_closed)
+
+            while self.status == Browser.ESTABLISHING_LINK:
+                time.sleep(0.1)
+
+            if self.status != Browser.LINK_ESTABLISHED:
+                return
+
+            self.update_display()
+
         if self.link != None and self.link.destination.hash == self.destination_hash:
             # Send the request
             self.status = Browser.REQUESTING
