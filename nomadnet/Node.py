@@ -131,7 +131,7 @@ class Node:
             except Exception as e:
                 RNS.log("Error while fetching list of allowed identities for request: "+str(e), RNS.LOG_ERROR)
 
-            if remote_identity.hash in allowed_list:
+            if hasattr(remote_identity, "hash") and remote_identity.hash in allowed_list:
                 request_allowed = True
             else:
                 request_allowed = False

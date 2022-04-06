@@ -493,10 +493,28 @@ class KnownNodeInfo(urwid.WidgetWrap):
         ]
 
         node_ident = RNS.Identity.recall(source_hash)
-        op_hash = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", node_ident)
-        op_str = self.app.directory.simplest_display_str(op_hash)
+        if node_ident != None:
+            op_hash = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", node_ident)
+            op_str = self.app.directory.simplest_display_str(op_hash)
+        else:
+            op_str = "Unknown"
+
         operator_entry = urwid.Text("Operator  : "+op_str, align="left")
         pile_widgets.insert(4, operator_entry)
+
+        hops = RNS.Transport.hops_to(source_hash)
+        if hops == 1:
+            str_s = ""
+        else:
+            str_s = "s"
+
+        if hops != RNS.Transport.PATHFINDER_M:
+            hops_str = str(hops)+" hop"+str_s
+        else:
+            hops_str = "Unknown"
+
+        operator_entry = urwid.Text("Distance  : "+hops_str, align="left")
+        pile_widgets.insert(5, operator_entry)
 
         pile = urwid.Pile(pile_widgets)
 
