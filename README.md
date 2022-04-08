@@ -25,7 +25,6 @@ Nomad Network does not need any connections to the public internet to work. In f
 The current version of the program should be considered a beta release. The program works well, but there will most probably be bugs and possibly sub-optimal performance in some scenarios. On the other hand, this is the ideal time to have an influence on the direction of the development of Nomad Network. To do so, join the discussion, report bugs and request features here on the GitHub project.
 
 ### Feature roadmap
- - Access control and authentication for nodes, pages and files
  - Network-wide propagated bulletins and discussion threads
  - Collaborative maps
  - Facilitation of trade and barter
