@@ -110,6 +110,7 @@ class TopicList(urwid.WidgetWrap):
             GuideEntry(self.app, self, guide_display, "Introduction"),
             GuideEntry(self.app, self, guide_display, "Concepts & Terminology"),
             GuideEntry(self.app, self, guide_display, "Hosting a Node"),
+            GuideEntry(self.app, self, guide_display, "Configuration Options"),
             GuideEntry(self.app, self, guide_display, "Markup"),
             self.first_run_entry,
             GuideEntry(self.app, self, guide_display, "Network Configuration"),
@@ -352,6 +353,204 @@ Now go out there and explore. This is still early days. See what you can find an
 -\u223f
 <
 
+'''
+
+TOPIC_CONFIG = '''>Configuration Options
+
+To change the configuration of Nomad Network, you must edit the configuration file. By default, this is located at `!~/.nomadnetwork/config`! on your system. You can open it in any text-editor, and change the options. You can also use the editor built in to this program, under the `![ Config ]`! menu item. The default configuration file contains comments on all the different configuration options present, and explains their possible settings.
+
+For reference, all the configuration options are listed and explained here as well. The configuration is divided into different sections, each with their own options.
+
+>> Logging Section
+
+This section hold configuration directives related to logging output, and is delimited by the `![logging]`! header in the configuration file. Available directives, along with their default values, are as follows:
+
+>>>
+`!loglevel = 4`!
+>>>>
+Sets the verbosity of the log output. Must be an integer from 0 through 7.
+>>>>>
+0: Log only critical information
+1: Log errors and lower log levels
+2: Log warnings and lower log levels
+3: Log notices and lower log levels
+4: Log info and lower (this is the default)
+5: Verbose logging
+6: Debug logging
+7: Extreme logging
+<
+
+>>>
+`!destination = file`!
+>>>>
+Determines the output destination of logged information. Must be `!file`! or `!console`!.
+<
+
+>>>
+`!logfile = ~/.nomadnetwork/logfile`!
+>>>>
+Path to the log file. Must be a writable filesystem path.
+<
+
+>> Client Section
+
+This section hold configuration directives related to the client behaviour and user interface of the program. It is delimited by the `![client]`! header in the configuration file. Available directives, along with their default values, are as follows:
+
+>>>
+`!enable_client = yes`!
+>>>>
+Determines whether the client part of the program should be started on launch. Must be a boolean value.
+<
+
+>>>
+`!user_interface = text`!
+>>>>
+Selects which interface to use. Currently, only the `!text`! interface is available.
+<
+
+>>>
+`!downloads_path = ~/Downloads`!
+>>>>
+Sets the filesystem path to store downloaded files in.
+<
+
+>>>
+`!announce_at_start = yes`!
+>>>>
+Determines whether your LXMF address is automatically announced when the program starts. Must be a boolean value.
+<
+
+>>>
+`!try_propagation_on_send_fail = yes`!
+>>>>
+When this option is enabled, and sending a message directly to a peer fails, Nomad Network will instead deliver the message to the propagation network, for later retrieval by the recipient.
+<
+
+>>>
+`!periodic_lxmf_sync = yes`!
+>>>>
+Whether the program should periodically download messages from available propagation nodes in the background.
+<
+
+>>>
+`!lxmf_sync_interval = 360`!
+>>>>
+The number of minutes between each automatic sync. The default is equal to 6 hours.
+<
+
+>>>
+`!lxmf_sync_limit = 8`!
+>>>>
+On low-bandwidth networks, it can be useful to limit the amount of messages downloaded in each sync. The default is 8. Set to 0 to download all available messages every time a sync occurs.
+<
+
+>> Text UI Section
+
+This section hold configuration directives related to the look and feel of the text-based user interface of the program. It is delimited by the `![textui]`! header in the configuration file. Available directives, along with their default values, are as follows:
+
+>>>
+`!intro_time = 1`!
+>>>>
+Number of seconds to display the intro screen. Set to 0 to disable the intro screen.
+<
+
+>>>
+`!intro_text = Nomad Network`!
+>>>>
+The text to display on the intro screen.
+<
+
+>>>
+`!editor = editor`!
+>>>>
+What editor program to use when launching a text editor from within the program. Defaults to the `!editor`! alias, which in turn will use the default editor of the operating system.
+<
+
+>>>
+`!glyphs = unicode`!
+>>>>
+Determines what set of glyphs the program uses for rendering the user interface.
+>>>>>
+The `!plain`! set only uses ASCII characters, and should work on all terminals, but is rather boring.
+The `!unicode`! set uses more interesting glyphs and icons, and should work on most terminals. This is the default.
+The `!nerdfont`! set allows using a much wider range of glyphs, icons and graphics, and should be enabled if you are using a Nerd Font in your terminal.
+<
+
+>>>
+`!mouse_enabled = yes`!
+>>>>
+Determines whether the program should react to mouse/touch input. Must be a boolean value.
+<
+
+>>>
+`!hide_guide = no`!
+>>>>
+This option allows hiding the `![ Guide ]`! section of the program.
+<
+
+>>>
+`!animation_interval = 1`!
+>>>>
+Sets the animation refresh rate for certain animations and graphics in the program. Must be an integer.
+<
+
+>>>
+`!colormode = 256`!
+>>>>
+Tells the program what color palette is supported by the terminal. Most terminals support `!256`! colors. If your terminal supports full-color / RGB-mode, set to `!24bit`!. Available options:
+>>>>>
+`!monochrome`! Single-color (black/white) palette, for monochrome displays
+`!16`! Low-color mode for really old-school terminals
+`!88`! Standard palletised color-mode for terminals
+`!256`! Almost all modern terminals support this mode
+`!24bit`! Most new terminals support this full-color mode
+<
+
+>>>
+`!theme = dark`!
+>>>>
+What color theme to use. Set it to match your terminal theme. Can be either `!dark`! or `!light`!.
+<
+
+>> Node Section
+
+This section holds configuration directives related to the node hosting. It is delimited by the `![node]`! header in the configuration file. Available directives, along with their default values, are as follows:
+
+>>>
+`!enable_node = yes`!
+>>>>
+Determines whether the node server should be started on launch. Must be a boolean value.
+<
+
+>>>
+`!node_name = DisplayName's Node`!
+>>>>
+Defines what the announced name of the node should be.
+<
+
+>>>
+`!announce_at_start = yes`!
+>>>>
+Determines whether your node is automatically announced on the network when the program starts. Must be a boolean value.
+<
+
+>>>
+`!announce_interval = 720`!
+>>>>
+Determines how often, in minutes, your node is announced on the network. Defaults to 12 hours.
+<
+
+>>>
+`!pages_path = ~/.nomadnetwork/storage/pages`!
+>>>>
+Determines where the node server will look for hosted pages. Must be a readable filesystem path.
+<
+
+>>>
+`!files_path = ~/.nomadnetwork/storage/files`!
+>>>>
+Determines where the node server will look for downloadable files. Must be a readable filesystem path.
+<
 '''
 
 TOPIC_NETWORKS = '''>Network Configuration
@@ -733,9 +932,10 @@ TOPICS = {
     "Concepts & Terminology": TOPIC_CONCEPTS,
     "Conversations": TOPIC_CONVERSATIONS,
     "Hosting a Node": TOPIC_HOSTING,
+    "Configuration Options": TOPIC_CONFIG,
     "Markup": TOPIC_MARKUP,
-    "First Run": TOPIC_FIRST_RUN,
     "Display Test": TOPIC_DISPLAYTEST,
     "Network Configuration": TOPIC_NETWORKS,
     "Credits & Licenses": TOPIC_LICENSES,
+    "First Run": TOPIC_FIRST_RUN,
 }

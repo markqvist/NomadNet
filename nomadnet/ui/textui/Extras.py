@@ -5,7 +5,7 @@ class IntroDisplay():
 
         font = urwid.font.HalfBlock5x4Font()
 
-        big_text = urwid.BigText(("intro_title", "Nomad Network"), font)
+        big_text = urwid.BigText(("intro_title", self.app.config["textui"]["intro_text"]), font)
         big_text = urwid.Padding(big_text, align="center", width="clip")
 
         intro = urwid.Pile([
