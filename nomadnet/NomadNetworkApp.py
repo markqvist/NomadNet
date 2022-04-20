@@ -367,7 +367,7 @@ class NomadNetworkApp:
                         selected_node = node
 
         if selected_node == None:
-            RNS.log("Could not autoselect a prepagation node! LXMF propagation will not be available until a trusted node announces on the network.", RNS.LOG_WARNING)
+            RNS.log("Could not autoselect a propagation node! LXMF propagation will not be available until a trusted node announces on the network.", RNS.LOG_WARNING)
         else:
             node_identity = RNS.Identity.recall(selected_node.source_hash)
             if node_identity != None:
