@@ -53,6 +53,28 @@ You can install Nomad Network on Android using Termux, but there's a few more co
 
 For a native Android application with a graphical user interface, have a look at [Sideband](https://unsigned.io/sideband).
 
+### Using docker / running a daemon
+
+Nomad Network is automatically published as a docker image on Github Packages. Image tags are one of either `master` (for the latest release) or the version number (eg `0.1.7`) for the specified version number (as tagged in this git repo).
+
+
+```sh
+$ docker pull ghcr.io/markqvist/nomadnet:master
+
+# Run nomadnet interactively without installing it (with default config)
+$ docker run -it ghcr.io/markqvist/nomadnet:master
+
+# Run nomadnet as a daemon, using config stored on the host machine in specific
+# directories, and allowing access to specific numbered ports openned by nomadnet
+# on the host machine on the same port numbers.
+$ docker run -d \
+  -v /local/path/nomadnetconfig/:/root/.nomadnetwork/ \
+  -v /local/path/reticulumconfig/:/root/.reticulum/ \
+  -p 37428:37428 \
+  -p 37429:37429 \
+  ghcr.io/markqvist/nomadnet:master
+```
+
 ## Help & Discussion
 
 For help requests, discussion, sharing ideas or anything else related to Nomad Network, please have a look at the [Nomad Network discussions pages](https://github.com/markqvist/Reticulum/discussions/categories/nomad-network).
