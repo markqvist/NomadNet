@@ -24,6 +24,8 @@ class Node:
         self.register_pages()
         self.register_files()
 
+        self.destination.set_link_established_callback(self.peer_connected)
+
         if self.name == None:
             self.name = self.app.peer_settings["display_name"]+"'s Node"
 
@@ -97,6 +99,12 @@ class Node:
 
     def serve_page(self, path, data, request_id, remote_identity, requested_at):
         RNS.log("Page request "+RNS.prettyhexrep(request_id)+" for: "+str(path), RNS.LOG_VERBOSE)
+        try:
+            self.app.peer_settings["served_page_requests"] += 1
+            self.app.save_peer_settings()
+            
+        except Exception as e:
+            RNS.log("Could not increase served page request count", RNS.LOG_ERROR)
 
         file_path = path.replace("/page", self.app.pagespath, 1)
 
@@ -163,6 +171,13 @@ class Node:
     # TODO: Improve file handling, this will be slow for large files
     def serve_file(self, path, data, request_id, remote_identity, requested_at):
         RNS.log("File request "+RNS.prettyhexrep(request_id)+" for: "+str(path), RNS.LOG_VERBOSE)
+        try:
+            self.app.peer_settings["served_file_requests"] += 1
+            self.app.save_peer_settings()
+            
+        except Exception as e:
+            RNS.log("Could not increase served file request count", RNS.LOG_ERROR)
+
         file_path = path.replace("/file", self.app.filespath, 1)
         file_name = path.replace("/file/", "", 1)
         try:
@@ -197,10 +212,20 @@ class Node:
 
             time.sleep(self.job_interval)
 
-    def peer_connected(link):
-        RNS.log("Peer connected to "+str(self.destination), RNS.LOG_INFO)
+    def peer_connected(self, link):
+        RNS.log("Peer connected to "+str(self.destination), RNS.LOG_VERBOSE)
+        try:
+            self.app.peer_settings["node_connects"] += 1
+            self.app.save_peer_settings()
+
+        except Exception as e:
+            RNS.log("Could not increase node connection count", RNS.LOG_ERROR)
+
         link.set_link_closed_callback(self.peer_disconnected)
 
+    def peer_disconnected(self, link):
+        RNS.log("Peer disconnected from "+str(self.destination), RNS.LOG_VERBOSE)
+        pass
 
 DEFAULT_INDEX = '''>Default Home Page
 

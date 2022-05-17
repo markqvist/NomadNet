@@ -407,7 +407,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
         addr_str     = "<"+RNS.hexrep(source_hash, delimit=False)+">"
 
         if node_ident != None:
-            lxmf_addr_str = "Runs LXMF Propagation Node "+RNS.prettyhexrep(RNS.Destination.hash_from_name_and_identity("lxmf.propagation", node_ident))
+            lxmf_addr_str = g["sent"]+" LXMF Propagation Node Address is "+RNS.prettyhexrep(RNS.Destination.hash_from_name_and_identity("lxmf.propagation", node_ident))
         else:
             lxmf_addr_str = "No associated Propagation Node known"
 
@@ -537,7 +537,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
             e_name,
             urwid.Text("Node Addr : "+addr_str, align="left"),
             urwid.Divider(g["divider1"]),
-            urwid.Text(lxmf_addr_str, align="left"),
+            urwid.Text(lxmf_addr_str, align="center"),
             urwid.Divider(g["divider1"]),
             propagation_node_checkbox,
             connect_identify_checkbox,
@@ -806,7 +806,7 @@ class NodeAnnounceTime(urwid.WidgetWrap):
         if self.app.peer_settings["node_last_announce"] != None:
             self.last_announce_string = pretty_date(int(self.app.peer_settings["node_last_announce"]))
 
-        self.display_widget.set_text("Last Announce   : "+self.last_announce_string)
+        self.display_widget.set_text("Last Announce     : "+self.last_announce_string)
 
     def update_time_callback(self, loop=None, user_data=None):
         self.update_time()
@@ -837,7 +837,103 @@ class NodeActiveConnections(urwid.WidgetWrap):
         if self.app.node != None:
             self.stat_string = str(len(self.app.node.destination.links))
 
-        self.display_widget.set_text("Connected Peers : "+self.stat_string)
+        self.display_widget.set_text("Connections Now   : "+self.stat_string)
+
+    def update_stat_callback(self, loop=None, user_data=None):
+        self.update_stat()
+        if self.started:
+            self.app.ui.loop.set_alarm_in(self.timeout, self.update_stat_callback)
+
+    def start(self):
+        was_started = self.started
+        self.started = True
+        if not was_started:
+            self.update_stat_callback()
+
+    def stop(self):
+        self.started = False
+
+
+class NodeTotalConnections(urwid.WidgetWrap):
+    def __init__(self, app):
+        self.started = False
+        self.app = app
+        self.timeout = self.app.config["textui"]["animation_interval"]
+        self.display_widget = urwid.Text("")
+        self.update_stat()
+
+        urwid.WidgetWrap.__init__(self, self.display_widget)
+
+    def update_stat(self):
+        self.stat_string = "None"
+        if self.app.node != None:
+            self.stat_string = str(self.app.peer_settings["node_connects"])
+
+        self.display_widget.set_text("Total Connections : "+self.stat_string)
+
+    def update_stat_callback(self, loop=None, user_data=None):
+        self.update_stat()
+        if self.started:
+            self.app.ui.loop.set_alarm_in(self.timeout, self.update_stat_callback)
+
+    def start(self):
+        was_started = self.started
+        self.started = True
+        if not was_started:
+            self.update_stat_callback()
+
+    def stop(self):
+        self.started = False
+
+
+class NodeTotalPages(urwid.WidgetWrap):
+    def __init__(self, app):
+        self.started = False
+        self.app = app
+        self.timeout = self.app.config["textui"]["animation_interval"]
+        self.display_widget = urwid.Text("")
+        self.update_stat()
+
+        urwid.WidgetWrap.__init__(self, self.display_widget)
+
+    def update_stat(self):
+        self.stat_string = "None"
+        if self.app.node != None:
+            self.stat_string = str(self.app.peer_settings["served_page_requests"])
+
+        self.display_widget.set_text("Served Pages      : "+self.stat_string)
+
+    def update_stat_callback(self, loop=None, user_data=None):
+        self.update_stat()
+        if self.started:
+            self.app.ui.loop.set_alarm_in(self.timeout, self.update_stat_callback)
+
+    def start(self):
+        was_started = self.started
+        self.started = True
+        if not was_started:
+            self.update_stat_callback()
+
+    def stop(self):
+        self.started = False
+
+
+class NodeTotalFiles(urwid.WidgetWrap):
+    def __init__(self, app):
+        self.started = False
+        self.app = app
+        self.timeout = self.app.config["textui"]["animation_interval"]
+        self.display_widget = urwid.Text("")
+        self.update_stat()
+
+        urwid.WidgetWrap.__init__(self, self.display_widget)
+
+    def update_stat(self):
+        self.stat_string = "None"
+        if self.app.node != None:
+            self.stat_string = str(self.app.peer_settings["served_file_requests"])
+
+        self.display_widget.set_text("Served Files      : "+self.stat_string)
 
     def update_stat_callback(self, loop=None, user_data=None):
         self.update_stat()
@@ -873,7 +969,7 @@ class LocalPeer(urwid.WidgetWrap):
         def save_query(sender):
             def dismiss_dialog(sender):
                 self.dialog_open = False
-                self.parent.left_pile.contents[2] = (LocalPeer(self.app, self.parent), options)
+                self.parent.left_pile.contents[1] = (LocalPeer(self.app, self.parent), options)
 
             self.app.set_display_name(e_name.get_edit_text())
 
@@ -890,19 +986,19 @@ class LocalPeer(urwid.WidgetWrap):
             overlay = dialog
             options = self.parent.left_pile.options(height_type="pack", height_amount=None)
             self.dialog_open = True
-            self.parent.left_pile.contents[2] = (overlay, options)
+            self.parent.left_pile.contents[1] = (overlay, options)
 
         def announce_query(sender):
             def dismiss_dialog(sender):
                 self.dialog_open = False
                 options = self.parent.left_pile.options(height_type="pack", height_amount=None)
-                self.parent.left_pile.contents[2] = (LocalPeer(self.app, self.parent), options)
+                self.parent.left_pile.contents[1] = (LocalPeer(self.app, self.parent), options)
 
             self.app.announce_now()
 
             dialog = DialogLineBox(
                 urwid.Pile([
-                    urwid.Text("\n\n\nAnnounce Sent\n\n", align="center"),
+                    urwid.Text("\n\n\nAnnounce Sent\n\n\n", align="center"),
                     urwid.Button("OK", on_press=dismiss_dialog)
                 ]), title=g["info"]
             )
@@ -914,11 +1010,11 @@ class LocalPeer(urwid.WidgetWrap):
             
             self.dialog_open = True
             options = self.parent.left_pile.options(height_type="pack", height_amount=None)
-            self.parent.left_pile.contents[2] = (overlay, options)
+            self.parent.left_pile.contents[1] = (overlay, options)
 
         def node_info_query(sender):
             options = self.parent.left_pile.options(height_type="pack", height_amount=None)
-            self.parent.left_pile.contents[2] = (self.parent.node_info_display, options)
+            self.parent.left_pile.contents[1] = (self.parent.node_info_display, options)
 
         if LocalPeer.announce_timer == None:
             self.t_last_announce = AnnounceTime(self.app)
@@ -951,6 +1047,9 @@ class LocalPeer(urwid.WidgetWrap):
 class NodeInfo(urwid.WidgetWrap):
     announce_timer = None
     links_timer = None
+    conns_timer = None
+    pages_timer = None
+    files_timer = None
 
     def __init__(self, app, parent):
         self.app = app
@@ -963,7 +1062,7 @@ class NodeInfo(urwid.WidgetWrap):
 
         def show_peer_info(sender):
             options = self.parent.left_pile.options(height_type="pack", height_amount=None)
-            self.parent.left_pile.contents[2] = (LocalPeer(self.app, self.parent), options)
+            self.parent.left_pile.contents[1] = (LocalPeer(self.app, self.parent), options)
         
         if self.app.enable_node:
             if self.app.node != None:
@@ -977,11 +1076,17 @@ class NodeInfo(urwid.WidgetWrap):
             t_id = urwid.Text("Addr : "+RNS.hexrep(self.app.node.destination.hash, delimit=False))
             e_name = urwid.Text("Name : "+display_name)
 
+            def stats_query(sender):
+                self.app.peer_settings["node_connects"] = 0
+                self.app.peer_settings["served_page_requests"] = 0
+                self.app.peer_settings["served_file_requests"] = 0
+                self.app.save_peer_settings()
+
             def announce_query(sender):
                 def dismiss_dialog(sender):
                     self.dialog_open = False
                     options = self.parent.left_pile.options(height_type="pack", height_amount=None)
-                    self.parent.left_pile.contents[2] = (NodeInfo(self.app, self.parent), options)
+                    self.parent.left_pile.contents[1] = (NodeInfo(self.app, self.parent), options)
 
                 self.app.node.announce()
 
@@ -999,7 +1104,7 @@ class NodeInfo(urwid.WidgetWrap):
                 
                 self.dialog_open = True
                 options = self.parent.left_pile.options(height_type="pack", height_amount=None)
-                self.parent.left_pile.contents[2] = (overlay, options)
+                self.parent.left_pile.contents[1] = (overlay, options)
 
             def connect_query(sender):
                 self.parent.browser.retrieve_url(RNS.hexrep(self.app.node.destination.hash, delimit=False))
@@ -1018,22 +1123,54 @@ class NodeInfo(urwid.WidgetWrap):
                 self.t_active_links = NodeInfo.links_timer
                 self.t_active_links.update_stat()
 
+            if NodeInfo.conns_timer == None:
+                self.t_total_connections = NodeTotalConnections(self.app)
+                NodeInfo.conns_timer = self.t_total_connections
+            else:
+                self.t_total_connections = NodeInfo.conns_timer
+                self.t_total_connections.update_stat()
+
+            if NodeInfo.pages_timer == None:
+                self.t_total_pages = NodeTotalPages(self.app)
+                NodeInfo.pages_timer = self.t_total_pages
+            else:
+                self.t_total_pages = NodeInfo.pages_timer
+                self.t_total_pages.update_stat()
+
+            if NodeInfo.files_timer == None:
+                self.t_total_files = NodeTotalFiles(self.app)
+                NodeInfo.files_timer = self.t_total_files
+            else:
+                self.t_total_files = NodeInfo.files_timer
+                self.t_total_files.update_stat()
+
+            lxmf_addr_str = g["sent"]+" LXMF Propagation Node Address is "+RNS.prettyhexrep(RNS.Destination.hash_from_name_and_identity("lxmf.propagation", self.app.node.destination.identity))
+            e_lxmf = urwid.Text(lxmf_addr_str, align="center")
+
             announce_button = urwid.Button("Announce", on_press=announce_query)
             connect_button = urwid.Button("Browse", on_press=connect_query)
+            reset_button = urwid.Button("Rst Stats", on_press=stats_query)
 
             pile = urwid.Pile([
                 t_id,
                 e_name,
                 urwid.Divider(g["divider1"]),
+                e_lxmf,
+                urwid.Divider(g["divider1"]),
                 self.t_last_announce,
                 self.t_active_links,
+                self.t_total_connections,
+                self.t_total_pages,
+                self.t_total_files,
                 urwid.Divider(g["divider1"]),
                 urwid.Columns([
-                    ("weight", 0.3, urwid.Button("Back", on_press=show_peer_info)),
-                    ("weight", 0.1, urwid.Text("")),
-                    ("weight", 0.4, connect_button),
-                    ("weight", 0.1, urwid.Text("")),
-                    ("weight", 0.5, announce_button)
+                    ("weight", 5, urwid.Button("Back", on_press=show_peer_info)),
+                    ("weight", 0.5, urwid.Text("")),
+                    ("weight", 6, connect_button),
+                    ("weight", 0.5, urwid.Text("")),
+                    ("weight", 8, reset_button),
+                    ("weight", 0.5, urwid.Text("")),
+                    ("weight", 7, announce_button),
                 ])
             ])
         else:
@@ -1051,7 +1188,9 @@ class NodeInfo(urwid.WidgetWrap):
         if self.app.node != None:
             self.t_last_announce.start()
             self.t_active_links.start()
-
+            self.t_total_connections.start()
+            self.t_total_pages.start()
+            self.t_total_files.start()
 
 
 class UpdatingText(urwid.WidgetWrap):
@@ -1153,7 +1292,7 @@ class NetworkDisplay():
         self.list_display = 1
         self.left_pile = NetworkLeftPile([
             ("weight", 1, self.known_nodes_display),
-            ("pack", self.network_stats_display),
+            # ("pack", self.network_stats_display),
             ("pack", self.local_peer_display),
         ])
 
