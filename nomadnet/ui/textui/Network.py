@@ -430,15 +430,44 @@ class KnownNodeInfo(urwid.WidgetWrap):
 
         e_name = urwid.Edit(caption="Name      : ",edit_text=display_str)
 
+        node_ident = RNS.Identity.recall(source_hash)
+        op_hash = None
+        op_str = None
+        if node_ident != None:
+            op_hash = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", node_ident)
+            op_str = self.app.directory.simplest_display_str(op_hash)
+        else:
+            op_str = "Unknown"
+
         def show_known_nodes(sender):
             options = self.parent.left_pile.options(height_type="weight", height_amount=1)
             self.parent.left_pile.contents[0] = (self.parent.known_nodes_display, options)
 
         def connect(sender):
-            # TODO: Remove when new mitigation has been tested
-            # self.app.ui.main_display.request_redraw(extra_delay=0.75)
             self.parent.browser.retrieve_url(RNS.hexrep(source_hash, delimit=False))
             show_known_nodes(None)
+
+        def msg_op(sender):
+            show_known_nodes(None)
+            if node_ident != None:
+                try:
+                    existing_conversations = nomadnet.Conversation.conversation_list(self.app)
+                    
+                    source_hash_text = RNS.hexrep(op_hash, delimit=False)
+                    display_name = op_str
+
+                    if not source_hash_text in [c[0] for c in existing_conversations]:
+                        entry = DirectoryEntry(source_hash, display_name, trust_level)
+                        self.app.directory.remember(entry)
+
+                        new_conversation = nomadnet.Conversation(source_hash_text, nomadnet.NomadNetworkApp.get_shared_instance(), initiator=True)
+                        self.app.ui.main_display.sub_displays.conversations_display.update_conversation_list()
+
+                    self.app.ui.main_display.sub_displays.conversations_display.display_conversation(None, source_hash_text)
+                    self.app.ui.main_display.show_conversations(None)
+
+                except Exception as e:
+                    RNS.log("Error while starting conversation from node info. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
         def pn_change(sender, userdata):
             self.pn_changed = True
@@ -470,9 +499,13 @@ class KnownNodeInfo(urwid.WidgetWrap):
             self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
             show_known_nodes(None)
 
-        type_button = ("weight", 0.45, urwid.Button("Connect", on_press=connect))
-        save_button = ("weight", 0.45, urwid.Button("Save", on_press=save_node))
-        button_columns = urwid.Columns([("weight", 0.45, urwid.Button("Back", on_press=show_known_nodes)), ("weight", 0.1, urwid.Text("")), save_button, ("weight", 0.1, urwid.Text("")), type_button])
+        back_button = ("weight", 0.2, urwid.Button("Back", on_press=show_known_nodes))
+        connect_button = ("weight", 0.2, urwid.Button("Connect", on_press=connect))
+        save_button = ("weight", 0.2, urwid.Button("Save", on_press=save_node))
+        msg_button = ("weight", 0.2, urwid.Button("Msg Op", on_press=msg_op))
+        bdiv = ("weight", 0.02, urwid.Text(""))
+
+        button_columns = urwid.Columns([back_button, bdiv, connect_button, bdiv, msg_button, bdiv, save_button])
 
         pile_widgets = [
             urwid.Text("Type      : "+type_string, align="left"),
@@ -490,13 +523,6 @@ class KnownNodeInfo(urwid.WidgetWrap):
             urwid.Divider(g["divider1"]),
             button_columns
         ]
-
-        node_ident = RNS.Identity.recall(source_hash)
-        if node_ident != None:
-            op_hash = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", node_ident)
-            op_str = self.app.directory.simplest_display_str(op_hash)
-        else:
-            op_str = "Unknown"
 
         operator_entry = urwid.Text("Operator  : "+op_str, align="left")
         pile_widgets.insert(3, operator_entry)
