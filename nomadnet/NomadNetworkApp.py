@@ -65,6 +65,7 @@ class NomadNetworkApp:
         self.rns = RNS.Reticulum(configdir = rnsconfigdir)
 
         self.configpath        = self.configdir+"/config"
+        self.ignoredpath       = self.configdir+"/ignored"
         self.logfilepath       = self.configdir+"/logfile"
         self.errorfilepath     = self.configdir+"/errors"
         self.storagepath       = self.configdir+"/storage"
@@ -202,11 +203,35 @@ class NomadNetworkApp:
                 RNS.log("The contained exception was: %s" % (str(e)), RNS.LOG_ERROR)
                 nomadnet.panic()
 
+        self.ignored_list = []
+        if os.path.isfile(self.ignoredpath):
+            try:
+                fh = open(self.ignoredpath, "rb")
+                ignored_input = fh.read()
+                fh.close()
+
+                ignored_hash_strs = ignored_input.splitlines()
+
+                for hash_str in ignored_hash_strs:
+                    if len(hash_str) == RNS.Identity.TRUNCATED_HASHLENGTH//8*2:
+                        try:
+                            ignored_hash = bytes.fromhex(hash_str.decode("utf-8"))
+                            self.ignored_list.append(ignored_hash)
+
+                        except Exception as e:
+                            RNS.log("Could not decode RNS Identity hash from: "+str(hash_str), RNS.LOG_DEBUG)
+                            RNS.log("The contained exception was: "+str(e), RNS.LOG_DEBUG)
+
+            except Exception as e:
+                RNS.log("Error while fetching loading list of ignored destinations: "+str(e), RNS.LOG_ERROR)
 
         self.directory = nomadnet.Directory(self)
 
         self.message_router = LXMF.LXMRouter(identity = self.identity, storagepath = self.storagepath, autopeer = True)
         self.message_router.register_delivery_callback(self.lxmf_delivery)
+
+        for destination_hash in self.ignored_list:
+            self.message_router.ignore_destination(destination_hash)
 
         self.lxmf_destination = self.message_router.register_delivery_identity(self.identity, display_name=self.peer_settings["display_name"])
         self.lxmf_destination.set_default_app_data(self.get_display_name_bytes)

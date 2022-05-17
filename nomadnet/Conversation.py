@@ -14,20 +14,25 @@ class Conversation:
     @staticmethod
     def received_announce(destination_hash, announced_identity, app_data):
         app = nomadnet.NomadNetworkApp.get_shared_instance()
-        destination_hash_text = RNS.hexrep(destination_hash, delimit=False)
-        # Check if the announced destination is in
-        # our list of conversations
-        if destination_hash_text in [e[0] for e in Conversation.conversation_list(app)]:
-            if app.directory.find(destination_hash):
-                if Conversation.created_callback != None:
-                    Conversation.created_callback()
-            else:
-                if Conversation.created_callback != None:
-                    Conversation.created_callback()
 
-        # Add the announce to the directory announce
-        # stream logger
-        app.directory.lxmf_announce_received(destination_hash, app_data)
+        if not destination_hash in app.ignored_list:
+            destination_hash_text = RNS.hexrep(destination_hash, delimit=False)
+            # Check if the announced destination is in
+            # our list of conversations
+            if destination_hash_text in [e[0] for e in Conversation.conversation_list(app)]:
+                if app.directory.find(destination_hash):
+                    if Conversation.created_callback != None:
+                        Conversation.created_callback()
+                else:
+                    if Conversation.created_callback != None:
+                        Conversation.created_callback()
+
+            # Add the announce to the directory announce
+            # stream logger
+            app.directory.lxmf_announce_received(destination_hash, app_data)
+            
+        else:
+            RNS.log("Ignored announce from "+RNS.prettyhexrep(destination_hash), RNS.LOG_DEBUG)
 
     @staticmethod
     def query_for_peer(source_hash):

@@ -12,12 +12,17 @@ class Directory:
     @staticmethod
     def received_announce(destination_hash, announced_identity, app_data):
         app = nomadnet.NomadNetworkApp.get_shared_instance()
-        destination_hash_text = RNS.hexrep(destination_hash, delimit=False)
 
-        associated_peer = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", announced_identity)
+        if not destination_hash in app.ignored_list:
+            destination_hash_text = RNS.hexrep(destination_hash, delimit=False)
 
-        app.directory.node_announce_received(destination_hash, app_data, associated_peer)
-        app.autoselect_propagation_node()
+            associated_peer = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", announced_identity)
+
+            app.directory.node_announce_received(destination_hash, app_data, associated_peer)
+            app.autoselect_propagation_node()
+            
+        else:
+            RNS.log("Ignored announce from "+RNS.prettyhexrep(destination_hash), RNS.LOG_DEBUG)
 
 
     def __init__(self, app):
