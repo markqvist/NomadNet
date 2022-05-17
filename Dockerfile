@@ -21,4 +21,4 @@ COPY --from=build /opt/venv /opt/venv
 VOLUME /root/.reticulum
 VOLUME /root/.nomadnetwork
 
-ENTRYPOINT ["nomadnet --daemon"]
+ENTRYPOINT ["nomadnet"]
