@@ -38,6 +38,12 @@ pip3 install nomadnet
 
 # Run the client
 nomadnet
+
+# Or alternatively run as a daemon, with no user interface
+nomadnet --daemon
+
+# List options
+nomadnet --help
 ```
 
 The first time the program is running, you will be presented with the guide section, which contains all the information you need to start using Nomad Network.
@@ -48,12 +54,12 @@ If you want to try Nomad Network without building your own physical network, you
 
 **Please Note**: If this is the very first time you use pip to install a program on your system, you might need to reboot your system for the program to become available. If you get a "command not found" error or similar when running the program, reboot your system and try again.
 
-### Installing on Android
+### Install on Android
 You can install Nomad Network on Android using Termux, but there's a few more commands involved than the above one-liner. The process is documented in the [Android Installation](https://markqvist.github.io/Reticulum/manual/gettingstartedfast.html#reticulum-on-android) section of the Reticulum Manual. Once the Reticulum has been installed according to the linked documentation, Nomad Network can be installed as usual with pip.
 
 For a native Android application with a graphical user interface, have a look at [Sideband](https://unsigned.io/sideband).
 
-### Using docker / running a daemon
+### Nomad Network Daemon in Docker
 
 Nomad Network is automatically published as a docker image on Github Packages. Image tags are one of either `master` (for the latest release) or the version number (eg `0.1.7`) for the specified version number (as tagged in this git repo).
 
