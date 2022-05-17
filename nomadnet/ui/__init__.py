@@ -12,11 +12,15 @@ UI_MENU       = 0x01
 UI_TEXT       = 0x02
 UI_GRAPHICAL  = 0x03
 UI_WEB        = 0x04
-UI_MODES = [UI_MENU, UI_TEXT, UI_GRAPHICAL, UI_WEB]
+UI_MODES = [UI_NONE, UI_MENU, UI_TEXT, UI_GRAPHICAL, UI_WEB]
 
 def spawn(uimode):
     if uimode in UI_MODES:
-        RNS.log("Starting user interface...", RNS.LOG_INFO)
+        if uimode == UI_NONE:
+            RNS.log("Starting Nomad Network daemon...", RNS.LOG_INFO)
+        else:
+            RNS.log("Starting user interface...", RNS.LOG_INFO)
+
         if uimode == UI_MENU:
             from .MenuUI import MenuUI
             return MenuUI()
@@ -29,8 +33,11 @@ def spawn(uimode):
         elif uimode == UI_WEB:
             from .WebUI import WebUI
             return WebUI()
+        elif uimode == UI_NONE:
+            from .NoneUI import NoneUI
+            return NoneUI()
         else:
             return None
     else:
-        RNS.log("Invalid UI mode", RNS.LOG_ERROR)
+        RNS.log("Invalid UI mode", RNS.LOG_ERROR, _override_destination=True)
         nomadnet.panic()

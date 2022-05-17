@@ -66,7 +66,8 @@ class Conversation:
             except Exception as e:
                 pass
 
-            Conversation.created_callback()
+            if Conversation.created_callback != None:
+                Conversation.created_callback()
 
         return ingested_path
 

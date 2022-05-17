@@ -86,7 +86,9 @@ class Directory:
             self.announce_stream.insert(0, (timestamp, source_hash, app_data, False))
             while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
                 self.announce_stream.pop()
-            self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
+
+            if hasattr(self.app.ui, "main_display"):
+                self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
 
     def node_announce_received(self, source_hash, app_data, associated_peer):
         if app_data != None:
@@ -101,7 +103,8 @@ class Directory:
                     node_entry = DirectoryEntry(source_hash, display_name=app_data.decode("utf-8"), trust_level=DirectoryEntry.TRUSTED, hosts_node=True)
                     self.remember(node_entry)
             
-            self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
+            if hasattr(self.app.ui, "main_display"):
+                self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
 
     def remove_announce_with_timestamp(self, timestamp):
         selected_announce = None

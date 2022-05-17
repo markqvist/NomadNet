@@ -563,7 +563,7 @@ class KnownNodes(urwid.WidgetWrap):
             self.pile = urwid.Pile([urwid.Text(("warning_text", g["info"]+"\n"), align="center"), SelectText(("warning_text", "Currently, no nodes are known\n\n"), align="center")])
             self.display_widget = urwid.Filler(self.pile, valign="top", height="pack")
 
-        urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="Known Nodes"), widget_style))
+        urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="Saved Nodes"), widget_style))
 
     def keypress(self, size, key):
         if key == "up" and (self.no_content or self.ilb.first_item_is_selected()):
