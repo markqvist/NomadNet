@@ -528,7 +528,6 @@ class LinkableText(urwid.Text):
         if self.delegate != None:
             self.delegate.handle_link(link_target)
 
-
     def find_next_part_pos(self, pos, part_positions):
         for position in part_positions:
             if position > pos:
@@ -596,7 +595,12 @@ class LinkableText(urwid.Text):
             return key
         
         elif key == "right":
+            old = self._cursor_position
             self._cursor_position = self.find_next_part_pos(self._cursor_position, part_positions)
+            if self._cursor_position == old:
+                self._cursor_position = 0
+                return "down"
+
             self._invalidate()
         
         elif key == "left":
@@ -641,9 +645,33 @@ class LinkableText(urwid.Text):
         if button != 1 or not is_mouse_press(event):
             return False
         else:
-            pos = (y * size[0]) + x
+            (maxcol,) = size
+            translation = self.get_line_translation(maxcol)
+            line_offset = 0
+
+            if self.align == "center":
+                line_offset = translation[y][1][1]-translation[y][0][0]
+                if x < translation[y][0][0]:
+                    x = translation[y][0][0]
+
+                if x > translation[y][1][0]+translation[y][0][0]:
+                    x = translation[y][1][0]+translation[y][0][0]
+
+            elif self.align == "right":
+                line_offset = translation[y][1][1]-translation[y][0][0]
+                if x < translation[y][0][0]:
+                    x = translation[y][0][0]
+
+            else:
+                line_offset = translation[y][0][1]
+                if x > translation[y][0][0]:
+                    x = translation[y][0][0]
+
+            pos = line_offset+x
+
             self._cursor_position = pos
             item = self.find_item_at_pos(self._cursor_position)
+
             if item != None:
                 if isinstance(item, LinkSpec):
                     self.handle_link(item.link_target)
