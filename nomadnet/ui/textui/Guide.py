@@ -551,6 +551,10 @@ Determines where the node server will look for hosted pages. Must be a readable 
 >>>>
 Determines where the node server will look for downloadable files. Must be a readable filesystem path.
 <
+
+>Ignoring Destinations
+
+If you encounter peers or nodes on the network, that you would rather not see in your client, you can add them to the `!~/.nomadnetwork/ignored`! file. To ignore nodes or peers, add one 20-character hexadecimal destination hash per line to the file. To unignore one again, simply remove the corresponding entry from the file and restart Nomad Network.
 '''
 
 TOPIC_NETWORKS = '''>Network Configuration
