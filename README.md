@@ -26,7 +26,7 @@ The current version of the program should be considered a beta release. The prog
 
 ### Feature roadmap
  - Network-wide propagated bulletins and discussion threads
- - Collaborative maps
+ - Collaborative maps and geospatial information sharing
  - Facilitation of trade and barter
 
 ## How do I get started?
