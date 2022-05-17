@@ -13,7 +13,7 @@ RUN cd /app/ && python3 setup.py install
 # Use multi-stage build, as we don't need rust compilation on the final image
 FROM python:3.11-rc-alpine3.14
 
-LABEL org.opencontainers.image.documentation="https://github.com/markqvist/NomadNet#using-docker--running-a-daemon"
+LABEL org.opencontainers.image.documentation="https://github.com/markqvist/NomadNet#nomad-network-daemon-with-docker"
 
 ENV PATH="/opt/venv/bin:$PATH"
 COPY --from=build /opt/venv /opt/venv

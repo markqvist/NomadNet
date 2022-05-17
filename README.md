@@ -59,7 +59,7 @@ You can install Nomad Network on Android using Termux, but there's a few more co
 
 For a native Android application with a graphical user interface, have a look at [Sideband](https://unsigned.io/sideband).
 
-### Nomad Network Daemon in Docker
+### Nomad Network Daemon with Docker
 
 Nomad Network is automatically published as a docker image on Github Packages. Image tags are one of either `master` (for the latest release) or the version number (eg `0.1.7`) for the specified version number (as tagged in this git repo).
 
