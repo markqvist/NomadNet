@@ -382,9 +382,9 @@ class KnownNodeInfo(urwid.WidgetWrap):
         addr_str     = "<"+RNS.hexrep(source_hash, delimit=False)+">"
 
         if node_ident != None:
-            lxmf_addr_str = RNS.prettyhexrep(RNS.Destination.hash_from_name_and_identity("lxmf.propagation", node_ident))
+            lxmf_addr_str = "Runs LXMF Propagation Node "+RNS.prettyhexrep(RNS.Destination.hash_from_name_and_identity("lxmf.propagation", node_ident))
         else:
-            lxmf_addr_str = "Unknown"
+            lxmf_addr_str = "No associated Propagation Node known"
 
 
         type_string = "Node " + g["node"]
@@ -476,11 +476,10 @@ class KnownNodeInfo(urwid.WidgetWrap):
 
         pile_widgets = [
             urwid.Text("Type      : "+type_string, align="left"),
-            # urwid.Text("Name      : "+display_str, align="left"),
             e_name,
             urwid.Text("Node Addr : "+addr_str, align="left"),
-            urwid.Text("LXMF Addr : "+lxmf_addr_str, align="left"),
-            # urwid.Text(["Trust     : ", (style, trust_str)], align="left"),
+            urwid.Divider(g["divider1"]),
+            urwid.Text(lxmf_addr_str, align="left"),
             urwid.Divider(g["divider1"]),
             propagation_node_checkbox,
             connect_identify_checkbox,
@@ -500,7 +499,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
             op_str = "Unknown"
 
         operator_entry = urwid.Text("Operator  : "+op_str, align="left")
-        pile_widgets.insert(4, operator_entry)
+        pile_widgets.insert(3, operator_entry)
 
         hops = RNS.Transport.hops_to(source_hash)
         if hops == 1:
@@ -514,7 +513,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
             hops_str = "Unknown"
 
         operator_entry = urwid.Text("Distance  : "+hops_str, align="left")
-        pile_widgets.insert(5, operator_entry)
+        pile_widgets.insert(4, operator_entry)
 
         pile = urwid.Pile(pile_widgets)
 
@@ -1212,7 +1211,7 @@ class LXMFPeers(urwid.WidgetWrap):
             self.pile = urwid.Pile([urwid.Text(("warning_text", g["info"]+"\n"), align="center"), SelectText(("warning_text", "Currently, no LXMF nodes are peered\n\n"), align="center")])
             self.display_widget = urwid.Filler(self.pile, valign="top", height="pack")
 
-        urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="LXMF Peers"), widget_style))
+        urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="LXMF Propagation Peers"), widget_style))
 
     def keypress(self, size, key):
         if key == "up" and (self.no_content or self.ilb.first_item_is_selected()):
@@ -1269,13 +1268,13 @@ class LXMFPeerEntry(urwid.WidgetWrap):
             node_hash = RNS.Destination.hash_from_name_and_identity("nomadnetwork.node", node_identity)
             display_name = self.app.directory.alleged_display_str(node_hash)
             if display_name != None:
-                display_str += "\n   "+str(display_name)
+                display_str += " "+str(display_name)
 
         sym = g["sent"]
         style         = "list_unknown"
         focus_style   = "list_focus"
 
-        widget = ListEntry(sym+" "+display_str+"\n   Last heard "+pretty_date(int(peer.last_heard))+"\n   "+str(len(peer.unhandled_messages))+" unhandled messages")
+        widget = ListEntry(sym+" "+display_str+"\n  "+str(len(peer.unhandled_messages))+" unhandled messages - "+"Last heard "+pretty_date(int(peer.last_heard)))
         # urwid.connect_signal(widget, "click", delegate.connect_node, node)
 
         self.display_widget = urwid.AttrMap(widget, style, focus_style)
