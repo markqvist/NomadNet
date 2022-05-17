@@ -118,6 +118,33 @@ class AnnounceInfo(urwid.WidgetWrap):
             self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
             show_announce_stream(None)
 
+        if is_node:
+            node_ident = RNS.Identity.recall(source_hash)
+            op_hash = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", node_ident)
+            op_str = self.app.directory.simplest_display_str(op_hash)
+
+        def msg_op(sender):
+            show_announce_stream(None)
+            if is_node:
+                try:
+                    existing_conversations = nomadnet.Conversation.conversation_list(self.app)
+                    
+                    source_hash_text = RNS.hexrep(op_hash, delimit=False)
+                    display_name = op_str
+
+                    if not source_hash_text in [c[0] for c in existing_conversations]:
+                        entry = DirectoryEntry(source_hash, display_name, trust_level)
+                        self.app.directory.remember(entry)
+
+                        new_conversation = nomadnet.Conversation(source_hash_text, nomadnet.NomadNetworkApp.get_shared_instance(), initiator=True)
+                        self.app.ui.main_display.sub_displays.conversations_display.update_conversation_list()
+
+                    self.app.ui.main_display.sub_displays.conversations_display.display_conversation(None, source_hash_text)
+                    self.app.ui.main_display.show_conversations(None)
+
+                except Exception as e:
+                    RNS.log("Error while starting conversation from announce. The contained exception was: "+str(e), RNS.LOG_ERROR)
+
         def converse(sender):
             show_announce_stream(None)
             try:
@@ -141,13 +168,14 @@ class AnnounceInfo(urwid.WidgetWrap):
 
         if is_node:
             type_button = ("weight", 0.45, urwid.Button("Connect", on_press=connect))
+            msg_button =  ("weight", 0.45, urwid.Button("Msg Op", on_press=msg_op))
             save_button = ("weight", 0.45, urwid.Button("Save", on_press=save_node))
         else:
             type_button = ("weight", 0.45, urwid.Button("Converse", on_press=converse))
             save_button = None
 
         if is_node:
-            button_columns = urwid.Columns([("weight", 0.45, urwid.Button("Back", on_press=show_announce_stream)), ("weight", 0.1, urwid.Text("")), save_button, ("weight", 0.1, urwid.Text("")), type_button])
+            button_columns = urwid.Columns([("weight", 0.45, urwid.Button("Back", on_press=show_announce_stream)), ("weight", 0.1, urwid.Text("")), type_button, ("weight", 0.1, urwid.Text("")), msg_button, ("weight", 0.1, urwid.Text("")), save_button])
         else:
             button_columns = urwid.Columns([("weight", 0.45, urwid.Button("Back", on_press=show_announce_stream)), ("weight", 0.1, urwid.Text("")), type_button])
 
@@ -164,9 +192,6 @@ class AnnounceInfo(urwid.WidgetWrap):
         ]
 
         if is_node:
-            node_ident = RNS.Identity.recall(source_hash)
-            op_hash = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", node_ident)
-            op_str = self.app.directory.simplest_display_str(op_hash)
             operator_entry = urwid.Text("Oprtr : "+op_str, align="left")
             pile_widgets.insert(4, operator_entry)
 
