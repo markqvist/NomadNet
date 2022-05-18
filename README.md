@@ -66,7 +66,7 @@ Nomad Network is automatically published as a docker image on Github Packages. I
 ```sh
 $ docker pull ghcr.io/markqvist/nomadnet:master
 
-# Run nomadnet interactively without installing it (with default config)
+# Run nomadnet interactively in a container
 $ docker run -it ghcr.io/markqvist/nomadnet:master --textui
 
 # Run nomadnet as a daemon, using config stored on the host machine in specified
@@ -86,6 +86,9 @@ $ docker run -d \
   -v /local/path/nomadnetconfigdir/:/root/.nomadnetwork/ \
   -v /local/path/reticulumconfigdir/:/root/.reticulum/ \
   ghcr.io/markqvist/nomadnet:master
+
+# Send daemon log output to console instead of file
+$ docker run -i ghcr.io/markqvist/nomadnet:master --daemon --console
 ```
 
 ## Help & Discussion
