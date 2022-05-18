@@ -16,6 +16,7 @@ def main():
         parser.add_argument("--config", action="store", default=None, help="path to alternative Nomad Network config directory", type=str)
         parser.add_argument("--rnsconfig", action="store", default=None, help="path to alternative Reticulum config directory", type=str)
         parser.add_argument("-d", "--daemon", action="store_true", default=False, help="run Nomad Network in daemon mode")
+        parser.add_argument("-t", "--textui", action="store_true", default=False, help="run Nomad Network in text-UI mode")
         parser.add_argument("--version", action="version", version="Nomad Network Client {version}".format(version=__version__))
         
         args = parser.parse_args()
@@ -30,7 +31,15 @@ def main():
         else:
             rnsconfigarg = None
 
-        program_setup(configarg, rnsconfigarg, args.daemon)
+        if args.daemon:
+            daemon = True
+        else:
+            daemon = False
+
+        if args.textui:
+            daemon = False
+
+        program_setup(configarg, rnsconfigarg, daemon)
 
     except KeyboardInterrupt:
         print("")
