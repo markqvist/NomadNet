@@ -46,7 +46,7 @@ class NomadNetworkApp:
         if issubclass(e_type, KeyboardInterrupt):
             sys.__excepthook__(e_type, e_value, e_traceback)
 
-    def __init__(self, configdir = None, rnsconfigdir = None, daemon = False):
+    def __init__(self, configdir = None, rnsconfigdir = None, daemon = False, force_console = False):
         self.version       = __version__
         self.enable_client = False
         self.enable_node   = False
@@ -58,6 +58,11 @@ class NomadNetworkApp:
             self.configdir = NomadNetworkApp.configdir
         else:
             self.configdir = configdir
+
+        if force_console:
+            self.force_console_log = True
+        else:
+            self.force_console_log = False
 
         if NomadNetworkApp._shared_instance == None:
             NomadNetworkApp._shared_instance = self
@@ -490,7 +495,7 @@ class NomadNetworkApp:
                     if RNS.loglevel > 7:
                         RNS.loglevel = 7
                 if option == "destination":
-                    if value.lower() == "file":
+                    if value.lower() == "file" and not self.force_console_log:
                         RNS.logdest = RNS.LOG_FILE
                         if "logfile" in self.config["logging"]:
                             self.logfilepath = self.config["logging"]["logfile"]
