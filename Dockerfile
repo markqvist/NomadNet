@@ -16,6 +16,7 @@ FROM python:3.11-rc-alpine3.14
 LABEL org.opencontainers.image.documentation="https://github.com/markqvist/NomadNet#nomad-network-daemon-with-docker"
 
 ENV PATH="/opt/venv/bin:$PATH"
+ENV PYTHONUNBUFFERED="yes"
 COPY --from=build /opt/venv /opt/venv
 
 VOLUME /root/.reticulum

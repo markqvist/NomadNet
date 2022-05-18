@@ -59,25 +59,32 @@ You can install Nomad Network on Android using Termux, but there's a few more co
 
 For a native Android application with a graphical user interface, have a look at [Sideband](https://unsigned.io/sideband).
 
-### Nomad Network Daemon with Docker
+### Docker Images
 
-Nomad Network is automatically published as a docker image on Github Packages. Image tags are one of either `master` (for the latest release) or the version number (eg `0.1.7`) for the specified version number (as tagged in this git repo).
-
+Nomad Network is automatically published as a docker image on Github Packages. Image tags are one of either `master` (for the very latest commit) or the version number (eg `0.1.8`) for a specific release.
 
 ```sh
 $ docker pull ghcr.io/markqvist/nomadnet:master
 
 # Run nomadnet interactively without installing it (with default config)
-$ docker run -it ghcr.io/markqvist/nomadnet:master
+$ docker run -it ghcr.io/markqvist/nomadnet:master --textui
 
-# Run nomadnet as a daemon, using config stored on the host machine in specific
-# directories, and allowing access to specific numbered ports openned by nomadnet
-# on the host machine on the same port numbers.
+# Run nomadnet as a daemon, using config stored on the host machine in specified
+# directories, and connect the containers network to the host network (which will
+# allow the default AutoInterface to automatically peer with other discovered
+# Reticulum instances).
 $ docker run -d \
-  -v /local/path/nomadnetconfig/:/root/.nomadnetwork/ \
-  -v /local/path/reticulumconfig/:/root/.reticulum/ \
-  -p 37428:37428 \
-  -p 37429:37429 \
+  -v /local/path/nomadnetconfigdir/:/root/.nomadnetwork/ \
+  -v /local/path/reticulumconfigdir/:/root/.reticulum/ \
+  --network host
+  ghcr.io/markqvist/nomadnet:master
+
+# You can also keep the network of the container isolated from the host, but you
+# will need to manually configure one or more Reticulum interfaces to reach other
+# nodes in a network, by editing the Reticulum configuration file.
+$ docker run -d \
+  -v /local/path/nomadnetconfigdir/:/root/.nomadnetwork/ \
+  -v /local/path/reticulumconfigdir/:/root/.reticulum/ \
   ghcr.io/markqvist/nomadnet:master
 ```
 
