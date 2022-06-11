@@ -200,6 +200,9 @@ class NomadNetworkApp:
                     "node_last_announce": None,
                     "propagation_node": None,
                     "last_lxmf_sync": 0,
+                    "node_connects": 0,
+                    "served_page_requests": 0,
+                    "served_file_requests": 0
                 }
                 self.save_peer_settings()
                 RNS.log("Created new peer settings file")
