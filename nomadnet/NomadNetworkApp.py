@@ -254,9 +254,17 @@ class NomadNetworkApp:
         RNS.log("LXMF Router ready to receive on: "+RNS.prettyhexrep(self.lxmf_destination.hash))
 
         if self.enable_node:
-            self.message_router.enable_propagation()
+            self.message_router.set_message_storage_limit(gigabytes=self.message_storage_limit)
+            for dest_str in self.prioritised_lxmf_destinations:
+                try:
+                    dest_hash = bytes.fromhex(dest_str)
+                    if len(dest_hash) == RNS.Reticulum.TRUNCATED_HASHLENGTH//8:
+                        self.message_router.prioritise(dest_hash)
 
-            # TODO: Set LXMF storage limits
+                except Exception as e:
+                    RNS.log("Cannot prioritise "+str(dest_str)+", it is not a valid destination hash", RNS.LOG_ERROR)
+
+            self.message_router.enable_propagation()
 
             RNS.log("LXMF Propagation Node started on: "+RNS.prettyhexrep(self.message_router.propagation_destination.hash))
             self.node = nomadnet.Node(self)
@@ -656,6 +664,19 @@ class NomadNetworkApp:
             if "files_path" in self.config["node"]:
                 self.filespath = self.config["node"]["files_path"]
 
+            if "prioritise_destinations" in self.config["node"]:
+                self.prioritised_lxmf_destinations = self.config["node"].as_list("prioritise_destinations")
+            else:
+                self.prioritised_lxmf_destinations = []
+
+            if not "message_storage_limit" in self.config["node"]:
+                self.message_storage_limit = 2
+            else:
+                value = self.config["node"].as_int("message_storage_limit")
+                if value < 0.064:
+                    value = 0.064
+                self.message_storage_limit = value
+
               
     @staticmethod
     def get_shared_instance():
@@ -766,28 +787,43 @@ editor = editor
 
 # If you don't want the Guide section to
 # show up in the menu, you can disable it.
-
 hide_guide = no
 
 [node]
 
 # Whether to enable node hosting
-
 enable_node = no
 
 # The node name will be visible to other
 # peers on the network, and included in
 # announces.
-
 node_name = None
 
 # Automatic announce interval in minutes.
 # 6 hours by default.
-
 announce_interval = 360
 
-# Whether to announce when the node starts
-
+# Whether to announce when the node starts.
 announce_at_start = Yes
+
+# The maximum amount of storage to use for
+# the LXMF Propagation Node message store,
+# specified in gigabytes. When this limit
+# is reached, LXMF will periodically remove
+# messages in its message store. By default,
+# LXMF prioritises keeping messages that are
+# new and small. Large and old messages will
+# be removed first. This setting is optional
+# and defaults to 2 gigabytes.
+# message_storage_limit = 2
+
+# You can tell the LXMF message router to
+# prioritise storage for one or more
+# destinations. If the message store reaches
+# the specified limit, LXMF will prioritise
+# keeping messages for destinations specified
+# with this option. This setting is optional,
+# and generally you do not need to use it.
+# prioritise_destinations = 10bc7624c27032a18639, ba780a6dff4cc1391db8
 
 '''.splitlines()
