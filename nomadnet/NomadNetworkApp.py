@@ -672,7 +672,7 @@ class NomadNetworkApp:
             if not "message_storage_limit" in self.config["node"]:
                 self.message_storage_limit = 2
             else:
-                value = self.config["node"].as_int("message_storage_limit")
+                value = self.config["node"].as_float("message_storage_limit")
                 if value < 0.064:
                     value = 0.064
                 self.message_storage_limit = value

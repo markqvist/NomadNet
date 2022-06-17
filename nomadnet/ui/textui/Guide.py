@@ -514,12 +514,12 @@ What color theme to use. Set it to match your terminal theme. Can be either `!da
 
 >> Node Section
 
-This section holds configuration directives related to the node hosting. It is delimited by the `![node]`! header in the configuration file. Available directives, along with their default values, are as follows:
+This section holds configuration directives related to the node hosting. It is delimited by the `![node]`! header in the configuration file. Available directives, along with example values, are as follows:
 
 >>>
-`!enable_node = yes`!
+`!enable_node = no`!
 >>>>
-Determines whether the node server should be started on launch. Must be a boolean value.
+Determines whether the node server should be started on launch. Must be a boolean value, and is turned off by default.
 <
 
 >>>
@@ -550,6 +550,18 @@ Determines where the node server will look for hosted pages. Must be a readable 
 `!files_path = ~/.nomadnetwork/storage/files`!
 >>>>
 Determines where the node server will look for downloadable files. Must be a readable filesystem path.
+<
+
+>>>
+`!message_storage_limit = 2`!
+>>>>
+Configures the maximum amount of storage, in gigabytes, the LXMF Propagation Node will use to store messages.
+<
+
+>>>
+`!prioritise_destinations = 10bc7624c27032a18639, ba780a6dff4cc1391db8`!
+>>>>
+Configures the LXMF Propagation Node to prioritise storing messages for certain destinations. If the message store reaches the specified limit, LXMF will prioritise keeping messages for destinations specified with this option. This setting is optional, and generally you do not need to use it.
 <
 
 >Ignoring Destinations
