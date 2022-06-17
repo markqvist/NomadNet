@@ -255,6 +255,9 @@ class NomadNetworkApp:
 
         if self.enable_node:
             self.message_router.enable_propagation()
+
+            # TODO: Set LXMF storage limits
+
             RNS.log("LXMF Propagation Node started on: "+RNS.prettyhexrep(self.message_router.propagation_destination.hash))
             self.node = nomadnet.Node(self)
         else:
@@ -352,6 +355,10 @@ class NomadNetworkApp:
                 return "Done, no new messages"
             else:
                 return "Downloaded "+str(new_msgs)+" new messages"
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_NO_IDENTITY_RCVD:
+            return "Node did not receive identification"
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_NO_ACCESS:
+            return "Node did not allow request"
         else:
             return "Unknown"
 
@@ -379,7 +386,7 @@ class NomadNetworkApp:
         return self.message_router.propagation_transfer_progress
 
     def request_lxmf_sync(self, limit = None):
-        if self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_IDLE or self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_COMPLETE:
+        if self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_IDLE or self.message_router.propagation_transfer_state >= LXMF.LXMRouter.PR_COMPLETE:
             self.peer_settings["last_lxmf_sync"] = time.time()
             self.save_peer_settings()
             self.message_router.request_messages_from_propagation_node(self.identity, max_messages = limit)

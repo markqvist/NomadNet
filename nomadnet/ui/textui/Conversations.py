@@ -334,7 +334,7 @@ class ConversationsDisplay():
             self.dialog_open = False
             self.sync_dialog = None
             self.update_conversation_list()
-            if self.app.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_COMPLETE:
+            if self.app.message_router.propagation_transfer_state >= LXMF.LXMRouter.PR_COMPLETE:
                 self.app.cancel_lxmf_sync()
 
         max_messages_group = []
@@ -360,7 +360,7 @@ class ConversationsDisplay():
         real_sync_button = urwid.Button("Sync Now", on_press=sync_now)
         hidden_sync_button = urwid.Button("Cancel Sync", on_press=cancel_sync)
 
-        if self.app.get_sync_status() == "Idle" or self.app.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_COMPLETE:
+        if self.app.get_sync_status() == "Idle" or self.app.message_router.propagation_transfer_state >= LXMF.LXMRouter.PR_COMPLETE:
             sync_button = real_sync_button
         else:
             sync_button = hidden_sync_button
@@ -423,7 +423,7 @@ class ConversationsDisplay():
         if self.dialog_open and self.sync_dialog != None:
             self.sync_dialog.sync_progress.set_completion(self.app.get_sync_progress())
 
-            if self.app.get_sync_status() == "Idle" or self.app.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_COMPLETE:
+            if self.app.get_sync_status() == "Idle" or self.app.message_router.propagation_transfer_state >= LXMF.LXMRouter.PR_COMPLETE:
                 self.sync_dialog.bc.contents[0] = (self.sync_dialog.real_sync_button, self.sync_dialog.bc.options("weight", 0.45))
             else:
                 self.sync_dialog.bc.contents[0] = (self.sync_dialog.hidden_sync_button, self.sync_dialog.bc.options("weight", 0.45))
