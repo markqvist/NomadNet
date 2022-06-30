@@ -279,7 +279,7 @@ class Browser:
 
         components = url.split(":")
         if len(components) == 1:
-            if len(components[0]) == 20:
+            if len(components[0]) == (RNS.Reticulum.TRUNCATED_HASHLENGTH//8)*2:
                 try:
                     destination_hash = bytes.fromhex(components[0])
                 except Exception as e:
@@ -288,7 +288,7 @@ class Browser:
             else:
                 raise ValueError("Malformed URL")
         elif len(components) == 2:
-            if len(components[0]) == 20:
+            if len(components[0]) == (RNS.Reticulum.TRUNCATED_HASHLENGTH//8)*2:
                 try:
                     destination_hash = bytes.fromhex(components[0])
                 except Exception as e:
