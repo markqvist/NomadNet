@@ -202,9 +202,9 @@ The following section will briefly introduce various concepts and terms used in 
 
 A `*peer`* refers to another Nomad Network client, which will generally be operated by another person. But since Nomad Network is a general LXMF client, it could also be any other LXMF client, program, automated system or machine that can communicate over LXMF.
 
-All peers (and nodes) are identified by their `*address`* (which is, technically speaking, a Reticulum destination hash). An address consist of 20 hexadecimal characters, and looks like this:
+All peers (and nodes) are identified by their `*address`* (which is, technically speaking, a Reticulum destination hash). An address consist of 32 hexadecimal characters (16 bytes), and looks like this:
 
-`c<b8ea8f92541c9a275f0e>
+`c<e9eafceea9e3664a5c55611c5e8c420a>
 `l
 
 Anyone can choose whatever display name they want, but addresses are always unique, and generated from the unique cryptographic keys of the peer. This is an important point to understand. Since there is not anyone controlling naming or address spaces in Nomad Network, you can easily come across another user with the same display name as you.
@@ -535,9 +535,9 @@ Determines whether your node is automatically announced on the network when the 
 <
 
 >>>
-`!announce_interval = 720`!
+`!announce_interval = 360`!
 >>>>
-Determines how often, in minutes, your node is announced on the network. Defaults to 12 hours.
+Determines how often, in minutes, your node is announced on the network. Defaults to 6 hours.
 <
 
 >>>
@@ -559,14 +559,14 @@ Configures the maximum amount of storage, in gigabytes, the LXMF Propagation Nod
 <
 
 >>>
-`!prioritise_destinations = 10bc7624c27032a18639, ba780a6dff4cc1391db8`!
+`!prioritise_destinations = 41d20c727598a3fbbdf9106133a3a0ed, d924b81822ca24e68e2effea99bcb8cf`!
 >>>>
 Configures the LXMF Propagation Node to prioritise storing messages for certain destinations. If the message store reaches the specified limit, LXMF will prioritise keeping messages for destinations specified with this option. This setting is optional, and generally you do not need to use it.
 <
 
 >Ignoring Destinations
 
-If you encounter peers or nodes on the network, that you would rather not see in your client, you can add them to the `!~/.nomadnetwork/ignored`! file. To ignore nodes or peers, add one 20-character hexadecimal destination hash per line to the file. To unignore one again, simply remove the corresponding entry from the file and restart Nomad Network.
+If you encounter peers or nodes on the network, that you would rather not see in your client, you can add them to the `!~/.nomadnetwork/ignored`! file. To ignore nodes or peers, add one 32-character hexadecimal destination hash per line to the file. To unignore one again, simply remove the corresponding entry from the file and restart Nomad Network.
 '''
 
 TOPIC_NETWORKS = '''>Network Configuration
