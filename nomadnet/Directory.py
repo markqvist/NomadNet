@@ -60,6 +60,9 @@ class Directory:
 
                 entries = {}
                 for e in unpacked_list:
+                    if e[1] == None:
+                        e[1] = RNS.prettyhexrep(e[0])
+                        
                     if len(e) > 3:
                         hosts_node = e[3]
                     else:
@@ -132,7 +135,11 @@ class Directory:
             return "<"+RNS.hexrep(source_hash, delimit=False)+">"
         else:
             if source_hash in self.directory_entries:
-                return self.directory_entries[source_hash].display_name
+                dn = self.directory_entries[source_hash].display_name
+                if dn == None:
+                    return RNS.prettyhexrep(source_hash)
+                else:
+                    return dn
             else:
                 return "<"+RNS.hexrep(source_hash, delimit=False)+">"
 
@@ -242,9 +249,11 @@ class DirectoryEntry:
     def __init__(self, source_hash, display_name=None, trust_level=UNKNOWN, hosts_node=False, preferred_delivery=None, identify_on_connect=False):
         if len(source_hash) == RNS.Identity.TRUNCATED_HASHLENGTH//8:
             self.source_hash  = source_hash
-            self.display_name = display_name
+
             if display_name  == None:
                 display_name  = source_hash
+
+            self.display_name = display_name
 
             if preferred_delivery == None:
                 self.preferred_delivery = DirectoryEntry.DIRECT

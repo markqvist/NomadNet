@@ -6,6 +6,7 @@ import nomadnet
 import subprocess
 import threading
 from .MicronParser import markup_to_attrmaps
+from nomadnet.Directory import DirectoryEntry
 from nomadnet.vendor.Scrollable import *
 
 class BrowserFrame(urwid.Frame):
@@ -20,6 +21,8 @@ class BrowserFrame(urwid.Frame):
             self.delegate.reload()
         elif key == "ctrl u":
             self.delegate.url_dialog()
+        elif key == "ctrl s":
+            self.delegate.save_node_dialog()
         elif self.get_focus() == "body":
             return super(BrowserFrame, self).keypress(size, key)
             # if key == "up" and self.delegate.messagelist.top_is_visible:
@@ -496,6 +499,40 @@ class Browser:
         bottom = self.display_widget
 
         overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 65), valign="middle", height="pack", left=2, right=2)
+
+        options = self.delegate.columns.options("weight", self.delegate.right_area_width)
+        self.delegate.columns.contents[1] = (overlay, options)
+        self.delegate.columns.focus_position = 1
+
+    def save_node_dialog(self):
+        def dismiss_dialog(sender):
+            self.close_dialogs()
+
+        display_name = RNS.Identity.recall_app_data(self.destination_hash)
+        disp_str = ""
+        if display_name != None:
+            display_name = display_name.decode("utf-8")
+            disp_str = " \""+display_name+"\""
+            
+        def confirmed(sender):
+            node_entry = DirectoryEntry(self.destination_hash, display_name=display_name, hosts_node=True)
+            self.app.directory.remember(node_entry)
+            self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
+
+            self.close_dialogs()
+
+        dialog = UrlDialogLineBox(
+            urwid.Pile([
+                urwid.Text("Save connected node"+disp_str+" "+RNS.prettyhexrep(self.destination_hash)+" to Known Nodes?\n"),
+                urwid.Columns([("weight", 0.45, urwid.Button("Cancel", on_press=dismiss_dialog)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Save", on_press=confirmed))])
+            ]), title="Save Node"
+        )
+
+        dialog.confirmed = confirmed
+        dialog.delegate = self
+        bottom = self.display_widget
+
+        overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 50), valign="middle", height="pack", left=2, right=2)
 
         options = self.delegate.columns.options("weight", self.delegate.right_area_width)
         self.delegate.columns.contents[1] = (overlay, options)

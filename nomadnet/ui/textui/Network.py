@@ -1284,6 +1284,9 @@ class NetworkLeftPile(urwid.Pile):
             self.parent.browser.disconnect()
         elif key == "ctrl u":
             self.parent.browser.url_dialog()
+        elif key == "ctrl s":
+            self.parent.browser.save_node_dialog()
+
         else:
             return super(NetworkLeftPile, self).keypress(size, key)
 
