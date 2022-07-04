@@ -1191,8 +1191,8 @@ class NodeInfo(urwid.WidgetWrap):
                 self.t_storage_stats = NodeStorageStats(self.app)
                 NodeInfo.storage_timer = self.t_storage_stats
             else:
-                self.t_active_links = NodeInfo.links_timer
-                self.t_active_links.update_stat()
+                self.t_storage_stats = NodeInfo.links_timer
+                self.t_storage_stats.update_stat()
 
             if NodeInfo.conns_timer == None:
                 self.t_total_connections = NodeTotalConnections(self.app)
