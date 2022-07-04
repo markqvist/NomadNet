@@ -486,7 +486,12 @@ class Browser:
             self.close_dialogs()
 
         def confirmed(sender):
-            self.retrieve_url(e_url.get_edit_text())
+            try:
+                self.retrieve_url(e_url.get_edit_text())
+            except Exception as e:
+                self.browser_footer = urwid.Text("Could not open link: "+str(e))
+                self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
+
             self.close_dialogs()
 
         dialog = UrlDialogLineBox(
