@@ -2,9 +2,11 @@ import os
 import io
 import sys
 import time
+import shlex
 import atexit
 import threading
 import traceback
+import subprocess
 import contextlib
 
 import RNS
@@ -12,6 +14,7 @@ import LXMF
 import nomadnet
 
 from nomadnet.Directory import DirectoryEntry
+from datetime import datetime
 
 import RNS.vendor.umsgpack as msgpack
 
@@ -480,6 +483,69 @@ class NomadNetworkApp:
 
         nomadnet.Conversation.ingest(message, self)
 
+        if self.should_print(message):
+            self.print_message(message)
+
+    def should_print(self, message):
+        if self.print_messages:
+            if self.print_all_messages:
+                return True
+            
+            else:
+                source_hash_text = RNS.hexrep(message.source_hash, delimit=False)
+
+                if self.print_trusted_messages:
+                    trust_level = self.directory.trust_level(message.source_hash)
+                    if trust_level == DirectoryEntry.TRUSTED:
+                        return True
+
+                if type(self.allowed_message_print_destinations) is list:
+                    if source_hash_text in self.allowed_message_print_destinations:
+                        return True
+
+        return False
+
+    def print_message(self, message, received = None):
+        try:
+            template = self.printing_template_msg
+
+            if received == None:
+                received = time.time()
+
+            g = self.ui.glyphs
+            
+            m_rtime = datetime.fromtimestamp(message.timestamp)
+            stime = m_rtime.strftime(self.time_format)
+
+            message_time = datetime.fromtimestamp(received)
+            rtime = message_time.strftime(self.time_format)
+
+            display_name = self.directory.simplest_display_str(message.source_hash)
+            title = message.title_as_string()
+            if title == "":
+                title = "None"
+
+            output = template.format(
+                origin=display_name,
+                stime=stime,
+                rtime=rtime,
+                mtitle=title,
+                mbody=message.content_as_string(),
+            )
+
+            filename = "/tmp/"+RNS.hexrep(RNS.Identity.full_hash(output.encode("utf-8")), delimit=False)
+            with open(filename, "wb") as f:
+                f.write(output.encode("utf-8"))
+                f.close()
+
+            print_command = "lp -d thermal -o cpi=16 -o lpi=8 "+filename
+            return_code = subprocess.call(shlex.split(print_command), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            os.unlink(filename)
+
+        except Exception as e:
+            RNS.log("Error while printing incoming LXMF message. The contained exception was: "+str(e))
+
     def conversations(self):
         return nomadnet.Conversation.conversation_list(self)
 
@@ -686,6 +752,55 @@ class NomadNetworkApp:
                     value = 0.005
                 self.message_storage_limit = value
 
+        self.print_command = "lp"
+        self.print_messages = False
+        self.print_all_messages = False
+        self.print_trusted_messages = False
+        if "printing" in self.config:
+            if not "print_messages" in self.config["printing"]:
+                self.print_messages = False
+            else:
+                self.print_messages = self.config["printing"].as_bool("print_messages")
+
+                if "print_command" in self.config["printing"]:
+                    self.print_command = self.config["printing"]["print_command"]
+
+                if self.print_messages:
+                    if not "print_from" in self.config["printing"]:
+                        self.allowed_message_print_destinations = None
+                    else:
+                        if type(self.config["printing"]["print_from"]) == str:
+                            self.allowed_message_print_destinations = []
+                            if self.config["printing"]["print_from"].lower() == "everywhere":
+                                self.print_all_messages = True
+
+                            if self.config["printing"]["print_from"].lower() == "trusted":
+                                
+                                self.print_all_messages = False
+                                self.print_trusted_messages = True
+
+                            if len(self.config["printing"]["print_from"]) == (RNS.Identity.TRUNCATED_HASHLENGTH//8)*2:
+                                self.allowed_message_print_destinations.append(self.config["printing"]["print_from"])
+                        
+                        if type(self.config["printing"]["print_from"]) == list:
+                                self.allowed_message_print_destinations =  self.config["printing"].as_list("print_from")
+                                for allowed_entry in self.allowed_message_print_destinations:
+                                    if allowed_entry.lower() == "trusted":
+                                        self.print_trusted_messages = True
+
+
+                    if not "message_template" in self.config["printing"]:
+                        self.printing_template_msg = __printing_template_msg__
+                    else:
+                        mt_path = os.path.expanduser(self.config["printing"]["message_template"])
+                        if os.path.isfile(mt_path):
+                            template_file = open(mt_path, "rb")
+                            self.printing_template_msg = template_file.read().decode("utf-8")
+                        else:
+                            template_file = open(mt_path, "wb")
+                            template_file.write(__printing_template_msg__.encode("utf-8"))
+                            self.printing_template_msg = __printing_template_msg__
+
               
     @staticmethod
     def get_shared_instance():
@@ -835,4 +950,60 @@ announce_at_start = Yes
 # and generally you do not need to use it.
 # prioritise_destinations = 41d20c727598a3fbbdf9106133a3a0ed, d924b81822ca24e68e2effea99bcb8cf
 
+[printing]
+
+# You can configure Nomad Network to print
+# various kinds of information and messages.
+
+# Printing messages is disabled by default
+print_messages = No
+
+# You can configure a custom template for
+# message printing. If you uncomment this
+# option, set a path to the template and
+# restart Nomad Network, a default template
+# will be created that you can edit.
+# message_template = ~/.nomadnetwork/print_template_msg.txt
+
+# You can configure Nomad Network to only
+# print messages from trusted destinations.
+# print_from = trusted
+
+# Or specify the source LXMF addresses that
+# will automatically have messages printed
+# on arrival.
+# print_from = 76fe5751a56067d1e84eef3e88eab85b, 0e70b5848eb57c13154154feaeeb89b7
+
+# Or allow printing from anywhere, if you
+# are feeling brave and adventurous.
+# print_from = everywhere
+
+# You can configure the printing command.
+# This will use the default CUPS printer on
+# your system.
+print_command = lp
+
+# You can specify what printer to use
+# print_command = lp -d PRINTER_NAME
+
+# Or specify more advanced options. This
+# example works well for small thermal-
+# roll printers.
+# print_command = lp -d PRINTER_NAME -o cpi=16 -o lpi=8
+
+# This one is more suitable for full-sheet
+# printers.
+# print_command = lp -d PRINTER_NAME -o page-left=36 -o page-top=36 -o page-right=36 -o page-bottom=36
+
 '''.splitlines()
+
+__printing_template_msg__ = """
+---------------------------
+From: {origin}
+Sent: {stime}
+Rcvd: {rtime}
+Title: {mtitle}
+
+{mbody}
+---------------------------
+"""
