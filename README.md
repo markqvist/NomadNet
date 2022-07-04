@@ -61,7 +61,7 @@ For a native Android application with a graphical user interface, have a look at
 
 ### Docker Images
 
-Nomad Network is automatically published as a docker image on Github Packages. Image tags are one of either `master` (for the very latest commit) or the version number (eg `0.1.8`) for a specific release.
+Nomad Network is automatically published as a docker image on Github Packages. Image tags are one of either `master` (for the very latest commit) or the version number (eg `0.2.0`) for a specific release.
 
 ```sh
 $ docker pull ghcr.io/markqvist/nomadnet:master
