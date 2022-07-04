@@ -111,6 +111,7 @@ class TopicList(urwid.WidgetWrap):
             GuideEntry(self.app, self, guide_display, "Concepts & Terminology"),
             GuideEntry(self.app, self, guide_display, "Hosting a Node"),
             GuideEntry(self.app, self, guide_display, "Configuration Options"),
+            GuideEntry(self.app, self, guide_display, "Keyboard Shortcuts"),
             GuideEntry(self.app, self, guide_display, "Markup"),
             self.first_run_entry,
             GuideEntry(self.app, self, guide_display, "Network Configuration"),
@@ -192,6 +193,47 @@ Nomad Network does not need any connections to the public internet to work. In f
 
 The current version of the program should be considered a beta release. The program works well, but there will most probably be bugs and possibly sub-optimal performance in some scenarios. On the other hand, this is the best time to have an influence on the direction of the development of Nomad Network. To do so, join the discussion on the Nomad Network project on GitHub.
 
+'''
+
+TOPIC_SHORTCUTS = '''>Keyboard Shortcuts
+
+The different sections of the program has a number of keyboard shortcuts mapped, that makes operating and navigating the program easier. The following lists details all mapped shortcuts.
+
+>>`!Conversations Window`!
+>>>Conversation List
+ - Ctrl-N   Start a new conversation
+ - Ctrl-E   Display and edit selected peer info
+ - Ctrl-X   Delete conversation
+ - Ctrl-R   Open LXMF syncronisation dialog
+
+>>>Conversation Display
+ - Ctrl-D   Send message
+ - Ctrl-K   Clear input fields
+ - Ctrl-T   Toggle message title field
+ - Ctrl-O   Toggle sort mode
+ - Ctrl-P   Purge failed messages
+ - Ctrl-X   Clear conversation history
+ - Ctrl-W   Close conversation
+
+>>`!Network Window`!
+>>>Announce Stream
+ - Ctrl-L   Switch to Known Nodes list
+ - Ctrl-X   Delete selected announce
+ - Ctrl-P   Display peered LXMF Propagation Nodes
+
+>>>Known Nodes
+ - Ctrl-L   Switch to Announce Stream
+ - Ctrl-X   Delete selected node entry
+ - Ctrl-P   Display peered LXMF Propagation Nodes
+
+>>>Browser
+ - Ctrl-D   Back
+ - Ctrl-F   Forward
+ - Ctrl-R   Reload page
+ - Ctrl-U   Open URL entry dialog
+ - Ctrl-S   Save connected node
+ - Ctrl-L   Toggle fullscreen browser window
+ - Ctrl-W   Disconnect from node
 '''
 
 TOPIC_CONCEPTS = '''>Concepts and Terminology
@@ -949,6 +991,7 @@ TOPICS = {
     "Conversations": TOPIC_CONVERSATIONS,
     "Hosting a Node": TOPIC_HOSTING,
     "Configuration Options": TOPIC_CONFIG,
+    "Keyboard Shortcuts": TOPIC_SHORTCUTS,
     "Markup": TOPIC_MARKUP,
     "Display Test": TOPIC_DISPLAYTEST,
     "Network Configuration": TOPIC_NETWORKS,
