@@ -213,6 +213,7 @@ The different sections of the program has a number of keyboard shortcuts mapped,
  - Ctrl-O   Toggle sort mode
  - Ctrl-P   Purge failed messages
  - Ctrl-X   Clear conversation history
+ - Ctrl-G   Toggle fullscreen conversation
  - Ctrl-W   Close conversation
 
 >>`!Network Window`!
@@ -232,7 +233,7 @@ The different sections of the program has a number of keyboard shortcuts mapped,
  - Ctrl-R   Reload page
  - Ctrl-U   Open URL entry dialog
  - Ctrl-S   Save connected node
- - Ctrl-L   Toggle fullscreen browser window
+ - Ctrl-G   Toggle fullscreen browser window
  - Ctrl-W   Disconnect from node
 '''
 

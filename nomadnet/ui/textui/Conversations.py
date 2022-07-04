@@ -32,6 +32,8 @@ class ConversationsArea(urwid.LineBox):
             self.delegate.new_conversation()
         elif key == "ctrl r":
             self.delegate.sync_conversations()
+        elif key == "ctrl g":
+            self.delegate.toggle_fullscreen()
         elif key == "tab":
             self.delegate.app.ui.main_display.frame.set_focus("header")
         elif key == "up" and (self.delegate.ilb.first_item_is_selected() or self.delegate.ilb.body_is_empty()):
@@ -331,6 +333,15 @@ class ConversationsDisplay():
         if source_hash in ConversationsDisplay.cached_conversation_widgets:
             conversation = ConversationsDisplay.cached_conversation_widgets[source_hash]
             self.close_conversation(conversation)
+
+    def toggle_fullscreen(self):
+        if ConversationsDisplay.given_list_width != 0:
+            self.saved_list_width = ConversationsDisplay.given_list_width
+            ConversationsDisplay.given_list_width = 0
+        else:
+            ConversationsDisplay.given_list_width = self.saved_list_width
+
+        self.update_conversation_list()
 
     def sync_conversations(self):
         g = self.app.ui.glyphs
@@ -790,6 +801,8 @@ class ConversationWidget(urwid.WidgetWrap):
             self.toggle_editor()
         elif key == "ctrl x":
             self.clear_history_dialog()
+        elif key == "ctrl g":
+            nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.sub_displays.conversations_display.toggle_fullscreen()
         elif key == "ctrl o":
             self.sort_by_timestamp ^= True
             self.conversation_changed(None)

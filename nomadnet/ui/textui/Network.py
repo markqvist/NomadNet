@@ -1275,6 +1275,8 @@ class NetworkLeftPile(urwid.Pile):
     def keypress(self, size, key):
         if key == "ctrl l":
             self.parent.toggle_list()
+        elif key == "ctrl g":
+            self.parent.toggle_fullscreen()
         elif key == "ctrl e":
             self.parent.selected_node_info()
         elif key == "ctrl p":
@@ -1348,6 +1350,16 @@ class NetworkDisplay():
             options = self.left_pile.options(height_type="weight", height_amount=1)
             self.left_pile.contents[0] = (self.known_nodes_display, options)
             self.list_display = 1
+
+    def toggle_fullscreen(self):
+        if NetworkDisplay.given_list_width != 0:
+            self.saved_list_width = NetworkDisplay.given_list_width
+            NetworkDisplay.given_list_width = 0
+        else:
+            NetworkDisplay.given_list_width = self.saved_list_width
+
+        options = self.widget.options("given", NetworkDisplay.given_list_width)
+        self.widget.contents[0] = (self.left_area, options)
 
     def show_peers(self):
         options = self.left_pile.options(height_type="weight", height_amount=1)

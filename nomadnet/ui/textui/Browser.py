@@ -23,6 +23,8 @@ class BrowserFrame(urwid.Frame):
             self.delegate.url_dialog()
         elif key == "ctrl s":
             self.delegate.save_node_dialog()
+        elif key == "ctrl g":
+            nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.sub_displays.network_display.toggle_fullscreen()
         elif self.get_focus() == "body":
             return super(BrowserFrame, self).keypress(size, key)
             # if key == "up" and self.delegate.messagelist.top_is_visible:
