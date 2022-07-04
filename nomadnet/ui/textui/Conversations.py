@@ -226,7 +226,7 @@ class ConversationsDisplay():
                     (urwid.Button("OK", on_press=dismiss_dialog), options)
                 ]
             query_button = urwid.Button("Query network for keys", on_press=query_action, user_data=source_hash_text)
-            known_section = urwid.Pile([urwid.Divider(g["divider1"]), urwid.Text(g["info"]+"\n", align="center"), urwid.Text("The identity of this peer is not known, and you cannot currently communicate.\n", align="center"), query_button, urwid.Divider(g["divider1"])])
+            known_section = urwid.Pile([urwid.Divider(g["divider1"]), urwid.Text(g["info"]+"\n", align="center"), urwid.Text("The identity of this peer is not known, and you cannot currently send messages to it. You can query the network to obtain the identity.\n", align="center"), query_button, urwid.Divider(g["divider1"])])
 
         dialog_pile = urwid.Pile([
             selected_id_widget,
@@ -754,7 +754,7 @@ class ConversationWidget(urwid.WidgetWrap):
             if allowed:
                 self.frame.contents["footer"] = (self.minimal_editor, None)
             else:
-                warning = urwid.AttrMap(urwid.Padding(urwid.Text(g["info"]+" You cannot currently communicate with this peer, since it's identity keys are not known", align="center")), "msg_header_caution")
+                warning = urwid.AttrMap(urwid.Padding(urwid.Text("\n"+g["info"]+"\n\nYou cannot currently message this peer, since it's identity keys are not known.\n\nWait for an announce to arrive from the peer, or query the network for it.\n\nTo query the network, select this conversation in the conversation list, press Ctrl-E, and use the query button.\n", align="center")), "msg_header_caution")
                 self.frame.contents["footer"] = (warning, None)
 
     def toggle_focus_area(self):
