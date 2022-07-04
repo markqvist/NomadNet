@@ -1293,6 +1293,7 @@ class NetworkLeftPile(urwid.Pile):
 
 class NetworkDisplay():
     list_width = 0.33
+    given_list_width = 52
 
     def __init__(self, app):
         self.app = app
@@ -1327,8 +1328,10 @@ class NetworkDisplay():
 
         self.columns = urwid.Columns(
             [
-                ("weight", NetworkDisplay.list_width, self.left_area),
-                ("weight", self.right_area_width, self.right_area)
+                # ("weight", NetworkDisplay.list_width, self.left_area),
+                # ("weight", self.right_area_width, self.right_area)
+                (NetworkDisplay.given_list_width, self.left_area),
+                ("weight", 1, self.right_area)
             ],
             dividechars=0, focus_column=0
         )
@@ -1499,7 +1502,7 @@ class LXMFPeerEntry(urwid.WidgetWrap):
         style         = "list_unknown"
         focus_style   = "list_focus"
 
-        widget = ListEntry(sym+" "+display_str+"\n  "+str(len(peer.unhandled_messages))+" unhandled messages - "+"Last heard "+pretty_date(int(peer.last_heard)))
+        widget = ListEntry(sym+" "+display_str+"\n  "+str(len(peer.unhandled_messages))+" unhandled LXMs - "+"Last heard "+pretty_date(int(peer.last_heard)))
         # urwid.connect_signal(widget, "click", delegate.connect_node, node)
 
         self.display_widget = urwid.AttrMap(widget, style, focus_style)

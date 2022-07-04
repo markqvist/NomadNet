@@ -48,6 +48,7 @@ class DialogLineBox(urwid.LineBox):
 
 class ConversationsDisplay():
     list_width = 0.33
+    given_list_width = 52
     cached_conversation_widgets = {}
 
     def __init__(self, app):
@@ -64,8 +65,10 @@ class ConversationsDisplay():
 
         self.columns_widget = urwid.Columns(
             [
-                ("weight", ConversationsDisplay.list_width, self.listbox),
-                ("weight", 1-ConversationsDisplay.list_width, self.make_conversation_widget(None))
+                # ("weight", ConversationsDisplay.list_width, self.listbox),
+                # ("weight", 1-ConversationsDisplay.list_width, self.make_conversation_widget(None))
+                (ConversationsDisplay.given_list_width, self.listbox),
+                ("weight", 1, self.make_conversation_widget(None))
             ],
             dividechars=0, focus_column=0, box_columns=[0]
         )
@@ -126,7 +129,8 @@ class ConversationsDisplay():
 
         overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
 
-        options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
+        # options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
+        options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
         self.columns_widget.contents[0] = (overlay, options)
 
     def edit_selected_in_directory(self):
@@ -249,7 +253,8 @@ class ConversationsDisplay():
 
         overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
 
-        options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
+        # options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
+        options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
         self.columns_widget.contents[0] = (overlay, options)
 
     def new_conversation(self):
@@ -318,7 +323,8 @@ class ConversationsDisplay():
 
         overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
 
-        options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
+        # options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
+        options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
         self.columns_widget.contents[0] = (overlay, options)
 
     def delete_conversation(self, source_hash):
@@ -417,7 +423,8 @@ class ConversationsDisplay():
 
         overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
 
-        options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
+        # options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
+        options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
         self.columns_widget.contents[0] = (overlay, options)
 
     def update_sync_dialog(self, loop = None, sender = None):
@@ -438,7 +445,8 @@ class ConversationsDisplay():
     def update_conversation_list(self):
         ilb_position = self.ilb.get_selected_position()
         self.update_listbox()
-        options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
+        # options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
+        options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
         if not (self.dialog_open and self.sync_dialog != None):
             self.columns_widget.contents[0] = (self.listbox, options)
         else:
@@ -469,7 +477,8 @@ class ConversationsDisplay():
                 self.app.mark_conversation_read(self.currently_displayed_conversation)
 
         self.currently_displayed_conversation = source_hash
-        options = self.widget.options("weight", 1-ConversationsDisplay.list_width)
+        # options = self.widget.options("weight", 1-ConversationsDisplay.list_width)
+        options = self.widget.options("weight", 1)
         self.widget.contents[1] = (self.make_conversation_widget(source_hash), options)
         if source_hash == None:
             self.widget.set_focus_column(0)
