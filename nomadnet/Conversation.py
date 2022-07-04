@@ -239,10 +239,11 @@ class Conversation:
     def __str__(self):
         string = self.source_hash
 
-        if self.source_identity:
-            if self.source_identity.app_data:
-                # TODO: Sanitise for viewing
-                string += " | "+self.source.source_identity.app_data.decode("utf-8")
+        # TODO: Remove this
+        # if self.source_identity:
+        #     if self.source_identity.app_data:
+        #         # TODO: Sanitise for viewing, or just clean this
+        #         string += " | "+self.source_identity.app_data.decode("utf-8")
 
         return string
 

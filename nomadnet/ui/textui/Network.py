@@ -420,6 +420,9 @@ class KnownNodeInfo(urwid.WidgetWrap):
 
         addr_str     = "<"+RNS.hexrep(source_hash, delimit=False)+">"
 
+        if display_str == None:
+            display_str = addr_str
+
         if node_ident != None:
             lxmf_addr_str = g["sent"]+" LXMF Propagation Node Address is "+RNS.prettyhexrep(RNS.Destination.hash_from_name_and_identity("lxmf.propagation", node_ident))
         else:

@@ -60,8 +60,6 @@ class Directory:
 
                 entries = {}
                 for e in unpacked_list:
-                    if e[1] == None:
-                        e[1] = RNS.prettyhexrep(e[0])
                         
                     if len(e) > 3:
                         hosts_node = e[3]
@@ -250,8 +248,9 @@ class DirectoryEntry:
         if len(source_hash) == RNS.Identity.TRUNCATED_HASHLENGTH//8:
             self.source_hash  = source_hash
 
-            if display_name  == None:
-                display_name  = source_hash
+            # TODO: Clean
+            # if display_name  == None:
+            #     display_name  = source_hash
 
             self.display_name = display_name
 

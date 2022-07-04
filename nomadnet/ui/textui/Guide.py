@@ -929,11 +929,11 @@ Here's a few examples:
 
 `Faaa
 `=
-Here is a link without any label: `[1385edace36466a6b3dd:/page/index.mu]
+Here is a link without any label: `[72914442a3689add83a09a767963f57c:/page/index.mu]
 
-This is a `[labeled link`1385edace36466a6b3dd:/page/index.mu] to the same page, but it's hard to see if you don't know it
+This is a `[labeled link`72914442a3689add83a09a767963f57c:/page/index.mu] to the same page, but it's hard to see if you don't know it
 
-Here is `F00a`_`[a more visible link`1385edace36466a6b3dd:/page/index.mu]`_`f
+Here is `F00a`_`[a more visible link`72914442a3689add83a09a767963f57c:/page/index.mu]`_`f
 `=
 ``
 
@@ -941,11 +941,11 @@ The above markup produces the following output:
 
 `Faaa`B333
 
-Here is a link without any label: `[1385edace36466a6b3dd:/page/index.mu]
+Here is a link without any label: `[72914442a3689add83a09a767963f57c:/page/index.mu]
 
-This is a `[labeled link`1385edace36466a6b3dd:/page/index.mu] to the same page, but it's hard to see if you don't know it
+This is a `[labeled link`72914442a3689add83a09a767963f57c:/page/index.mu] to the same page, but it's hard to see if you don't know it
 
-Here is `F00f`_`[a more visible link`1385edace36466a6b3dd:/page/index.mu]`_`f
+Here is `F00f`_`[a more visible link`72914442a3689add83a09a767963f57c:/page/index.mu]`_`f
 
 ``
 

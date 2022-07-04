@@ -133,17 +133,82 @@ class Browser:
             self.browser_footer = urwid.AttrMap(urwid.Pile([urwid.Divider(self.g["divider1"]), urwid.Text("Link to: "+str(link_target))]), "browser_controls")
             self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
 
-    def handle_link(self, link_target):
-        if self.status >= Browser.DISCONECTED:
-            RNS.log("Browser handling link to: "+str(link_target), RNS.LOG_DEBUG)
-            try:
-                self.retrieve_url(link_target)
-            except Exception as e:
-                self.browser_footer = urwid.Text("Could not open link: "+str(e))
-                self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
+    def expand_shorthands(self, destination_type):
+        if destination_type == "nnn":
+            return "nomadnetwork.node"
+        elif destination_type == "lxmf":
+            return "lxmf.delivery"
         else:
-            RNS.log("Browser aleady hadling link, cannot handle link to: "+str(link_target), RNS.LOG_DEBUG)
+            return destination_type
 
+    def handle_link(self, link_target):
+        components = link_target.split("@")
+        destination_type = None
+
+        if len(components) == 2:
+            destination_type = self.expand_shorthands(components[0])
+            link_target = components[1]
+        else:
+            destination_type = "nomadnetwork.node"
+            link_target = components[0]
+
+        if destination_type == "nomadnetwork.node":
+            if self.status >= Browser.DISCONECTED:
+                RNS.log("Browser handling link to: "+str(link_target), RNS.LOG_DEBUG)
+                try:
+                    self.retrieve_url(link_target)
+                except Exception as e:
+                    self.browser_footer = urwid.Text("Could not open link: "+str(e))
+                    self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
+            else:
+                RNS.log("Browser already handling link, cannot handle link to: "+str(link_target), RNS.LOG_DEBUG)
+
+        elif destination_type == "lxmf.delivery":
+            RNS.log("Passing LXMF link to handler", RNS.LOG_DEBUG)
+            self.handle_lxmf_link(link_target)
+
+        else:
+            RNS.log("No known handler for destination type "+str(destination_type), RNS.LOG_DEBUG)
+            self.browser_footer = urwid.Text("Could not open link: "+"No known handler for destination type "+str(destination_type))
+            self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
+
+    def handle_lxmf_link(self, link_target):
+        try:
+            if not type(link_target) is str:
+                raise ValueError("Invalid data type for LXMF link")
+
+            if len(link_target) != (RNS.Reticulum.TRUNCATED_HASHLENGTH//8)*2:
+                raise ValueError("Invalid length for LXMF link")
+
+            try:
+                bytes.fromhex(link_target)
+
+            except Exception as e:
+                raise ValueError("Could not decode destination hash from LXMF link")
+
+            existing_conversations = nomadnet.Conversation.conversation_list(self.app)
+            
+            source_hash_text = link_target
+            display_name_data = RNS.Identity.recall_app_data(bytes.fromhex(source_hash_text))
+
+            display_name = None
+            if display_name_data != None:
+                display_name = display_name_data.decode("utf-8")
+
+            if not source_hash_text in [c[0] for c in existing_conversations]:
+                entry = DirectoryEntry(bytes.fromhex(source_hash_text), display_name=display_name)
+                self.app.directory.remember(entry)
+
+                new_conversation = nomadnet.Conversation(source_hash_text, nomadnet.NomadNetworkApp.get_shared_instance(), initiator=True)
+                self.app.ui.main_display.sub_displays.conversations_display.update_conversation_list()
+
+            self.app.ui.main_display.sub_displays.conversations_display.display_conversation(None, source_hash_text)
+            self.app.ui.main_display.show_conversations(None)
+
+        except Exception as e:
+            RNS.log("Error while starting conversation from link. The contained exception was: "+str(e), RNS.LOG_ERROR)
+            self.browser_footer = urwid.Text("Could not open LXMF link: "+str(e))
+            self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
 
 
     def micron_released_focus(self):
