@@ -749,7 +749,7 @@ While micron can output formatted text to even the most basic terminal, there's 
 
 Formatting such as `_underline`_, `!bold`! or `*italics`* will be displayed if your terminal supports it.
 
-If you are having trouble getting micron output to display correctly, try using `*gnome-terminal`*, which should work with all formatting options out of the box. Most other terminals will work fine as well, but you might have to change some settings to get certain formatting to display correctly.
+If you are having trouble getting micron output to display correctly, try using `*gnome-terminal`* or `*alacritty`*, which should work with all formatting options out of the box. Most other terminals will work fine as well, but you might have to change some settings to get certain formatting to display correctly.
 
 >>>Encoding
 
