@@ -607,6 +607,34 @@ Configures the maximum amount of storage, in megabytes, that the LXMF Propagatio
 Configures the LXMF Propagation Node to prioritise storing messages for certain destinations. If the message store reaches the specified limit, LXMF will prioritise keeping messages for destinations specified with this option. This setting is optional, and generally you do not need to use it.
 <
 
+>> Printing Section
+
+This section holds configuration directives related to printing. It is delimited by the `![printing]`! header in the configuration file. Available directives, along with example values, are as follows:
+
+>>>
+`!print_messages = no`!
+>>>>
+Determines whether messages should be printed upon arrival. Must be a boolean value, and is turned off by default.
+<
+
+>>>
+`!message_template = ~/.nomadnetwork/print_template_msg.txt`!
+>>>>
+Determines where the template for printed messages is found. Must be a filesystem path. If you set this path to a non-existing file, an example will be generated in the specified location.
+<
+
+>>>
+`!print_from = 76fe5751a56067d1e84eef3e88eab85b, trusted`!
+>>>>
+Determines from which destinations messages are printed. Can be a list of destinations hashes, the keyword "trusted", or "everywhere".
+<
+
+>>>
+`!print_command = lp -d PRINTER_NAME -o cpi=16 -o lpi=8`!
+>>>>
+Specifies the command that Nomad Network uses to print the message. Defaults to "lp". The above example works well for small thermal-roll printers.
+<
+
 >Ignoring Destinations
 
 If you encounter peers or nodes on the network, that you would rather not see in your client, you can add them to the `!~/.nomadnetwork/ignored`! file. To ignore nodes or peers, add one 32-character hexadecimal destination hash per line to the file. To unignore one again, simply remove the corresponding entry from the file and restart Nomad Network.
