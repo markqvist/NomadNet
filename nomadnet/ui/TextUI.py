@@ -127,6 +127,21 @@ GLYPHS = {
 class TextUI:
 
     def __init__(self):
+        self.restore_ixon = False
+
+        try:
+            rval = os.system("stty -a | grep \"\\-ixon\"")
+            if rval == 0:
+                pass
+
+            else:
+                os.system("stty -ixon")
+                self.restore_ixon = True
+
+        except Exception as e:
+            RNS.log("Could not configure terminal flow control sequences, some keybindings may not work.", RNS.LOG_WARNING)
+            RNS.log("The contained exception was: "+str(e))
+
         self.app = NomadNetworkApp.get_shared_instance()
         self.app.ui = self
         self.loop = None
@@ -164,7 +179,7 @@ class TextUI:
         else:
             initial_widget = self.main_display.widget
 
-        self.loop = urwid.MainLoop(initial_widget, screen=self.screen, handle_mouse=mouse_enabled)
+        self.loop = urwid.MainLoop(initial_widget, unhandled_input=self.unhandled_input, screen=self.screen, handle_mouse=mouse_enabled)
 
         if intro_timeout > 0:
             self.loop.set_alarm_in(intro_timeout, self.display_main)
@@ -193,6 +208,9 @@ class TextUI:
         self.colormode = colormode
         self.screen.set_terminal_properties(colormode)
         self.screen.reset_default_terminal_palette()
+
+    def unhandled_input(self, key):
+        pass
 
     def display_main(self, loop, user_data):
         self.loop.widget = self.main_display.widget

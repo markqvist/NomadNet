@@ -32,6 +32,15 @@ class NomadNetworkApp:
 
         RNS.log("Saving directory...", RNS.LOG_VERBOSE)
         self.directory.save_to_disk()
+
+        if hasattr(self.ui, "restore_ixon"):
+            if self.ui.restore_ixon:
+                try:
+                    os.system("stty ixon")
+
+                except Exception as e:
+                    RNS.log("Could not restore flow control sequences. The contained exception was: "+str(e), RNS.LOG_WARNING)
+
         RNS.log("Nomad Network Client exiting now", RNS.LOG_VERBOSE)
 
     def exception_handler(self, e_type, e_value, e_traceback):
