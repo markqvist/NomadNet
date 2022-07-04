@@ -51,6 +51,13 @@ class ListEntry(urwid.Text):
 
 
 class AnnounceInfo(urwid.WidgetWrap):
+    def keypress(self, size, key):
+        if key == "esc":
+            options = self.parent.left_pile.options(height_type="weight", height_amount=1)
+            self.parent.left_pile.contents[0] = (self.parent.announce_stream_display, options)
+        else:
+            return super(AnnounceInfo, self).keypress(size, key)
+
     def __init__(self, announce, parent, app):
         self.app = nomadnet.NomadNetworkApp.get_shared_instance()
         self.parent = self.app.ui.main_display.sub_displays.network_display
@@ -387,6 +394,13 @@ class ListDialogLineBox(urwid.LineBox):
             return super(ListDialogLineBox, self).keypress(size, key)
 
 class KnownNodeInfo(urwid.WidgetWrap):
+    def keypress(self, size, key):
+        if key == "esc":
+            options = self.parent.left_pile.options(height_type="weight", height_amount=1)
+            self.parent.left_pile.contents[0] = (self.parent.known_nodes_display, options)
+        else:
+            return super(KnownNodeInfo, self).keypress(size, key)
+
     def __init__(self, node_hash):
         self.app = nomadnet.NomadNetworkApp.get_shared_instance()
         self.parent = self.app.ui.main_display.sub_displays.network_display
@@ -567,6 +581,10 @@ class KnownNodeInfo(urwid.WidgetWrap):
         pile_widgets.insert(4, operator_entry)
 
         pile = urwid.Pile(pile_widgets)
+        
+        pile.focus_position = len(pile.contents)-1
+        button_columns.focus_position = 0
+
 
         self.display_widget = urwid.Filler(pile, valign="top", height="pack")
 
@@ -1257,6 +1275,8 @@ class NetworkLeftPile(urwid.Pile):
     def keypress(self, size, key):
         if key == "ctrl l":
             self.parent.toggle_list()
+        elif key == "ctrl e":
+            self.parent.selected_node_info()
         elif key == "ctrl p":
             self.parent.reinit_lxmf_peers()
             self.parent.show_peers()
@@ -1332,6 +1352,18 @@ class NetworkDisplay():
         else:
             self.list_display = 1
 
+    def selected_node_info(self):
+        if self.list_display == 1:
+            parent = self.app.ui.main_display.sub_displays.network_display
+            selected_node_entry = parent.known_nodes_display.ilb.get_selected_item()
+            if selected_node_entry != None:
+                selected_node_hash = selected_node_entry._get_base_widget().display_widget.source_hash
+                
+                if selected_node_hash != None:
+                    info_widget = KnownNodeInfo(selected_node_hash)
+                    options = parent.left_pile.options(height_type="weight", height_amount=1)
+                    parent.left_pile.contents[0] = (info_widget, options)
+    
     def focus_lists(self):
         self.columns.focus_position = 0
 

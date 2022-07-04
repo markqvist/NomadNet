@@ -210,7 +210,8 @@ class TextUI:
         self.screen.reset_default_terminal_palette()
 
     def unhandled_input(self, key):
-        pass
+        if key == "ctrl q":
+            raise urwid.ExitMainLoop
 
     def display_main(self, loop, user_data):
         self.loop.widget = self.main_display.widget
