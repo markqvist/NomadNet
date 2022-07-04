@@ -263,7 +263,7 @@ class NomadNetworkApp:
         RNS.log("LXMF Router ready to receive on: "+RNS.prettyhexrep(self.lxmf_destination.hash))
 
         if self.enable_node:
-            self.message_router.set_message_storage_limit(gigabytes=self.message_storage_limit)
+            self.message_router.set_message_storage_limit(megabytes=self.message_storage_limit)
             for dest_str in self.prioritised_lxmf_destinations:
                 try:
                     dest_hash = bytes.fromhex(dest_str)
@@ -679,11 +679,11 @@ class NomadNetworkApp:
                 self.prioritised_lxmf_destinations = []
 
             if not "message_storage_limit" in self.config["node"]:
-                self.message_storage_limit = 2
+                self.message_storage_limit = 2000
             else:
                 value = self.config["node"].as_float("message_storage_limit")
-                if value < 0.064:
-                    value = 0.064
+                if value < 0.005:
+                    value = 0.005
                 self.message_storage_limit = value
 
               
@@ -817,14 +817,14 @@ announce_at_start = Yes
 
 # The maximum amount of storage to use for
 # the LXMF Propagation Node message store,
-# specified in gigabytes. When this limit
+# specified in megabytes. When this limit
 # is reached, LXMF will periodically remove
 # messages in its message store. By default,
 # LXMF prioritises keeping messages that are
 # new and small. Large and old messages will
 # be removed first. This setting is optional
 # and defaults to 2 gigabytes.
-# message_storage_limit = 2
+# message_storage_limit = 2000
 
 # You can tell the LXMF message router to
 # prioritise storage for one or more
@@ -833,6 +833,6 @@ announce_at_start = Yes
 # keeping messages for destinations specified
 # with this option. This setting is optional,
 # and generally you do not need to use it.
-# prioritise_destinations = 10bc7624c27032a18639, ba780a6dff4cc1391db8
+# prioritise_destinations = 41d20c727598a3fbbdf9106133a3a0ed, d924b81822ca24e68e2effea99bcb8cf
 
 '''.splitlines()

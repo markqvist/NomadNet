@@ -13,7 +13,7 @@ class NetworkDisplayShortcuts():
         self.app = app
         g = app.ui.glyphs
 
-        self.widget = urwid.AttrMap(urwid.Text("[C-l] Nodes/Announces  [C-x] Remove  [C-w] Disconnect  [C-d] Back  [C-f] Forward  [C-r] Reload  [C-u] URL"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-l] Nodes/Announces  [C-x] Remove  [C-w] Disconnect  [C-d] Back  [C-f] Forward  [C-r] Reload  [C-u] URL  [C-g] Fullscreen"), "shortcutbar")
         #   "[C-"+g["arrow_u"]+g["arrow_d"]+"] Navigate Lists"
 
 
@@ -827,7 +827,7 @@ class NodeAnnounceTime(urwid.WidgetWrap):
         if self.app.peer_settings["node_last_announce"] != None:
             self.last_announce_string = pretty_date(int(self.app.peer_settings["node_last_announce"]))
 
-        self.display_widget.set_text("Last Announce     : "+self.last_announce_string)
+        self.display_widget.set_text("Last Announce  : "+self.last_announce_string)
 
     def update_time_callback(self, loop=None, user_data=None):
         self.update_time()
@@ -858,7 +858,7 @@ class NodeActiveConnections(urwid.WidgetWrap):
         if self.app.node != None:
             self.stat_string = str(len(self.app.node.destination.links))
 
-        self.display_widget.set_text("Connections Now   : "+self.stat_string)
+        self.display_widget.set_text("Conneced Now   : "+self.stat_string)
 
     def update_stat_callback(self, loop=None, user_data=None):
         self.update_stat()
@@ -874,6 +874,48 @@ class NodeActiveConnections(urwid.WidgetWrap):
     def stop(self):
         self.started = False
 
+class NodeStorageStats(urwid.WidgetWrap):
+    def __init__(self, app):
+        self.started = False
+        self.app = app
+        self.timeout = self.app.config["textui"]["animation_interval"]
+        self.display_widget = urwid.Text("")
+        self.update_stat()
+
+        urwid.WidgetWrap.__init__(self, self.display_widget)
+
+    def update_stat(self):
+        self.stat_string = "None"
+        if self.app.node != None:
+
+            limit = self.app.message_router.message_storage_limit
+            used = self.app.message_router.message_storage_size()
+
+            if limit != None:
+                pct = round((used/limit)*100, 1)
+                pct_str = str(pct)+"%, "
+                limit_str = " of "+RNS.prettysize(limit)
+            else:
+                limit_str = ""
+                pct_str = ""
+
+            self.stat_string = pct_str+RNS.prettysize(used)+limit_str
+
+        self.display_widget.set_text("LXMF Storage   : "+self.stat_string)
+
+    def update_stat_callback(self, loop=None, user_data=None):
+        self.update_stat()
+        if self.started:
+            self.app.ui.loop.set_alarm_in(self.timeout, self.update_stat_callback)
+
+    def start(self):
+        was_started = self.started
+        self.started = True
+        if not was_started:
+            self.update_stat_callback()
+
+    def stop(self):
+        self.started = False
 
 class NodeTotalConnections(urwid.WidgetWrap):
     def __init__(self, app):
@@ -890,7 +932,7 @@ class NodeTotalConnections(urwid.WidgetWrap):
         if self.app.node != None:
             self.stat_string = str(self.app.peer_settings["node_connects"])
 
-        self.display_widget.set_text("Total Connections : "+self.stat_string)
+        self.display_widget.set_text("Total Connects : "+self.stat_string)
 
     def update_stat_callback(self, loop=None, user_data=None):
         self.update_stat()
@@ -922,7 +964,7 @@ class NodeTotalPages(urwid.WidgetWrap):
         if self.app.node != None:
             self.stat_string = str(self.app.peer_settings["served_page_requests"])
 
-        self.display_widget.set_text("Served Pages      : "+self.stat_string)
+        self.display_widget.set_text("Served Pages   : "+self.stat_string)
 
     def update_stat_callback(self, loop=None, user_data=None):
         self.update_stat()
@@ -954,7 +996,7 @@ class NodeTotalFiles(urwid.WidgetWrap):
         if self.app.node != None:
             self.stat_string = str(self.app.peer_settings["served_file_requests"])
 
-        self.display_widget.set_text("Served Files      : "+self.stat_string)
+        self.display_widget.set_text("Served Files   : "+self.stat_string)
 
     def update_stat_callback(self, loop=None, user_data=None):
         self.update_stat()
@@ -1071,6 +1113,7 @@ class NodeInfo(urwid.WidgetWrap):
     conns_timer = None
     pages_timer = None
     files_timer = None
+    storage_timer = None
 
     def __init__(self, app, parent):
         self.app = app
@@ -1144,6 +1187,13 @@ class NodeInfo(urwid.WidgetWrap):
                 self.t_active_links = NodeInfo.links_timer
                 self.t_active_links.update_stat()
 
+            if NodeInfo.storage_timer == None:
+                self.t_storage_stats = NodeStorageStats(self.app)
+                NodeInfo.storage_timer = self.t_storage_stats
+            else:
+                self.t_active_links = NodeInfo.links_timer
+                self.t_active_links.update_stat()
+
             if NodeInfo.conns_timer == None:
                 self.t_total_connections = NodeTotalConnections(self.app)
                 NodeInfo.conns_timer = self.t_total_connections
@@ -1179,6 +1229,7 @@ class NodeInfo(urwid.WidgetWrap):
                 e_lxmf,
                 urwid.Divider(g["divider1"]),
                 self.t_last_announce,
+                self.t_storage_stats,
                 self.t_active_links,
                 self.t_total_connections,
                 self.t_total_pages,

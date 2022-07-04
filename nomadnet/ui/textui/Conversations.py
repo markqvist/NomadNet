@@ -14,7 +14,7 @@ class ConversationListDisplayShortcuts():
     def __init__(self, app):
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("[Enter] Open  [C-e] Peer Info  [C-x] Delete  [C-r] Sync  [C-n] New"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-e] Peer Info  [C-x] Delete  [C-r] Sync  [C-n] New  [C-g] Fullscreen"), "shortcutbar")
 
 class ConversationDisplayShortcuts():
     def __init__(self, app):

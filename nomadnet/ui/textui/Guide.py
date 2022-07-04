@@ -596,9 +596,9 @@ Determines where the node server will look for downloadable files. Must be a rea
 <
 
 >>>
-`!message_storage_limit = 2`!
+`!message_storage_limit = 2000`!
 >>>>
-Configures the maximum amount of storage, in gigabytes, the LXMF Propagation Node will use to store messages.
+Configures the maximum amount of storage, in megabytes, that the LXMF Propagation Node will use to store messages.
 <
 
 >>>
