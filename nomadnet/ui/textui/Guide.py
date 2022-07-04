@@ -277,7 +277,7 @@ For propagated delivery to work, one or more nodes must be available on the netw
 
 To select a node manually, go to the `![ Network ]`! part of the program, choose the desired node in the `*Known Nodes`* list, and select the `!< Info >`! button. In the `!Node Info`! dialog, you can specify the selected node as the default propagation node.
 
-By default, Nomad Network will check in with propagation nodes, and download any available messages every 6 hours. You can change this interval, or disable automatic synchronisation completely, by editing the configuration file.
+By default, Nomad Network will check in with propagation nodes, and download any available messages every 6 hours. You can change this interval, or disable automatic syncronisation completely, by editing the configuration file.
 
 You can always initiate a sync manually, by pressing `!Ctrl-R`! in the `![ Conversations ]`! part of the program, which will open the syncronisation window.
 
@@ -287,7 +287,7 @@ A Nomad Network `*node`* is an instance of the Nomad Network program that has be
 
 Nodes can host pages (similar to webpages) written in a markup-language called `*micron`*, as well as make files and other resources available for download for peers on the network. Nodes also form a distributed message store for offline users, and allows messages to be exchanged between peers that are not online at the same time.
 
-If no nodes exist on a network, all peers will still be able to communicate directly peer-to-peer, but both endpoints of a conversation will need to be available at the same time to converse. When nodes exist on the network, messages will be held and syncronised between nodes for deferred delivery if the destination peer is unavailable. Nodes will automatically discover and peer with each other, and handle synchronisation of message stores.
+If no nodes exist on a network, all peers will still be able to communicate directly peer-to-peer, but both endpoints of a conversation will need to be available at the same time to converse. When nodes exist on the network, messages will be held and syncronised between nodes for deferred delivery if the destination peer is unavailable. Nodes will automatically discover and peer with each other, and handle syncronisation of message stores.
 
 To learn how to host your own node, read the `*Hosting a Node`* section of this guide.
 

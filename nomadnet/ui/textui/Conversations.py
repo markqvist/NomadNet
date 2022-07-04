@@ -398,7 +398,8 @@ class ConversationsDisplay():
             dialog = DialogLineBox(
                 urwid.Pile([
                     urwid.Text(""),
-                    urwid.Text("No trusted nodes found, cannot sync", align="center"),
+                    urwid.Text("No trusted nodes found, cannot sync!\n", align="center"),
+                    urwid.Text("To syncronise messages from the network, one or more nodes must be marked as trusted in the Known Nodes list. Nomad Network will then automatically sync from the nearest trusted node.", align="left"),
                     urwid.Text(""),
                     button_columns
                 ]), title="Message Sync"
