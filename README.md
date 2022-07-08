@@ -100,9 +100,7 @@ You can help support the continued development of open, free and private communi
 
 - Monero:
   ```
-  84FpY1QbxHcgdseePYNmhTHcrgMX4nFf
-  BYtz2GKYToqHVVhJp8Eaw1Z1EedRnKD1
-  9b3B8NiLCGVxzKV17UMmmeEsCrPyA5w
+  84FpY1QbxHcgdseePYNmhTHcrgMX4nFfBYtz2GKYToqHVVhJp8Eaw1Z1EedRnKD19b3B8NiLCGVxzKV17UMmmeEsCrPyA5w
   ```
 - Ethereum
   ```

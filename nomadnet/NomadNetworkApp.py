@@ -386,13 +386,13 @@ class NomadNetworkApp:
         if self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_IDLE:
             return False
         elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_PATH_REQUESTED:
-            return True
+            return False
         elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_LINK_ESTABLISHING:
-            return True
+            return False
         elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_LINK_ESTABLISHED:
-            return True
+            return False
         elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_REQUEST_SENT:
-            return True
+            return False
         elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_RECEIVING:
             return True
         elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_RESPONSE_RECEIVED:
