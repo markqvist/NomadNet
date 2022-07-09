@@ -11,6 +11,8 @@ Nomad Network is build on [LXMF](https://github.com/markqvist/LXMF) and [Reticul
 
 Nomad Network does not need any connections to the public internet to work. In fact, it doesn't even need an IP or Ethernet network. You can use it entirely over packet radio, LoRa or even serial lines. But if you wish, you can bridge islanded networks over the Internet or private ethernet networks, or you can build networks running completely over the Internet. The choice is yours.
 
+If you'd rather want to use an LXMF client with a graphical user interface, you may want to take a look at [Sideband](https://github.com/markqvist/sideband), which is available for Linux, Android and macOS.
+
 ## Notable Features
  - Encrypted messaging over packet-radio, LoRa, WiFi or anything else [Reticulum](https://github.com/markqvist/Reticulum) supports.
  - Zero-configuration, minimal-infrastructure mesh communication
