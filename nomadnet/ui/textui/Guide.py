@@ -682,7 +682,7 @@ If you connect to the testnet, you can leave nomadnet running for a while and wa
  - Dublin Hub Testnet Node    : `!`[464ddc8cd323648ef919a638923b4916]`!
  - Frankfurt Hub Testnet Node : `!`[5cda089fc42675bdd904c6d06db87d49]`!
 
-To browse pages on a node that is not currently known, open the URL dialog in the `![ Network ]`! section of the program by pressing `!Ctrl+U`!, paste or enter the address and select `!< Go >`! or press enter. Nomadnet will attempt to discover and connect to the requested node.
+To browse pages on a node that is not currently known, open the URL dialog in the `![ Network ]`! section of the program by pressing `!Ctrl+U`!, paste or enter the address and select `!< Go >`! or press enter. Nomadnet will attempt to discover and connect to the requested node. You can save the currently connected node by pressing `!Ctrl+S`!.
 '''
 
 TOPIC_DISPLAYTEST = '''>Markup & Color Display Test
