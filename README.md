@@ -54,7 +54,12 @@ The first time the program is running, you will be presented with the guide sect
 
 To use Nomad Network on packet radio or LoRa, you will need to configure your Reticulum installation to use any relevant packet radio TNCs or LoRa devices on your system. See the [Reticulum documentation](https://markqvist.github.io/Reticulum/manual/interfaces.html) for info. For a general introduction on how to set up such a system, take a look at [this post](https://unsigned.io/private-messaging-over-lora/).
 
-If you want to try Nomad Network without building your own physical network, you can connect to the [Unsigned.io RNS Testnet](https://github.com/markqvist/Reticulum#public-testnet) over the Internet, where there is already some Nomad Network and LXMF activity.
+If you want to try Nomad Network without building your own physical network, you can connect to the [Unsigned.io RNS Testnet](https://github.com/markqvist/Reticulum#public-testnet) over the Internet, where there is already some Nomad Network and LXMF activity. If you connect to the testnet, you can leave nomadnet running for a while and wait for it to receive announces from other nodes on the network that host pages or services, or you can try connecting directly to some nodes listed here:
+
+ - `464ddc8cd323648ef919a638923b4916` Dublin Hub Testnet Node
+ - `5cda089fc42675bdd904c6d06db87d49` Frankfurt Hub Testnet Node
+
+To browse pages on a node that is not currently known, open the URL dialog in the `Network` section of the program by pressing `Ctrl+U`, paste or enter the address and select `Go` or press enter. Nomadnet will attempt to discover and connect to the requested node.
 
 **Please Note**: If this is the very first time you use pip to install a program on your system, you might need to reboot your system for the program to become available. If you get a "command not found" error or similar when running the program, reboot your system and try again.
 
