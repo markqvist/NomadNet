@@ -50,7 +50,7 @@ nomadnet --help
 
 On Arch Linux it is also possible to install using the `nomadnet` package from the [AUR](https://aur.archlinux.org/packages/nomadnet).
 
-The first time the program is running, you will be presented with the guide section, which contains all the information you need to start using Nomad Network.
+The first time the program is running, you will be presented with the **Guide section**, which contains all the information you need to start using Nomad Network.
 
 To use Nomad Network on packet radio or LoRa, you will need to configure your Reticulum installation to use any relevant packet radio TNCs or LoRa devices on your system. See the [Reticulum documentation](https://markqvist.github.io/Reticulum/manual/interfaces.html) for info. For a general introduction on how to set up such a system, take a look at [this post](https://unsigned.io/private-messaging-over-lora/).
 
