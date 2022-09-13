@@ -30,7 +30,6 @@ class NomadNetworkApp:
     START_ANNOUNCE_DELAY = 3
 
     def exit_handler(self):
-        RNS.log("Nomad Network Client exit handler executing...", RNS.LOG_VERBOSE)
         self.should_run_jobs = False
 
         RNS.log("Saving directory...", RNS.LOG_VERBOSE)

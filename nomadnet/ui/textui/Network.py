@@ -127,6 +127,9 @@ class AnnounceInfo(urwid.WidgetWrap):
 
         if is_node:
             node_ident = RNS.Identity.recall(source_hash)
+            if not node_ident:
+                raise KeyError("Could not recall identity for selected node")
+
             op_hash = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", node_ident)
             op_str = self.app.directory.simplest_display_str(op_hash)
 
@@ -607,6 +610,8 @@ class ExceptionHandlingListBox(IndicativeListBox):
                 nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.set_focus("header")
             elif key == "down":
                 nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.sub_displays.network_display.left_pile.set_focus(1)
+            else:
+                RNS.log("An error occurred while processing an interface event. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
 
 class KnownNodes(urwid.WidgetWrap):

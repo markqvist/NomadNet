@@ -47,6 +47,7 @@ class Directory:
             file = open(self.app.directorypath, "wb")
             file.write(msgpack.packb(directory))
             file.close()
+
         except Exception as e:
             RNS.log("Could not write directory to disk. Then contained exception was: "+str(e), RNS.LOG_ERROR)
 
@@ -178,6 +179,8 @@ class Directory:
             if associated_node in self.directory_entries:
                 node_entry = self.directory_entries[associated_node]
                 node_entry.trust_level = entry.trust_level
+
+        self.save_to_disk()
 
     def forget(self, source_hash):
         if source_hash in self.directory_entries:

@@ -142,6 +142,9 @@ class Conversation:
 
         self.__changed_callback = None
 
+        if not RNS.Transport.has_path(bytes.fromhex(source_hash)):
+            RNS.Transport.request_path(bytes.fromhex(source_hash))
+
         self.source_identity = RNS.Identity.recall(bytes.fromhex(self.source_hash))
 
         if self.source_identity:
