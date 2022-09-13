@@ -294,6 +294,10 @@ class ConversationsDisplay():
                     self.app.directory.remember(entry)
 
                     new_conversation = nomadnet.Conversation(source_hash_text, nomadnet.NomadNetworkApp.get_shared_instance(), initiator=True)
+                    
+                    if not RNS.Transport.has_path(source_hash):
+                        RNS.Transport.request_path(source_hash)
+
                     self.update_conversation_list()
 
                 self.display_conversation(source_hash_text)
