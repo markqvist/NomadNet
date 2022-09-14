@@ -314,7 +314,7 @@ The distributed message store is resilient to intermittency, and will remain fun
 
 Nomad Network nodes can host pages similar to web pages, that other peers can read and interact with. Pages are written in a compact markup language called `*micron`*. To learn how to write formatted pages with micron, see the `*Markup`* section of this guide (which is, itself, written in micron). Pages can be linked arbitrarily with hyperlinks, that can also link to pages (or other resources) on other nodes.
 
-To add pages to your node, place micron files in the `*pages`* directory of your Nomad Network programs `*storage`* directory. By default, the path to this will be `!~/.nomadnetwork/storage/pages`!. You should probably create the file `!index.mu`! first, as this is the page that will get served by default to a connecting peer.
+To add pages to your node, place micron files in the `*pages`* directory of your Nomad Network programs `*storage`* directory. By default, the path to this will be `!~/.config/nomadnetwork/storage/pages`!. You should probably create the file `!index.mu`! first, as this is the page that will get served by default to a connecting peer.
 
 You can control how long a peer will cache your pages by including the cache header in a page. To do so, the first line of your page must start with `!#!c=X`!, where `!X`! is the cache time in seconds. To tell the peer to always load the page from your node, and never cache it, set the cache time to zero. You should only do this if there is a real need, for example if your page displays dynamic content that `*must`* be updated at every page view. The default caching time is 12 hours. In most cases, you should not need to include the cache control header in your pages.
 
@@ -342,7 +342,7 @@ By default, Nomad Network connects anonymously to all nodes. To be able to ident
 
 >>Files
 
-Like pages, you can place files you want to make available in the `!~/.nomadnetwork/storage/files`! directory. To let a peer download a file, you should create a link to it in one of your pages.
+Like pages, you can place files you want to make available in the `!~/.config/nomadnetwork/storage/files`! directory. To let a peer download a file, you should create a link to it in one of your pages.
 
 >>Links and URLs
 
@@ -400,7 +400,7 @@ Now go out there and explore. This is still early days. See what you can find an
 
 TOPIC_CONFIG = '''>Configuration Options
 
-To change the configuration of Nomad Network, you must edit the configuration file. By default, this is located at `!~/.nomadnetwork/config`! on your system. You can open it in any text-editor, and change the options. You can also use the editor built in to this program, under the `![ Config ]`! menu item. The default configuration file contains comments on all the different configuration options present, and explains their possible settings.
+To change the configuration of Nomad Network, you must edit the configuration file. By default, this is located at `!~/.config/nomadnetwork/config`! on your system. You can open it in any text-editor, and change the options. You can also use the editor built in to this program, under the `![ Config ]`! menu item. The default configuration file contains comments on all the different configuration options present, and explains their possible settings.
 
 For reference, all the configuration options are listed and explained here as well. The configuration is divided into different sections, each with their own options.
 
@@ -430,7 +430,7 @@ Determines the output destination of logged information. Must be `!file`! or `!c
 <
 
 >>>
-`!logfile = ~/.nomadnetwork/logfile`!
+`!logfile = ~/.config/nomadnetwork/logfile`!
 >>>>
 Path to the log file. Must be a writable filesystem path.
 <
@@ -584,13 +584,13 @@ Determines how often, in minutes, your node is announced on the network. Default
 <
 
 >>>
-`!pages_path = ~/.nomadnetwork/storage/pages`!
+`!pages_path = ~/.config/nomadnetwork/storage/pages`!
 >>>>
 Determines where the node server will look for hosted pages. Must be a readable filesystem path.
 <
 
 >>>
-`!files_path = ~/.nomadnetwork/storage/files`!
+`!files_path = ~/.config/nomadnetwork/storage/files`!
 >>>>
 Determines where the node server will look for downloadable files. Must be a readable filesystem path.
 <
@@ -618,7 +618,7 @@ Determines whether messages should be printed upon arrival. Must be a boolean va
 <
 
 >>>
-`!message_template = ~/.nomadnetwork/print_template_msg.txt`!
+`!message_template = ~/.config/nomadnetwork/print_template_msg.txt`!
 >>>>
 Determines where the template for printed messages is found. Must be a filesystem path. If you set this path to a non-existing file, an example will be generated in the specified location.
 <
@@ -637,7 +637,7 @@ Specifies the command that Nomad Network uses to print the message. Defaults to 
 
 >Ignoring Destinations
 
-If you encounter peers or nodes on the network, that you would rather not see in your client, you can add them to the `!~/.nomadnetwork/ignored`! file. To ignore nodes or peers, add one 32-character hexadecimal destination hash per line to the file. To unignore one again, simply remove the corresponding entry from the file and restart Nomad Network.
+If you encounter peers or nodes on the network, that you would rather not see in your client, you can add them to the `!~/.config/nomadnetwork/ignored`! file. To ignore nodes or peers, add one 32-character hexadecimal destination hash per line to the file. To unignore one again, simply remove the corresponding entry from the file and restart Nomad Network.
 '''
 
 TOPIC_NETWORKS = '''>Network Configuration

@@ -966,7 +966,7 @@ print_messages = No
 # option, set a path to the template and
 # restart Nomad Network, a default template
 # will be created that you can edit.
-# message_template = ~/.nomadnetwork/print_template_msg.txt
+# message_template = ~/.config/nomadnetwork/print_template_msg.txt
 
 # You can configure Nomad Network to only
 # print messages from trusted destinations.
