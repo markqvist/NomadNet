@@ -25,7 +25,11 @@ class NomadNetworkApp:
     time_format      = "%Y-%m-%d %H:%M:%S"
     _shared_instance = None
 
-    configdir = os.path.expanduser("~")+"/.nomadnetwork"
+    userdir = os.path.expanduser("~")
+    if os.path.isdir(userdir+"/.nomadnetwork") and os.path.isfile(userdir+"/.nomadnetwork/config"):
+        configdir = userdir+"/.nomadnetwork"
+    else:
+        configdir = userdir+"/.config/nomadnetwork"
 
     START_ANNOUNCE_DELAY = 3
 
