@@ -218,6 +218,7 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
         date_time_format = "%Y-%m-%d"
         time_time_format = "%H:%M:%S"
         short_time_format = "%Y-%m-%d %H:%M"
+        date_only_format = "%Y-%m-%d"
 
         timestamp = announce[0]
         source_hash = announce[1]
@@ -232,7 +233,7 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
         if dt.strftime(date_time_format) == dtn.strftime(date_time_format):
             ts_string = dt.strftime(time_time_format)
         else:
-            ts_string = dt.strftime(short_time_format)
+            ts_string = dt.strftime(date_only_format)
 
         trust_level  = self.app.directory.trust_level(source_hash)
         display_str = self.app.directory.simplest_display_str(source_hash)
