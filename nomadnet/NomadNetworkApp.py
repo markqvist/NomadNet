@@ -47,6 +47,14 @@ class NomadNetworkApp:
                 except Exception as e:
                     RNS.log("Could not restore flow control sequences. The contained exception was: "+str(e), RNS.LOG_WARNING)
 
+        if hasattr(self.ui, "restore_palette"):
+            if self.ui.restore_palette:
+                try:
+                    self.ui.screen.write("\x1b]104\x07")
+
+                except Exception as e:
+                    RNS.log("Could not restore terminal color palette. The contained exception was: "+str(e), RNS.LOG_WARNING)
+
         RNS.log("Nomad Network Client exiting now", RNS.LOG_VERBOSE)
 
     def exception_handler(self, e_type, e_value, e_traceback):

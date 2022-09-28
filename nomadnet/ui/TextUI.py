@@ -207,7 +207,10 @@ class TextUI:
     def set_colormode(self, colormode):
         self.colormode = colormode
         self.screen.set_terminal_properties(colormode)
-        self.screen.reset_default_terminal_palette()
+        
+        if self.colormode < 256:
+            self.screen.reset_default_terminal_palette()
+            self.restore_palette = True
 
     def unhandled_input(self, key):
         if key == "ctrl q":
