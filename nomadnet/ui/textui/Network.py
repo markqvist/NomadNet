@@ -114,8 +114,6 @@ class AnnounceInfo(urwid.WidgetWrap):
             self.parent.left_pile.contents[0] = (self.parent.announce_stream_display, options)
 
         def connect(sender):
-            # TODO: Remove when new mitigation has been tested
-            # self.app.ui.main_display.request_redraw(extra_delay=0.75)
             self.parent.browser.retrieve_url(RNS.hexrep(source_hash, delimit=False))
             show_announce_stream(None)
 
