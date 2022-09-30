@@ -26,10 +26,12 @@ class NomadNetworkApp:
     _shared_instance = None
 
     userdir = os.path.expanduser("~")
-    if os.path.isdir(userdir+"/.nomadnetwork") and os.path.isfile(userdir+"/.nomadnetwork/config"):
-        configdir = userdir+"/.nomadnetwork"
-    else:
+    if os.path.isdir("/etc/nomadnetwork") and os.path.isfile("/etc/nomadnetwork/config"):
+        configdir = "/etc/nomadnetwork"
+    elif os.path.isdir(userdir+"/.config/nomadnetwork") and os.path.isfile(userdir+"/.config/nomadnetwork/config"):
         configdir = userdir+"/.config/nomadnetwork"
+    else:
+        configdir = userdir+"/.nomadnetwork"
 
     START_ANNOUNCE_DELAY = 3
 
