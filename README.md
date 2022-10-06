@@ -56,8 +56,8 @@ To use Nomad Network on packet radio or LoRa, you will need to configure your Re
 
 If you want to try Nomad Network without building your own physical network, you can connect to the [Unsigned.io RNS Testnet](https://github.com/markqvist/Reticulum#public-testnet) over the Internet, where there is already some Nomad Network and LXMF activity. If you connect to the testnet, you can leave nomadnet running for a while and wait for it to receive announces from other nodes on the network that host pages or services, or you can try connecting directly to some nodes listed here:
 
- - `464ddc8cd323648ef919a638923b4916` Dublin Hub Testnet Node
- - `5cda089fc42675bdd904c6d06db87d49` Frankfurt Hub Testnet Node
+ - `abb3ebcd03cb2388a838e70c001291f9` Dublin Hub Testnet Node
+ - `ea6a715f814bdc37e56f80c34da6ad51` Frankfurt Hub Testnet Node
 
 To browse pages on a node that is not currently known, open the URL dialog in the `Network` section of the program by pressing `Ctrl+U`, paste or enter the address and select `Go` or press enter. Nomadnet will attempt to discover and connect to the requested node.
 
