@@ -687,8 +687,8 @@ The Testnet also runs the latest version of Reticulum, often even a short while 
 
 If you connect to the testnet, you can leave nomadnet running for a while and wait for it to receive announces from other nodes on the network that host pages or services, or you can try connecting directly to some nodes listed here:
 
- - Dublin Hub Testnet Node    : `!`[464ddc8cd323648ef919a638923b4916]`!
- - Frankfurt Hub Testnet Node : `!`[5cda089fc42675bdd904c6d06db87d49]`!
+ - Dublin Hub Testnet Node    : `!`[abb3ebcd03cb2388a838e70c001291f9]`!
+ - Frankfurt Hub Testnet Node : `!`[ea6a715f814bdc37e56f80c34da6ad51]`!
 
 To browse pages on a node that is not currently known, open the URL dialog in the `![ Network ]`! section of the program by pressing `!Ctrl+U`!, paste or enter the address and select `!< Go >`! or press enter. Nomadnet will attempt to discover and connect to the requested node. You can save the currently connected node by pressing `!Ctrl+S`!.
 '''
