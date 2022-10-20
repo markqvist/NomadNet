@@ -64,7 +64,7 @@ To browse pages on a node that is not currently known, open the URL dialog in th
 ### Install on Android
 You can install Nomad Network on Android using Termux, but there's a few more commands involved than the above one-liner. The process is documented in the [Android Installation](https://markqvist.github.io/Reticulum/manual/gettingstartedfast.html#reticulum-on-android) section of the Reticulum Manual. Once the Reticulum has been installed according to the linked documentation, Nomad Network can be installed as usual with pip.
 
-For a native Android application with a graphical user interface, have a look at [Sideband](https://unsigned.io/sideband).
+For a native Android application with a graphical user interface, have a look at [Sideband](https://github.com/markqvist/Sideband).
 
 ### Docker Images
 
