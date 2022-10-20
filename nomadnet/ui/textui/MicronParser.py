@@ -480,7 +480,11 @@ def make_output(state, line, url_delegate):
 
                 elif mode == "text":
                     if c == "\\":
-                        escape = True
+                        if escape:
+                            part += c
+                            escape = False
+                        else:
+                            escape = True
                     elif c == "`":
                         if escape:
                             part += c
