@@ -256,7 +256,7 @@ class NomadNetworkApp:
                             RNS.log("The contained exception was: "+str(e), RNS.LOG_DEBUG)
 
             except Exception as e:
-                RNS.log("Error while fetching loading list of ignored destinations: "+str(e), RNS.LOG_ERROR)
+                RNS.log("Error while loading list of ignored destinations: "+str(e), RNS.LOG_ERROR)
 
         self.directory = nomadnet.Directory(self)
 
