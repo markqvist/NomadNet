@@ -71,11 +71,17 @@ class AnnounceInfo(urwid.WidgetWrap):
         trust_str    = ""
         display_str  = self.app.directory.simplest_display_str(source_hash)
         addr_str     = "<"+RNS.hexrep(source_hash, delimit=False)+">"
-        is_node      = announce[3]
+        info_type    = announce[3]
 
-        if is_node:
-            type_string = "Node " + g["node"]
-        else:
+        is_node = False
+        is_pn   = False
+        if info_type == "node" or info_type == True:
+            type_string = "Nomad Network Node " + g["node"]
+            is_node = True
+        elif info_type == "pn":
+            type_string = "LXMF Propagation Node " + g["sent"]
+            is_pn = True
+        elif info_type == "peer" or info_type == False:
             type_string = "Peer " + g["peer"]
 
         try:
@@ -174,10 +180,20 @@ class AnnounceInfo(urwid.WidgetWrap):
             except Exception as e:
                 RNS.log("Error while starting conversation from announce. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
+        def use_pn(sender):
+            show_announce_stream(None)
+            try:
+                self.app.set_user_selected_propagation_node(source_hash)
+            except Exception as e:
+                RNS.log("Error while setting active propagation node from announce. The contained exception was: "+str(e), RNS.LOG_ERROR)
+
         if is_node:
             type_button = ("weight", 0.45, urwid.Button("Connect", on_press=connect))
             msg_button =  ("weight", 0.45, urwid.Button("Msg Op", on_press=msg_op))
             save_button = ("weight", 0.45, urwid.Button("Save", on_press=save_node))
+        elif is_pn:
+            type_button = ("weight", 0.45, urwid.Button("Use as default", on_press=use_pn))
+            save_button = None
         else:
             type_button = ("weight", 0.45, urwid.Button("Converse", on_press=converse))
             save_button = None
@@ -187,21 +203,33 @@ class AnnounceInfo(urwid.WidgetWrap):
         else:
             button_columns = urwid.Columns([("weight", 0.45, urwid.Button("Back", on_press=show_announce_stream)), ("weight", 0.1, urwid.Text("")), type_button])
 
-        pile_widgets = [
-            urwid.Text("Time  : "+ts_string, align="left"),
-            urwid.Text("Addr  : "+addr_str, align="left"),
-            urwid.Text("Type  : "+type_string, align="left"),
-            urwid.Text("Name  : "+display_str, align="left"),
-            urwid.Text(["Trust : ", (style, trust_str)], align="left"),
-            urwid.Divider(g["divider1"]),
-            urwid.Text(["Announce Data: \n", (data_style, data_str)], align="left"),
-            urwid.Divider(g["divider1"]),
-            button_columns
-        ]
+        pile_widgets = []
 
-        if is_node:
-            operator_entry = urwid.Text("Oprtr : "+op_str, align="left")
-            pile_widgets.insert(4, operator_entry)
+        if is_pn:
+            pile_widgets = [
+                urwid.Text("Time  : "+ts_string, align="left"),
+                urwid.Text("Addr  : "+addr_str, align="left"),
+                urwid.Text("Type  : "+type_string, align="left"),
+                urwid.Divider(g["divider1"]),
+                button_columns
+            ]
+
+        else:
+            pile_widgets = [
+                urwid.Text("Time  : "+ts_string, align="left"),
+                urwid.Text("Addr  : "+addr_str, align="left"),
+                urwid.Text("Type  : "+type_string, align="left"),
+                urwid.Text("Name  : "+display_str, align="left"),
+                urwid.Text(["Trust : ", (style, trust_str)], align="left"),
+                urwid.Divider(g["divider1"]),
+                urwid.Text(["Announce Data: \n", (data_style, data_str)], align="left"),
+                urwid.Divider(g["divider1"]),
+                button_columns
+            ]
+
+            if is_node:
+                operator_entry = urwid.Text("Oprtr : "+op_str, align="left")
+                pile_widgets.insert(4, operator_entry)
 
         pile = urwid.Pile(pile_widgets)
 
@@ -220,7 +248,7 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
 
         timestamp = announce[0]
         source_hash = announce[1]
-        is_node = announce[3]
+        announce_type = announce[3]
         self.app = app
         self.timestamp = timestamp
         time_format = app.time_format
@@ -257,10 +285,12 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
             style         = "list_untrusted"
             focus_style   = "list_focus_untrusted"
 
-        if is_node:
+        if announce_type == "node" or announce_type == True:
             type_symbol = g["node"]
-        else:
+        elif announce_type == "peer" or announce_type == False:
             type_symbol = g["peer"]
+        elif announce_type == "pn":
+            type_symbol = g["sent"]
 
         widget = ListEntry(ts_string+" "+type_symbol+" "+display_str)
         urwid.connect_signal(widget, "click", self.display_announce, announce)
@@ -425,13 +455,15 @@ class KnownNodeInfo(urwid.WidgetWrap):
         if display_str == None:
             display_str = addr_str
 
+        pn_hash = RNS.Destination.hash_from_name_and_identity("lxmf.propagation", node_ident)
+
         if node_ident != None:
-            lxmf_addr_str = g["sent"]+" LXMF Propagation Node Address is "+RNS.prettyhexrep(RNS.Destination.hash_from_name_and_identity("lxmf.propagation", node_ident))
+            lxmf_addr_str = g["sent"]+" LXMF Propagation Node Address is "+RNS.prettyhexrep(pn_hash)
         else:
             lxmf_addr_str = "No associated Propagation Node known"
 
 
-        type_string = "Node " + g["node"]
+        type_string = "Nomad Network Node " + g["node"]
 
         if trust_level == DirectoryEntry.UNTRUSTED:
             trust_str     = "Untrusted"
@@ -525,7 +557,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
         def save_node(sender):
             if self.pn_changed:
                 if propagation_node_checkbox.get_state():
-                    self.app.set_user_selected_propagation_node(source_hash)
+                    self.app.set_user_selected_propagation_node(pn_hash)
                 else:
                     self.app.set_user_selected_propagation_node(None)
 

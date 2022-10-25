@@ -436,8 +436,9 @@ class NomadNetworkApp:
     def autoselect_propagation_node(self):
         selected_node = None
 
-        if "propagation_node" in self.peer_settings and self.directory.find(self.peer_settings["propagation_node"]):
-            selected_node = self.directory.find(self.peer_settings["propagation_node"])
+        if "propagation_node" in self.peer_settings:
+            selected_node = self.peer_settings["propagation_node"]
+        
         else:
             nodes = self.directory.known_nodes()
             trusted_nodes = []
@@ -450,19 +451,14 @@ class NomadNetworkApp:
 
                     if hops < best_hops:
                         best_hops = hops
-                        selected_node = node
+                        selected_node = node.source_hash
 
         if selected_node == None:
-            RNS.log("Could not autoselect a propagation node! LXMF propagation will not be available until a trusted node announces on the network.", RNS.LOG_WARNING)
+            RNS.log("Could not autoselect a propagation node! LXMF propagation will not be available until a trusted node announces on the network, or a propagation node is manually selected.", RNS.LOG_WARNING)
         else:
-            node_identity = RNS.Identity.recall(selected_node.source_hash)
-            if node_identity != None:
-                propagation_hash = RNS.Destination.hash_from_name_and_identity("lxmf.propagation", node_identity)
-                RNS.log("Selecting "+selected_node.display_name+" "+RNS.prettyhexrep(propagation_hash)+" as default LXMF propagation node", RNS.LOG_INFO)
-                self.message_router.set_outbound_propagation_node(propagation_hash)
-            else:
-                RNS.log("Could not recall identity for autoselected LXMF propagation node "+RNS.prettyhexrep(selected_node.source_hash), RNS.LOG_WARNING)
-                RNS.log("LXMF propagation will not be available until a trusted node announces on the network.", RNS.LOG_WARNING)
+            pn_name_str = ""
+            RNS.log("Selecting "+RNS.prettyhexrep(selected_node)+pn_name_str+" as default LXMF propagation node", RNS.LOG_INFO)
+            self.message_router.set_outbound_propagation_node(selected_node)
 
     def get_user_selected_propagation_node(self):
         if "propagation_node" in self.peer_settings:

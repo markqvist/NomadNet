@@ -398,10 +398,15 @@ class ConversationsDisplay():
         if pn_ident != None:
             node_hash = RNS.Destination.hash_from_name_and_identity("nomadnetwork.node", pn_ident)
             pn_entry = self.app.directory.find(node_hash)
+            pn_display_str = " "
+            if pn_entry != None:
+                pn_display_str += " "+str(pn_entry.display_name)
+            else:
+                pn_display_str += " "+RNS.prettyhexrep(pn_hash)
 
             dialog = DialogLineBox(
                 urwid.Pile([
-                    urwid.Text(""+g["node"]+" "+str(pn_entry.display_name), align="center"),
+                    urwid.Text(""+g["node"]+pn_display_str, align="center"),
                     urwid.Divider(g["divider1"]),
                     sync_progress,
                     urwid.Divider(g["divider1"]),
@@ -417,7 +422,7 @@ class ConversationsDisplay():
                 urwid.Pile([
                     urwid.Text(""),
                     urwid.Text("No trusted nodes found, cannot sync!\n", align="center"),
-                    urwid.Text("To syncronise messages from the network, one or more nodes must be marked as trusted in the Known Nodes list. Nomad Network will then automatically sync from the nearest trusted node.", align="left"),
+                    urwid.Text("To syncronise messages from the network, one or more nodes must be marked as trusted in the Known Nodes list, or a node must manually be selected as the default propagation node. Nomad Network will then automatically sync from the nearest trusted node, or the manually selected one.", align="left"),
                     urwid.Text(""),
                     button_columns
                 ]), title="Message Sync"

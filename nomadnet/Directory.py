@@ -5,6 +5,29 @@ import time
 import nomadnet
 import RNS.vendor.umsgpack as msgpack
 
+class PNAnnounceHandler:
+    def __init__(self, owner):
+        self.aspect_filter = "lxmf.propagation"
+        self.owner = owner
+
+    def received_announce(self, destination_hash, announced_identity, app_data):
+        try:
+            if type(app_data) == bytes:
+                data = msgpack.unpackb(app_data)
+
+                if data[0] == True:
+                    RNS.log("Received active propagation node announce from "+RNS.prettyhexrep(destination_hash))
+
+                    associated_peer = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", announced_identity)
+                    associated_node = RNS.Destination.hash_from_name_and_identity("nomadnetwork.node", announced_identity)
+
+                    self.owner.app.directory.pn_announce_received(destination_hash, app_data, associated_peer, associated_node)
+                    self.owner.app.autoselect_propagation_node()
+
+        except Exception as e:
+            RNS.log("Error while evaluating propagation node announce, ignoring announce.", RNS.LOG_DEBUG)
+            RNS.log("The contained exception was: "+str(e), RNS.LOG_DEBUG)
+
 class Directory:
     ANNOUNCE_STREAM_MAXLENGTH = 64
 
@@ -14,8 +37,6 @@ class Directory:
         app = nomadnet.NomadNetworkApp.get_shared_instance()
 
         if not destination_hash in app.ignored_list:
-            destination_hash_text = RNS.hexrep(destination_hash, delimit=False)
-
             associated_peer = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", announced_identity)
 
             app.directory.node_announce_received(destination_hash, app_data, associated_peer)
@@ -30,6 +51,9 @@ class Directory:
         self.announce_stream = []
         self.app = app
         self.load_from_disk()
+
+        self.pn_announce_handler = PNAnnounceHandler(self)
+        RNS.Transport.register_announce_handler(self.pn_announce_handler)
 
 
     def save_to_disk(self):
@@ -90,7 +114,7 @@ class Directory:
     def lxmf_announce_received(self, source_hash, app_data):
         if app_data != None:
             timestamp = time.time()
-            self.announce_stream.insert(0, (timestamp, source_hash, app_data, False))
+            self.announce_stream.insert(0, (timestamp, source_hash, app_data, "peer"))
             while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
                 self.announce_stream.pop()
 
@@ -100,7 +124,7 @@ class Directory:
     def node_announce_received(self, source_hash, app_data, associated_peer):
         if app_data != None:
             timestamp = time.time()
-            self.announce_stream.insert(0, (timestamp, source_hash, app_data, True))
+            self.announce_stream.insert(0, (timestamp, source_hash, app_data, "node"))
             while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
                 self.announce_stream.pop()
 
@@ -109,6 +133,27 @@ class Directory:
                 if not existing_entry:
                     node_entry = DirectoryEntry(source_hash, display_name=app_data.decode("utf-8"), trust_level=DirectoryEntry.TRUSTED, hosts_node=True)
                     self.remember(node_entry)
+            
+            if hasattr(self.app.ui, "main_display"):
+                self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
+
+    def pn_announce_received(self, source_hash, app_data, associated_peer, associated_node):
+        found_node = None
+        for sh in self.directory_entries:
+            if sh == associated_node:
+                found_node = True
+                break
+
+        for e in self.announce_stream:
+            if e[1] == associated_node:
+                found_node = True
+                break
+
+        if not found_node:
+            timestamp = time.time()
+            self.announce_stream.insert(0, (timestamp, source_hash, app_data, "pn"))
+            while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
+                self.announce_stream.pop()
             
             if hasattr(self.app.ui, "main_display"):
                 self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
@@ -250,11 +295,6 @@ class DirectoryEntry:
     def __init__(self, source_hash, display_name=None, trust_level=UNKNOWN, hosts_node=False, preferred_delivery=None, identify_on_connect=False):
         if len(source_hash) == RNS.Identity.TRUNCATED_HASHLENGTH//8:
             self.source_hash  = source_hash
-
-            # TODO: Clean
-            # if display_name  == None:
-            #     display_name  = source_hash
-
             self.display_name = display_name
 
             if preferred_delivery == None:
