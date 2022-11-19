@@ -227,6 +227,35 @@ class Conversation:
             RNS.log("Destination is not known, cannot create LXMF Message.", RNS.LOG_VERBOSE)
             return False
 
+    def paper_output(self, content="", title=""):
+        if self.send_destination:
+            try:
+                dest = self.send_destination
+                source = self.app.lxmf_destination
+                desired_method = LXMF.LXMessage.PAPER
+
+                lxm = LXMF.LXMessage(dest, source, content, title=title, desired_method=desired_method)
+                qr_code = lxm.as_qr()
+                qr_tmp_path = self.app.tmpfilespath+"/"+str(RNS.hexrep(lxm.hash, delimit=False))
+                qr_code.save(qr_tmp_path)
+
+                print_result = self.app.print_file(qr_tmp_path)
+                os.unlink(qr_tmp_path)
+                
+                if print_result:
+                    message_path = Conversation.ingest(lxm, self.app, originator=True)
+                    self.messages.append(ConversationMessage(message_path))
+
+                return print_result
+
+            except Exception as e:
+                RNS.log("An error occurred while generating paper message, the contained exception was: "+str(e), RNS.LOG_ERROR)
+                return False
+
+        else:
+            RNS.log("Destination is not known, cannot create LXMF Message.", RNS.LOG_VERBOSE)
+            return False
+
     def message_notification(self, message):
         if message.state == LXMF.LXMessage.FAILED and hasattr(message, "try_propagation_on_fail") and message.try_propagation_on_fail:
             RNS.log("Direct delivery of "+str(message)+" failed. Retrying as propagated message.", RNS.LOG_VERBOSE)

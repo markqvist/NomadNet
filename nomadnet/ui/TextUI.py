@@ -121,7 +121,9 @@ GLYPHS = {
     ("decoration_menu", " +",        " +",          " \uf93a"),
     ("unread_menu",     " !",        " \u2709",     urm_char),
     ("globe",           "",          "",            "\uf484"),
-    ("sent",            "/\\",       "\u2191",      "\ufbf4")
+    ("sent",            "/\\",       "\u2191",      "\ufbf4"),
+    ("papermsg",        "P",         "\u25a4",      "\uf719"),
+    ("qrcode",          "QR",        "\u25a4",      "\uf029"),
 }
 
 class TextUI:

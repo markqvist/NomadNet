@@ -14,13 +14,13 @@ class ConversationListDisplayShortcuts():
     def __init__(self, app):
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("[C-e] Peer Info  [C-x] Delete  [C-r] Sync  [C-n] New  [C-g] Fullscreen"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-e] Peer Info  [C-x] Delete  [C-r] Sync  [C-n] New  [C-u] Ingest URL  [C-g] Fullscreen"), "shortcutbar")
 
 class ConversationDisplayShortcuts():
     def __init__(self, app):
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("[C-d] Send  [C-k] Clear  [C-w] Close  [C-t] Title  [C-p] Purge  [C-x] Clear History  [C-o] Sort"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-d] Send  [C-p] Paper Msg  [C-t] Title  [C-k] Clear  [C-w] Close  [C-u] Purge  [C-x] Clear History  [C-o] Sort"), "shortcutbar")
 
 class ConversationsArea(urwid.LineBox):
     def keypress(self, size, key):
@@ -30,6 +30,8 @@ class ConversationsArea(urwid.LineBox):
             self.delegate.delete_selected_conversation()
         elif key == "ctrl n":
             self.delegate.new_conversation()
+        elif key == "ctrl u":
+            self.delegate.ingest_lxm_url()
         elif key == "ctrl r":
             self.delegate.sync_conversations()
         elif key == "ctrl g":
@@ -327,6 +329,110 @@ class ConversationsDisplay():
         overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
 
         # options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
+        options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
+        self.columns_widget.contents[0] = (overlay, options)
+
+    def ingest_lxm_url(self):
+        self.dialog_open = True
+        lxm_url = ""
+        e_url = urwid.Edit(caption="URL : ",edit_text=lxm_url)
+
+        def dismiss_dialog(sender):
+            self.update_conversation_list()
+            self.dialog_open = False
+
+        def confirmed(sender):
+            try:
+                local_delivery_signal = "local_delivery_occurred"
+                duplicate_signal = "duplicate_lxm"
+                lxm_url = e_url.get_edit_text()
+
+                ingest_result = self.app.message_router.ingest_lxm_url(
+                    lxm_url,
+                    signal_local_delivery=local_delivery_signal,
+                    signal_duplicate=duplicate_signal
+                )
+
+                if ingest_result == False:
+                    raise ValueError("The URL contained no decodable messages")
+                
+                elif ingest_result == local_delivery_signal:
+                    rdialog_pile = urwid.Pile([
+                        urwid.Text("Message was decoded, decrypted successfully, and added to your conversation list."),
+                        urwid.Text(""),
+                        urwid.Columns([("weight", 0.6, urwid.Text("")), ("weight", 0.4, urwid.Button("OK", on_press=dismiss_dialog))])
+                    ])
+                    rdialog_pile.error_display = False
+
+                    rdialog = DialogLineBox(rdialog_pile, title="Ingest message URL")
+                    rdialog.delegate = self
+                    bottom = self.listbox
+
+                    roverlay = urwid.Overlay(rdialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+
+                    options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
+                    self.columns_widget.contents[0] = (roverlay, options)
+                
+                elif ingest_result == duplicate_signal:
+                    rdialog_pile = urwid.Pile([
+                        urwid.Text("The decoded message has already been processed by the LXMF Router, and will not be ingested again."),
+                        urwid.Text(""),
+                        urwid.Columns([("weight", 0.6, urwid.Text("")), ("weight", 0.4, urwid.Button("OK", on_press=dismiss_dialog))])
+                    ])
+                    rdialog_pile.error_display = False
+
+                    rdialog = DialogLineBox(rdialog_pile, title="Ingest message URL")
+                    rdialog.delegate = self
+                    bottom = self.listbox
+
+                    roverlay = urwid.Overlay(rdialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+
+                    options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
+                    self.columns_widget.contents[0] = (roverlay, options)
+                
+                else:
+                    if self.app.enable_node:
+                        propagation_text = "The decoded message was not addressed to this LXMF address, but has been added to the propagation node queues, and will be distributed on the propagation network."
+                    else:
+                        propagation_text = "The decoded message was not addressed to this LXMF address, and has been discarded."
+
+                    rdialog_pile = urwid.Pile([
+                        urwid.Text(propagation_text),
+                        urwid.Text(""),
+                        urwid.Columns([("weight", 0.6, urwid.Text("")), ("weight", 0.4, urwid.Button("OK", on_press=dismiss_dialog))])
+                    ])
+                    rdialog_pile.error_display = False
+
+                    rdialog = DialogLineBox(rdialog_pile, title="Ingest message URL")
+                    rdialog.delegate = self
+                    bottom = self.listbox
+
+                    roverlay = urwid.Overlay(rdialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+
+                    options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
+                    self.columns_widget.contents[0] = (roverlay, options)
+
+            except Exception as e:
+                RNS.log("Could not ingest LXM URL. The contained exception was: "+str(e), RNS.LOG_VERBOSE)
+                if not dialog_pile.error_display:
+                    dialog_pile.error_display = True
+                    options = dialog_pile.options(height_type="pack")
+                    dialog_pile.contents.append((urwid.Text(""), options))
+                    dialog_pile.contents.append((urwid.Text(("error_text", "Could ingest LXM from URL data. Check your input."), align="center"), options))
+
+        dialog_pile = urwid.Pile([
+            e_url,
+            urwid.Text(""),
+            urwid.Columns([("weight", 0.45, urwid.Button("Ingest", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Back", on_press=dismiss_dialog))])
+        ])
+        dialog_pile.error_display = False
+
+        dialog = DialogLineBox(dialog_pile, title="Ingest message URL")
+        dialog.delegate = self
+        bottom = self.listbox
+
+        overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+
         options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
         self.columns_widget.contents[0] = (overlay, options)
 
@@ -636,6 +742,8 @@ class MessageEdit(urwid.Edit):
     def keypress(self, size, key):
         if key == "ctrl d":
             self.delegate.send_message()
+        elif key == "ctrl p":
+            self.delegate.paper_message()
         elif key == "ctrl k":
             self.delegate.clear_editor()
         elif key == "up":
@@ -800,7 +908,7 @@ class ConversationWidget(urwid.WidgetWrap):
             self.toggle_focus_area()
         elif key == "ctrl w":
             self.close()
-        elif key == "ctrl p":
+        elif key == "ctrl u":
             self.conversation.purge_failed()
             self.conversation_changed(None)
         elif key == "ctrl t":
@@ -860,6 +968,34 @@ class ConversationWidget(urwid.WidgetWrap):
             else:
                 pass
 
+    def paper_message(self):
+        content = self.content_editor.get_edit_text()
+        title = self.title_editor.get_edit_text()
+        if not content == "":
+            if self.conversation.paper_output(content, title):
+                self.clear_editor()
+            else:
+                self.paper_message_failed()
+
+    def paper_message_failed(self):
+        def dismiss_dialog(sender):
+            self.dialog_open = False
+            self.conversation_changed(None)
+
+        dialog = DialogLineBox(
+            urwid.Pile([
+                urwid.Text("Could not output paper message,\ncheck your settings. See the log\nfile for any error messages.\n", align="center"),
+                urwid.Columns([("weight", 0.6, urwid.Text("")), ("weight", 0.4, urwid.Button("OK", on_press=dismiss_dialog))])
+            ]), title="!"
+        )
+        dialog.delegate = self
+        bottom = self.messagelist
+
+        overlay = urwid.Overlay(dialog, bottom, align="center", width=34, valign="middle", height="pack", left=2, right=2)
+
+        self.frame.contents["body"] = (overlay, self.frame.options())
+        self.frame.set_focus("body")
+
     def close(self):
         self.delegate.close_conversation(self)
 
@@ -890,6 +1026,9 @@ class LXMessageWidget(urwid.WidgetWrap):
             elif message.lxm.method == LXMF.LXMessage.PROPAGATED and message.lxm.state == LXMF.LXMessage.SENT:
                 header_style = "msg_header_propagated"
                 title_string = g["sent"]+" "+title_string
+            elif message.lxm.method == LXMF.LXMessage.PAPER and message.lxm.state == LXMF.LXMessage.PAPER:
+                header_style = "msg_header_propagated"
+                title_string = g["papermsg"]+" "+title_string
             elif message.lxm.state == LXMF.LXMessage.SENT:
                 header_style = "msg_header_sent"
                 title_string = g["sent"]+" "+title_string

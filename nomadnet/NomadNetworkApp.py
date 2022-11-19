@@ -105,6 +105,7 @@ class NomadNetworkApp:
         self.conversationpath  = self.configdir+"/storage/conversations"
         self.directorypath     = self.configdir+"/storage/directory"
         self.peersettingspath  = self.configdir+"/storage/peersettings"
+        self.tmpfilespath      = self.configdir+"/storage/tmp"
 
         self.pagespath         = self.configdir+"/storage/pages"
         self.filespath         = self.configdir+"/storage/files"
@@ -144,6 +145,11 @@ class NomadNetworkApp:
 
         if not os.path.isdir(self.cachepath):
             os.makedirs(self.cachepath)
+
+        if not os.path.isdir(self.tmpfilespath):
+            os.makedirs(self.tmpfilespath)
+        else:
+            self.clear_tmp_dir()
 
         if os.path.isfile(self.configpath):
             try:
@@ -514,6 +520,26 @@ class NomadNetworkApp:
 
         return False
 
+    def print_file(self, filename):
+        print_command = self.print_command+" "+filename
+
+        try:
+            return_code = subprocess.call(shlex.split(print_command), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        except Exception as e:
+            RNS.log("An error occurred while executing print command: "+str(print_command), RNS.LOG_ERROR)
+            RNS.log("The contained exception was: "+str(e), RNS.LOG_ERROR)
+            return False
+
+        if return_code == 0:
+            RNS.log("Successfully printed "+str(filename)+" using print command: "+print_command, RNS.LOG_DEBUG)
+            return True
+
+        else:
+            RNS.log("Printing "+str(filename)+" failed using print command: "+print_command, RNS.LOG_DEBUG)
+            return False
+
+
     def print_message(self, message, received = None):
         try:
             template = self.printing_template_msg
@@ -547,8 +573,7 @@ class NomadNetworkApp:
                 f.write(output.encode("utf-8"))
                 f.close()
 
-            print_command = "lp -d thermal -o cpi=16 -o lpi=8 "+filename
-            return_code = subprocess.call(shlex.split(print_command), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            self.print_file(filename)
 
             os.unlink(filename)
 
@@ -575,6 +600,12 @@ class NomadNetworkApp:
             nomadnet.Conversation.unread_conversations.pop(bytes.fromhex(source_hash))
             if os.path.isfile(self.conversationpath + "/" + source_hash + "/unread"):
                 os.unlink(self.conversationpath + "/" + source_hash + "/unread")
+
+    def clear_tmp_dir(self):
+        if os.path.isdir(self.tmpfilespath):
+            for file in os.listdir(self.tmpfilespath):
+                fpath = self.tmpfilespath+"/"+file
+                os.unlink(fpath)
 
     def createDefaultConfig(self):
         self.config = ConfigObj(__default_nomadnet_config__)
