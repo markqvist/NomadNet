@@ -1,5 +1,4 @@
-Nomad Network - Communicate Freely
-==========
+# Nomad Network - Communicate Freely
 
 Off-grid, resilient mesh communication with strong encryption, forward secrecy and extreme privacy.
 
@@ -25,11 +24,6 @@ If you'd rather want to use an LXMF client with a graphical user interface, you 
 
 ## Current Status
 The current version of the program should be considered a beta release. The program works well, but there will most probably be bugs and possibly sub-optimal performance in some scenarios. On the other hand, this is the ideal time to have an influence on the direction of the development of Nomad Network. To do so, join the discussion, report bugs and request features here on the GitHub project.
-
-### Feature roadmap
- - Network-wide propagated bulletins and discussion threads
- - Collaborative maps and geospatial information sharing
- - Facilitation of trade and barter
 
 ## How do I get started?
 The easiest way to install Nomad Network is via pip:
@@ -118,6 +112,29 @@ You can help support the continued development of open, free and private communi
   3CPmacGm34qYvR6XWLVEJmi2aNe3PZqUuq
   ```
 - Ko-Fi: https://ko-fi.com/markqvist
+
+## Development Roadmap
+
+- New major features
+    - Network-wide propagated bulletins and discussion threads
+    - Collaborative maps and geospatial information sharing
+    - Facilitation of trade and barter
+- Minor improvements and fixes
+    - Fix internal editor failing on some OSes with no "editor" alias
+    - Possibly add a required-width header
+    - Improve browser handling of remote link close
+    - Better navigation handling when requests fail (also because of closed links)
+    - Ctrl-M shorcut for jumping to menu
+    - Retry failed messages mechanism
+    - Re-arrange buttons to be more consistent
+    - Link status (RSSI and SNR) in conversation or conv list
+    - Share node with other users / send node info to user
+    - Input field for pages
+    - Post mechanism
+    - Term compatibility notice in readme
+    - Selected icon in conversation list
+    - Possibly a Search Local Nodes function
+    - Possibly add via entry in node info box, next to distance
 
 ## Caveat Emptor
 Nomad Network is beta software, and should be considered as such. While it has been built with cryptography best-practices very foremost in mind, it _has not_ been externally security audited, and there could very well be privacy-breaking bugs. If you want to help out, or help sponsor an audit, please do get in touch.
