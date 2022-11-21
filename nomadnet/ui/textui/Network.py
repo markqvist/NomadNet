@@ -894,7 +894,7 @@ class NodeActiveConnections(urwid.WidgetWrap):
         if self.app.node != None:
             self.stat_string = str(len(self.app.node.destination.links))
 
-        self.display_widget.set_text("Conneced Now   : "+self.stat_string)
+        self.display_widget.set_text("Connected Now  : "+self.stat_string)
 
     def update_stat_callback(self, loop=None, user_data=None):
         self.update_stat()
