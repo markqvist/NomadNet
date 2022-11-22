@@ -14,7 +14,7 @@ class ConversationListDisplayShortcuts():
     def __init__(self, app):
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("[C-e] Peer Info  [C-x] Delete  [C-r] Sync  [C-n] New  [C-u] Ingest URL  [C-g] Fullscreen"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-e] Peer Info  [C-x] Delete  [C-r] Sync  [C-n] New  [C-u] Ingest URI  [C-g] Fullscreen"), "shortcutbar")
 
 class ConversationDisplayShortcuts():
     def __init__(self, app):
@@ -31,7 +31,7 @@ class ConversationsArea(urwid.LineBox):
         elif key == "ctrl n":
             self.delegate.new_conversation()
         elif key == "ctrl u":
-            self.delegate.ingest_lxm_url()
+            self.delegate.ingest_lxm_uri()
         elif key == "ctrl r":
             self.delegate.sync_conversations()
         elif key == "ctrl g":
@@ -332,10 +332,10 @@ class ConversationsDisplay():
         options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
         self.columns_widget.contents[0] = (overlay, options)
 
-    def ingest_lxm_url(self):
+    def ingest_lxm_uri(self):
         self.dialog_open = True
-        lxm_url = ""
-        e_url = urwid.Edit(caption="URL : ",edit_text=lxm_url)
+        lxm_uri = ""
+        e_uri = urwid.Edit(caption="URI : ",edit_text=lxm_uri)
 
         def dismiss_dialog(sender):
             self.update_conversation_list()
@@ -345,16 +345,16 @@ class ConversationsDisplay():
             try:
                 local_delivery_signal = "local_delivery_occurred"
                 duplicate_signal = "duplicate_lxm"
-                lxm_url = e_url.get_edit_text()
+                lxm_uri = e_uri.get_edit_text()
 
-                ingest_result = self.app.message_router.ingest_lxm_url(
-                    lxm_url,
+                ingest_result = self.app.message_router.ingest_lxm_uri(
+                    lxm_uri,
                     signal_local_delivery=local_delivery_signal,
                     signal_duplicate=duplicate_signal
                 )
 
                 if ingest_result == False:
-                    raise ValueError("The URL contained no decodable messages")
+                    raise ValueError("The URI contained no decodable messages")
                 
                 elif ingest_result == local_delivery_signal:
                     rdialog_pile = urwid.Pile([
@@ -364,7 +364,7 @@ class ConversationsDisplay():
                     ])
                     rdialog_pile.error_display = False
 
-                    rdialog = DialogLineBox(rdialog_pile, title="Ingest message URL")
+                    rdialog = DialogLineBox(rdialog_pile, title="Ingest message URI")
                     rdialog.delegate = self
                     bottom = self.listbox
 
@@ -381,7 +381,7 @@ class ConversationsDisplay():
                     ])
                     rdialog_pile.error_display = False
 
-                    rdialog = DialogLineBox(rdialog_pile, title="Ingest message URL")
+                    rdialog = DialogLineBox(rdialog_pile, title="Ingest message URI")
                     rdialog.delegate = self
                     bottom = self.listbox
 
@@ -403,7 +403,7 @@ class ConversationsDisplay():
                     ])
                     rdialog_pile.error_display = False
 
-                    rdialog = DialogLineBox(rdialog_pile, title="Ingest message URL")
+                    rdialog = DialogLineBox(rdialog_pile, title="Ingest message URI")
                     rdialog.delegate = self
                     bottom = self.listbox
 
@@ -413,21 +413,21 @@ class ConversationsDisplay():
                     self.columns_widget.contents[0] = (roverlay, options)
 
             except Exception as e:
-                RNS.log("Could not ingest LXM URL. The contained exception was: "+str(e), RNS.LOG_VERBOSE)
+                RNS.log("Could not ingest LXM URI. The contained exception was: "+str(e), RNS.LOG_VERBOSE)
                 if not dialog_pile.error_display:
                     dialog_pile.error_display = True
                     options = dialog_pile.options(height_type="pack")
                     dialog_pile.contents.append((urwid.Text(""), options))
-                    dialog_pile.contents.append((urwid.Text(("error_text", "Could ingest LXM from URL data. Check your input."), align="center"), options))
+                    dialog_pile.contents.append((urwid.Text(("error_text", "Could ingest LXM from URI data. Check your input."), align="center"), options))
 
         dialog_pile = urwid.Pile([
-            e_url,
+            e_uri,
             urwid.Text(""),
             urwid.Columns([("weight", 0.45, urwid.Button("Ingest", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Back", on_press=dismiss_dialog))])
         ])
         dialog_pile.error_display = False
 
-        dialog = DialogLineBox(dialog_pile, title="Ingest message URL")
+        dialog = DialogLineBox(dialog_pile, title="Ingest message URI")
         dialog.delegate = self
         bottom = self.listbox
 
