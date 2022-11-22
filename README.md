@@ -120,15 +120,15 @@ You can help support the continued development of open, free and private communi
     - Collaborative maps and geospatial information sharing
     - Facilitation of trade and barter
 - Minor improvements and fixes
+    - Link status (RSSI and SNR) in conversation or conv list
+    - Ctrl-M shorcut for jumping to menu
+    - Share node with other users / send node info to user
     - Fix internal editor failing on some OSes with no "editor" alias
     - Possibly add a required-width header
     - Improve browser handling of remote link close
     - Better navigation handling when requests fail (also because of closed links)
-    - Ctrl-M shorcut for jumping to menu
     - Retry failed messages mechanism
     - Re-arrange buttons to be more consistent
-    - Link status (RSSI and SNR) in conversation or conv list
-    - Share node with other users / send node info to user
     - Input field for pages
     - Post mechanism
     - Term compatibility notice in readme
