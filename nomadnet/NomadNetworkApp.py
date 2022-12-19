@@ -98,6 +98,7 @@ class NomadNetworkApp:
         self.ignoredpath       = self.configdir+"/ignored"
         self.logfilepath       = self.configdir+"/logfile"
         self.errorfilepath     = self.configdir+"/errors"
+        self.pnannouncedpath   = self.configdir+"/pnannounced"
         self.storagepath       = self.configdir+"/storage"
         self.identitypath      = self.configdir+"/storage/identity"
         self.cachepath         = self.configdir+"/storage/cache"
@@ -296,11 +297,24 @@ class NomadNetworkApp:
                     RNS.log("Cannot prioritise "+str(dest_str)+", it is not a valid destination hash", RNS.LOG_ERROR)
 
             self.message_router.enable_propagation()
+            try:
+                with open(self.pnannouncedpath, "wb") as pnf:
+                    pnf.write(msgpack.packb(time.time()))
+                    pnf.close()
+            except Exception as e:
+                RNS.log("An error ocurred while writing Propagation Node announce timestamp. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
             RNS.log("LXMF Propagation Node started on: "+RNS.prettyhexrep(self.message_router.propagation_destination.hash))
             self.node = nomadnet.Node(self)
         else:
             self.node = None
+            if os.path.isfile(self.pnannouncedpath):
+                try:
+                    RNS.log("Sending indication to peered LXMF Propagation Node that this node is no longer participating", RNS.LOG_DEBUG)
+                    self.message_router.disable_propagation()
+                    os.unlink(self.pnannouncedpath)
+                except Exception as e:
+                    RNS.log("An error ocurred while indicating that this LXMF Propagation Node is no longer participating. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
         RNS.Transport.register_announce_handler(nomadnet.Conversation)
         RNS.Transport.register_announce_handler(nomadnet.Directory)
