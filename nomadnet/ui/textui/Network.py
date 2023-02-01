@@ -311,19 +311,28 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
             self.delegate.parent.close_list_dialogs()
 
         def confirmed(sender):
-            self.delegate.parent.close_list_dialogs()
+            def close_req(sender):
+                self.delegate.parent.close_list_dialogs()
+
+            dialog_pile.contents[0] = (urwid.Text("\nKeys requested from network\n", align="center"), options)
+            RNS.Transport.request_path(announce[1])
+
+        confirmed_button = urwid.Button("Request keys", on_press=confirmed)
+
+        dialog_pile = urwid.Pile([
+            urwid.Text("The keys for the announced destination could not be recalled. You can wait for an announce to arrive, or request the keys from the network.\n", align="center"),
+            urwid.Columns([
+                ("weight", 0.45, confirmed_button),
+                ("weight", 0.1, urwid.Text("")),
+                ("weight", 0.45, urwid.Button("Close", on_press=dismiss_dialog)),
+            ])
+        ])
 
         dialog = ListDialogLineBox(
-            urwid.Pile([
-                urwid.Text("The keys for the announced destination could not be recalled. You can wait for an announce to arrive, or request the keys from the network.\n", align="center"),
-                urwid.Columns([
-                    ("weight", 0.45, urwid.Button("Request keys", on_press=confirmed)),
-                    ("weight", 0.1, urwid.Text("")),
-                    ("weight", 0.45, urwid.Button("Cancel", on_press=dismiss_dialog)),
-                ])
-            ]),
+            dialog_pile,
             title="Keys Unknown"
         )
+        confirmed_button.dialog_pile = dialog_pile
         dialog.delegate = self.delegate.parent
         bottom = self.delegate
 
