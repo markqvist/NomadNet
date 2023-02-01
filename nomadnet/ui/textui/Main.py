@@ -140,6 +140,15 @@ class MainDisplay():
         self.menu_display.start()
 
     def quit(self, sender=None):
+        logterm_pid = None
+        if True or RNS.vendor.platformutils.is_android():
+            if self.sub_displays.log_display != None and self.sub_displays.log_display.log_term != None:
+                if self.sub_displays.log_display.log_term.log_term != None:
+                    logterm_pid = self.sub_displays.log_display.log_term.log_term.pid
+                    if logterm_pid != None:
+                        import os, signal
+                        os.kill(logterm_pid, signal.SIGKILL)
+
         raise urwid.ExitMainLoop
 
 
