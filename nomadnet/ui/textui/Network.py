@@ -239,7 +239,7 @@ class AnnounceInfo(urwid.WidgetWrap):
 
 
 class AnnounceStreamEntry(urwid.WidgetWrap):
-    def __init__(self, app, announce):
+    def __init__(self, app, announce, delegate):
         full_time_format = "%Y-%m-%d %H:%M:%S"
         date_time_format = "%Y-%m-%d"
         time_time_format = "%H:%M:%S"
@@ -250,6 +250,7 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
         source_hash = announce[1]
         announce_type = announce[3]
         self.app = app
+        self.delegate = delegate
         self.timestamp = timestamp
         time_format = app.time_format
         dt = datetime.fromtimestamp(self.timestamp)
@@ -299,10 +300,37 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
         urwid.WidgetWrap.__init__(self, self.display_widget)
 
     def display_announce(self, event, announce):
+      try:
         parent = self.app.ui.main_display.sub_displays.network_display
         info_widget = AnnounceInfo(announce, parent, self.app)
         options = parent.left_pile.options(height_type="weight", height_amount=1)
         parent.left_pile.contents[0] = (info_widget, options)
+      
+      except KeyError as e:
+        def dismiss_dialog(sender):
+            self.delegate.parent.close_list_dialogs()
+
+        def confirmed(sender):
+            self.delegate.parent.close_list_dialogs()
+
+        dialog = ListDialogLineBox(
+            urwid.Pile([
+                urwid.Text("The keys for the announced destination could not be recalled. You can wait for an announce to arrive, or request the keys from the network.\n", align="center"),
+                urwid.Columns([
+                    ("weight", 0.45, urwid.Button("Request keys", on_press=confirmed)),
+                    ("weight", 0.1, urwid.Text("")),
+                    ("weight", 0.45, urwid.Button("Cancel", on_press=dismiss_dialog)),
+                ])
+            ]),
+            title="Keys Unknown"
+        )
+        dialog.delegate = self.delegate.parent
+        bottom = self.delegate
+
+        overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+
+        options = self.delegate.parent.left_pile.options("weight", 1)
+        self.delegate.parent.left_pile.contents[0] = (overlay, options)
 
     def timestamp(self):
         return self.timestamp
@@ -358,7 +386,7 @@ class AnnounceStream(urwid.WidgetWrap):
                 new_entries.insert(0, e)
 
         for e in new_entries:
-            nw = AnnounceStreamEntry(self.app, e)
+            nw = AnnounceStreamEntry(self.app, e, self)
             nw.timestamp = e[0]
             self.widget_list.insert(0, nw)
 
@@ -1498,10 +1526,6 @@ class NetworkDisplay():
         self.local_peer_display.start()
         self.node_info_display.start()
         self.network_stats_display.start()
-        # There seems to be an intermittent memory leak somewhere
-        # in the periodic updating here. The periodic updater should
-        # not be needed anymore, so dis
-        #self.announce_stream_display.start()
 
     def shortcuts(self):
         return self.shortcuts_display
