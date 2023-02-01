@@ -456,9 +456,8 @@ class NomadNetworkApp:
     def autoselect_propagation_node(self):
         selected_node = None
 
-        if "propagation_node" in self.peer_settings:
+        if "propagation_node" in self.peer_settings and self.peer_settings["propagation_node"] != None:
             selected_node = self.peer_settings["propagation_node"]
-        
         else:
             nodes = self.directory.known_nodes()
             trusted_nodes = []
@@ -706,7 +705,7 @@ class NomadNetworkApp:
                                 self.config["textui"]["intro_text"] = "Nomad Network"
 
                             if not "editor" in self.config["textui"]:
-                                self.config["textui"]["editor"] = "editor"
+                                self.config["textui"]["editor"] = "nano"
 
                             if not "glyphs" in self.config["textui"]:
                                 self.config["textui"]["glyphs"] = "unicode"
@@ -958,10 +957,8 @@ glyphs = unicode
 # application. On by default.
 mouse_enabled = True
 
-# What editor to use for editing text. By
-# default the operating systems "editor"
-# alias will be used.
-editor = editor
+# What editor to use for editing text.
+editor = nano
 
 # If you don't want the Guide section to
 # show up in the menu, you can disable it.

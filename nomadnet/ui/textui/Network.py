@@ -704,7 +704,7 @@ class KnownNodes(urwid.WidgetWrap):
         else:
             self.no_content = True
             widget_style = "inactive_text"
-            self.pile = urwid.Pile([urwid.Text(("warning_text", g["info"]+"\n"), align="center"), SelectText(("warning_text", "Currently, no nodes are known\n\n"), align="center")])
+            self.pile = urwid.Pile([urwid.Text(("warning_text", g["info"]+"\n"), align="center"), SelectText(("warning_text", "Currently, no nodes are saved\n\nCtrl+L to view the announce stream\n\n"), align="center")])
             self.display_widget = urwid.Filler(self.pile, valign="top", height="pack")
 
         urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="Saved Nodes"), widget_style))
