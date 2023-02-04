@@ -15,4 +15,4 @@ The message board page itself is hosted on a NomadNet node, you can place the me
 * Run the `message_board.py` script (`python3 message_board.py` either in a `screen` or as a system service), this script uses `NomadNet` and `RNS` libraries and has no additional libraries that need to be installed. Take a note of the message boards address, it is printed on starting the board, you can then place this address in `message_board.mu` file to make it easier for users to interact the board.
 
 ## Credits
-* The send and receive functions in message_board.py are based on examples posted on the Reticulum Matrix channel by [Mark](https://github.com/markqvist)
+* This example application was written and contributed by @chengtripp
