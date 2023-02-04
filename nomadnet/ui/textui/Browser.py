@@ -51,7 +51,7 @@ class BrowserFrame(urwid.Frame):
                     RNS.log("Error while setting up cursor timeout. The contained exception was: "+str(e), RNS.LOG_ERROR)
                                         
             return super(BrowserFrame, self).keypress(size, key)
-            
+
         else:
             return super(BrowserFrame, self).keypress(size, key)
 
@@ -175,6 +175,7 @@ class Browser:
         if destination_type == "nomadnetwork.node":
             if self.status >= Browser.DISCONECTED:
                 RNS.log("Browser handling link to: "+str(link_target), RNS.LOG_DEBUG)
+                self.browser_footer = urwid.Text("Opening link to: "+str(link_target))
                 try:
                     self.retrieve_url(link_target)
                 except Exception as e:
