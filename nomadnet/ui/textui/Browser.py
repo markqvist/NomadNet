@@ -26,13 +26,32 @@ class BrowserFrame(urwid.Frame):
         elif key == "ctrl g":
             nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.sub_displays.network_display.toggle_fullscreen()
         elif self.get_focus() == "body":
+            if key == "down" or key == "up":
+                try:
+                    if hasattr(self.delegate, "page_pile") and self.delegate.page_pile:
+                        def df(loop, user_data):
+                            st = None
+                            nf = self.delegate.page_pile.get_focus()
+                            if hasattr(nf, "key_timeout"):
+                                st = nf
+                            elif hasattr(nf, "original_widget"):
+                                no = nf.original_widget
+                                if hasattr(no, "original_widget"):
+                                    st = no.original_widget
+                                else:
+                                    if hasattr(no, "key_timeout"):
+                                        st = no
+                        
+                            if st and hasattr(st, "key_timeout") and hasattr(st, "keypress") and callable(st.keypress):
+                                st.keypress(None, None)
+
+                        nomadnet.NomadNetworkApp.get_shared_instance().ui.loop.set_alarm_in(0.25, df)
+                
+                except Exception as e:
+                    RNS.log("Error while setting up cursor timeout. The contained exception was: "+str(e), RNS.LOG_ERROR)
+                                        
             return super(BrowserFrame, self).keypress(size, key)
-            # if key == "up" and self.delegate.messagelist.top_is_visible:
-            #     nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.set_focus("header")
-            # elif key == "down" and self.delegate.messagelist.bottom_is_visible:
-            #     self.set_focus("footer")
-            # else:
-            #     return super(ConversationFrame, self).keypress(size, key)
+            
         else:
             return super(BrowserFrame, self).keypress(size, key)
 
@@ -80,6 +99,7 @@ class Browser:
         self.link_target = None
         self.frame = None
         self.attr_maps = []
+        self.page_pile = None
         self.build_display()
 
         self.history = []
@@ -219,6 +239,7 @@ class Browser:
         self.browser_header = urwid.Text("")
         self.browser_footer = urwid.Text("")
 
+        self.page_pile = None
         self.browser_body = urwid.Filler(urwid.Text("Disconnected\n"+self.g["arrow_l"]+"  "+self.g["arrow_r"], align="center"), "middle")
 
         self.frame = BrowserFrame(self.browser_body, header=self.browser_header, footer=self.browser_footer)
@@ -266,6 +287,7 @@ class Browser:
     def update_display(self):
         if self.status == Browser.DISCONECTED:
             self.display_widget.set_attr_map({None: "inactive_text"})
+            self.page_pile = None
             self.browser_body = urwid.Filler(urwid.Text("Disconnected\n"+self.g["arrow_l"]+"  "+self.g["arrow_r"], align="center"), "middle")
             self.browser_footer = urwid.Text("")
             self.browser_header = urwid.Text("")
@@ -314,6 +336,8 @@ class Browser:
 
     def update_page_display(self):
         pile = urwid.Pile(self.attr_maps)
+        pile.automove_cursor_on_scroll = True
+        self.page_pile = pile
         self.browser_body = urwid.AttrMap(ScrollBar(Scrollable(pile, force_forward_keypress=True), thumb_char="\u2503", trough_char=" "), "scrollbar")
 
     def identify(self):

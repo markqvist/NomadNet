@@ -107,6 +107,51 @@ class Scrollable(urwid.WidgetDecoration):
             if canv_full.cursor is not None:
                 # Full canvas contains the cursor, but scrolled out of view
                 self._forward_keypress = False
+                
+                # Reset cursor position on page/up down scrolling
+                try:
+                    if hasattr(ow, "automove_cursor_on_scroll") and ow.automove_cursor_on_scroll:
+                        pwi = 0
+                        ch = 0
+                        last_hidden = False
+                        first_visible = False
+                        for w,o in ow.contents:
+                            wcanv = w.render((maxcol,))
+                            wh = wcanv.rows()
+                            if wh:
+                                ch += wh
+
+                            if not last_hidden and ch >= self._trim_top:
+                                last_hidden = True
+
+                            elif last_hidden:
+                                if not first_visible:
+                                    first_visible = True
+
+                                if w.selectable():
+                                    ow.focus_item = pwi
+
+                                    st = None
+                                    nf = ow.get_focus()
+                                    if hasattr(nf, "key_timeout"):
+                                        st = nf
+                                    elif hasattr(nf, "original_widget"):
+                                        no = nf.original_widget
+                                        if hasattr(no, "original_widget"):
+                                            st = no.original_widget
+                                        else:
+                                            if hasattr(no, "key_timeout"):
+                                                st = no
+                                    
+                                    if st and hasattr(st, "key_timeout") and hasattr(st, "keypress") and callable(st.keypress):
+                                        st.keypress(None, None)
+                                    
+                                    break
+
+                            pwi += 1
+                    except Exception as e:
+                        pass
+
             else:
                 # Original widget does not have a cursor, but may be selectable
 
