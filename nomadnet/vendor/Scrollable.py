@@ -149,8 +149,8 @@ class Scrollable(urwid.WidgetDecoration):
                                     break
 
                             pwi += 1
-                    except Exception as e:
-                        pass
+                except Exception as e:
+                    pass
 
             else:
                 # Original widget does not have a cursor, but may be selectable
