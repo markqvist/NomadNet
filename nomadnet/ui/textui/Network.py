@@ -610,6 +610,10 @@ class KnownNodeInfo(urwid.WidgetWrap):
             node_entry = DirectoryEntry(source_hash, display_name=display_str, trust_level=trust_level, hosts_node=True, identify_on_connect=connect_identify_checkbox.get_state())
             self.app.directory.remember(node_entry)
             self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
+
+            if trust_level == DirectoryEntry.TRUSTED:
+                self.app.autoselect_propagation_node()
+
             show_known_nodes(None)
 
         back_button = ("weight", 0.2, urwid.Button("Back", on_press=show_known_nodes))
