@@ -170,10 +170,9 @@ class NomadNetworkApp:
         else:
             if not os.path.isdir(self.examplespath):
                 try:
-                    os.makedirs(self.examplespath)
-                    from distutils.dir_util import copy_tree
+                    import shutil
                     examplespath = os.path.join(os.path.dirname(__file__), "examples")
-                    copy_tree(examplespath, self.examplespath)
+                    shutil.copytree(examplespath, self.examplespath, ignore=shutil.ignore_patterns("__pycache__"))
                 
                 except Exception as e:
                     RNS.log("Could not copy examples into the "+self.examplespath+" directory.", RNS.LOG_ERROR)
