@@ -111,6 +111,7 @@ class NomadNetworkApp:
         self.pagespath         = self.configdir+"/storage/pages"
         self.filespath         = self.configdir+"/storage/files"
         self.cachepath         = self.configdir+"/storage/cache"
+        self.examplespath      = self.configdir+"/examples"
 
         self.downloads_path    = os.path.expanduser("~/Downloads")
 
@@ -169,6 +170,9 @@ class NomadNetworkApp:
         else:
             RNS.log("Could not load config file, creating default configuration file...")
             self.createDefaultConfig()
+            if not os.path.isdir(self.examplespath):
+                os.makedirs(self.examplespath)
+
             self.firstrun = True
 
         if os.path.isfile(self.identitypath):

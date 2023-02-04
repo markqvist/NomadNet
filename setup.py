@@ -5,6 +5,12 @@ exec(open("nomadnet/_version.py", "r").read())
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+package_data = {
+"": [
+    "examples/messageboard/*",
+    ]
+}
+
 setuptools.setup(
     name="nomadnet",
     version=__version__,
@@ -15,6 +21,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/markqvist/nomadnet",
     packages=setuptools.find_packages(),
+    package_data=package_data,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
