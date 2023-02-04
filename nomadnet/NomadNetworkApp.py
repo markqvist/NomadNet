@@ -168,11 +168,19 @@ class NomadNetworkApp:
                 RNS.log("Check your configuration file for errors!", RNS.LOG_ERROR)
                 nomadnet.panic()
         else:
+            if not os.path.isdir(self.examplespath):
+                try:
+                    os.makedirs(self.examplespath)
+                    from distutils.dir_util import copy_tree
+                    examplespath = os.path.join(os.path.dirname(__file__), "examples")
+                    copy_tree(examplespath, self.examplespath)
+                
+                except Exception as e:
+                    RNS.log("Could not copy examples into the "+self.examplespath+" directory.", RNS.LOG_ERROR)
+                    RNS.log("The contained exception was: "+str(e), RNS.LOG_ERROR)
+            
             RNS.log("Could not load config file, creating default configuration file...")
             self.createDefaultConfig()
-            if not os.path.isdir(self.examplespath):
-                os.makedirs(self.examplespath)
-
             self.firstrun = True
 
         if os.path.isfile(self.identitypath):
