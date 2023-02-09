@@ -110,7 +110,10 @@ class ConversationsDisplay():
 
     def delete_selected_conversation(self):
         self.dialog_open = True
-        source_hash = self.ilb.get_selected_item().source_hash
+        item = self.ilb.get_selected_item()
+        if item == None:
+            return
+        source_hash = item.source_hash
 
         def dismiss_dialog(sender):
             self.update_conversation_list()
@@ -140,7 +143,10 @@ class ConversationsDisplay():
     def edit_selected_in_directory(self):
         g = self.app.ui.glyphs
         self.dialog_open = True
-        source_hash_text = self.ilb.get_selected_item().source_hash
+        item = self.ilb.get_selected_item()
+        if item == None:
+            return
+        source_hash_text = item.source_hash
         display_name = self.ilb.get_selected_item().display_name
         if display_name == None:
             display_name = ""
