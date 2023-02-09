@@ -1,5 +1,6 @@
 import nomadnet
 import urwid
+import random
 import time
 from urwid.util import is_mouse_press
 from urwid.text_layout import calc_coords
@@ -423,6 +424,32 @@ def make_output(state, line, url_delegate):
                     elif c == "a":
                         state["align"] = state["default_align"]
 
+                    elif c == "<":
+                        # TODO: remove
+                        import RNS
+                        field_name = None
+                        field_name_end = line[i:].find("`")
+                        if field_name_end == -1:
+                            pass
+                        else:
+                            field_name = line[i+1:i+field_name_end]
+                            def sr():
+                                return "@{"+str(random.randint(1000,9999))+"}"
+                            rsg = sr()
+                            while rsg in line[i+field_name_end:]:
+                                rsg = sr()
+                            lr = line[i+field_name_end:].replace("\\>", rsg)
+                            endpos = lr.find(">")
+                            
+                            if endpos == -1:
+                                pass
+                            
+                            else:
+                                field_data = lr[1:endpos].replace(rsg, "\\>")
+                                skip = len(field_data)+len(field_name)+2
+                                field_data = field_data.replace("\\>", ">")
+                                RNS.log("Field "+str(field_name)+": "+str(field_data))
+    
                     elif c == "[":
                         endpos = line[i:].find("]")
                         if endpos == -1:
