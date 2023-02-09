@@ -217,6 +217,8 @@ class TextUI:
     def unhandled_input(self, key):
         if key == "ctrl q":
             raise urwid.ExitMainLoop
+        elif key == "ctrl e":
+            pass
 
     def display_main(self, loop, user_data):
         self.loop.widget = self.main_display.widget

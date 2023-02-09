@@ -610,6 +610,10 @@ class KnownNodeInfo(urwid.WidgetWrap):
             node_entry = DirectoryEntry(source_hash, display_name=display_str, trust_level=trust_level, hosts_node=True, identify_on_connect=connect_identify_checkbox.get_state())
             self.app.directory.remember(node_entry)
             self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
+
+            if trust_level == DirectoryEntry.TRUSTED:
+                self.app.autoselect_propagation_node()
+
             show_known_nodes(None)
 
         back_button = ("weight", 0.2, urwid.Button("Back", on_press=show_known_nodes))
@@ -704,7 +708,7 @@ class KnownNodes(urwid.WidgetWrap):
         else:
             self.no_content = True
             widget_style = "inactive_text"
-            self.pile = urwid.Pile([urwid.Text(("warning_text", g["info"]+"\n"), align="center"), SelectText(("warning_text", "Currently, no nodes are known\n\n"), align="center")])
+            self.pile = urwid.Pile([urwid.Text(("warning_text", g["info"]+"\n"), align="center"), SelectText(("warning_text", "Currently, no nodes are saved\n\nCtrl+L to view the announce stream\n\n"), align="center")])
             self.display_widget = urwid.Filler(self.pile, valign="top", height="pack")
 
         urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="Saved Nodes"), widget_style))

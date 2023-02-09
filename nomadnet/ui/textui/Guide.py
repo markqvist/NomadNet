@@ -312,13 +312,21 @@ The distributed message store is resilient to intermittency, and will remain fun
 
 >>Pages
 
-Nomad Network nodes can host pages similar to web pages, that other peers can read and interact with. Pages are written in a compact markup language called `*micron`*. To learn how to write formatted pages with micron, see the `*Markup`* section of this guide (which is, itself, written in micron). Pages can be linked arbitrarily with hyperlinks, that can also link to pages (or other resources) on other nodes.
+Nomad Network nodes can host pages similar to web pages, that other peers can read and interact with. Pages are written in a compact markup language called `*micron`*. To learn how to write formatted pages with micron, see the `*Markup`* section of this guide (which is, itself, written in micron). Pages can be linked together with hyperlinks, that can also link to pages (or other resources) on other nodes.
 
 To add pages to your node, place micron files in the `*pages`* directory of your Nomad Network programs `*storage`* directory. By default, the path to this will be `!~/.nomadnetwork/storage/pages`!. You should probably create the file `!index.mu`! first, as this is the page that will get served by default to a connecting peer.
 
 You can control how long a peer will cache your pages by including the cache header in a page. To do so, the first line of your page must start with `!#!c=X`!, where `!X`! is the cache time in seconds. To tell the peer to always load the page from your node, and never cache it, set the cache time to zero. You should only do this if there is a real need, for example if your page displays dynamic content that `*must`* be updated at every page view. The default caching time is 12 hours. In most cases, you should not need to include the cache control header in your pages.
 
+>> Dynamic Pages
+
 You can use a preprocessor such as PHP, bash, Python (or whatever you prefer) to generate dynamic pages. To do so, just set executable permissions on the relevant page file, and be sure to include the interpreter at the beginning of the file, for example `!#!/usr/bin/python3`!.
+
+In the `!examples`! directory, you can find various small examples for the use of this feature. The currently included examples are:
+
+ - A messageboard that receives messages over LXMF, contributed by trippcheng
+
+By default, you can find the examples in `!~/.nomadnetwork/examples`!. If you build something neat, that you feel would fit here, you are more than welcome to contribute it.
 
 >>Authenticating Users
 
@@ -330,9 +338,9 @@ For each user allowed to access the page, add a line to this file, containing th
 
 `Faaa
 `=
-24c2dc2248953e0a3c21
-564a476410f4fca2ae93
-8bb864743f12f53395a1
+d454bcdac0e64fb68ba8e267543ae110
+2b9ff3fb5902c9ca5ff97bdfb239ef50
+7106d5abbc7208bfb171f2dd84b36490
 `=
 ``
 
@@ -348,7 +356,7 @@ Like pages, you can place files you want to make available in the `!~/.nomadnetw
 
 Links to pages and resources in Nomad Network use a simple URL format. Here is an example:
 
-`!1385edace36466a6b3dd:/page/index.mu`!
+`!18176ffddcc8cce1ddf8e3f72068f4a6:/page/index.mu`!
 
 The first part is the 10 byte destination address of the node (represented as readable hexadecimal), followed by the `!:`! character. Everything after the `!:`! represents the request path.
 

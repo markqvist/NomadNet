@@ -3,4 +3,5 @@ quotes = [
     ("That's enough entropy for you my friend", "Unknown"),
     ("Any time two people connect online, it's financed by a third person who believes they can manipulate the first two", "Jaron Lanier"),
     ("The landscape of the future is set, but how one will march across it is not determined", "Terence McKenna")
+    ("Freedom originates in the division of power, despotism in its concentration.", "John Acton")
 ]

@@ -111,6 +111,7 @@ class NomadNetworkApp:
         self.pagespath         = self.configdir+"/storage/pages"
         self.filespath         = self.configdir+"/storage/files"
         self.cachepath         = self.configdir+"/storage/cache"
+        self.examplespath      = self.configdir+"/examples"
 
         self.downloads_path    = os.path.expanduser("~/Downloads")
 
@@ -167,6 +168,16 @@ class NomadNetworkApp:
                 RNS.log("Check your configuration file for errors!", RNS.LOG_ERROR)
                 nomadnet.panic()
         else:
+            if not os.path.isdir(self.examplespath):
+                try:
+                    import shutil
+                    examplespath = os.path.join(os.path.dirname(__file__), "examples")
+                    shutil.copytree(examplespath, self.examplespath, ignore=shutil.ignore_patterns("__pycache__"))
+                
+                except Exception as e:
+                    RNS.log("Could not copy examples into the "+self.examplespath+" directory.", RNS.LOG_ERROR)
+                    RNS.log("The contained exception was: "+str(e), RNS.LOG_ERROR)
+            
             RNS.log("Could not load config file, creating default configuration file...")
             self.createDefaultConfig()
             self.firstrun = True
@@ -456,9 +467,8 @@ class NomadNetworkApp:
     def autoselect_propagation_node(self):
         selected_node = None
 
-        if "propagation_node" in self.peer_settings:
+        if "propagation_node" in self.peer_settings and self.peer_settings["propagation_node"] != None:
             selected_node = self.peer_settings["propagation_node"]
-        
         else:
             nodes = self.directory.known_nodes()
             trusted_nodes = []
@@ -706,7 +716,7 @@ class NomadNetworkApp:
                                 self.config["textui"]["intro_text"] = "Nomad Network"
 
                             if not "editor" in self.config["textui"]:
-                                self.config["textui"]["editor"] = "editor"
+                                self.config["textui"]["editor"] = "nano"
 
                             if not "glyphs" in self.config["textui"]:
                                 self.config["textui"]["glyphs"] = "unicode"
@@ -958,10 +968,8 @@ glyphs = unicode
 # application. On by default.
 mouse_enabled = True
 
-# What editor to use for editing text. By
-# default the operating systems "editor"
-# alias will be used.
-editor = editor
+# What editor to use for editing text.
+editor = nano
 
 # If you don't want the Guide section to
 # show up in the menu, you can disable it.
