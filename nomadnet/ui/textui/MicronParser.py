@@ -167,11 +167,12 @@ def parse_line(line, state, url_delegate):
                         widgets.append(("pack", tw))
                     else:
                         if o["type"] == "field":
-                            fw = 32
+                            fw = o["width"]
                             fd = o["data"]
                             fn = o["name"]
                             fs = o["style"]
-                            f = urwid.Edit(caption="", edit_text=fd, align=state["align"], multiline=True)
+                            fmask = "*" if o["masked"] else None
+                            f = urwid.Edit(caption="", edit_text=fd, align=state["align"], multiline=True, mask=fmask)
                             f.field_name = fn
                             fa = urwid.AttrMap(f, fs)
                             widgets.append((fw, fa))
@@ -467,6 +468,20 @@ def make_output(state, line, url_delegate):
                             pass
                         else:
                             field_name = line[i+1:i+field_name_end]
+                            field_name_skip = len(field_name)
+                            field_masked = False
+                            field_width = 24
+
+                            if "|" in field_name:
+                                f_components = field_name.split("|")
+                                field_flags = f_components[0]
+                                field_name = f_components[1]
+                                if "!" in field_flags:
+                                    field_flags = field_flags.replace("!", "")
+                                    field_masked = True
+                                if len(field_flags) > 0:
+                                    field_width = min(int(field_flags), 256)
+
                             def sr():
                                 return "@{"+str(random.randint(1000,9999))+"}"
                             rsg = sr()
@@ -480,9 +495,16 @@ def make_output(state, line, url_delegate):
                             
                             else:
                                 field_data = lr[1:endpos].replace(rsg, "\\>")
-                                skip = len(field_data)+len(field_name)+2
+                                skip = len(field_data)+field_name_skip+2
                                 field_data = field_data.replace("\\>", ">")
-                                output.append({"type":"field", "name": field_name, "data": field_data, "style": make_style(state)})
+                                output.append({
+                                    "type":"field",
+                                    "name": field_name,
+                                    "width": field_width,
+                                    "masked": field_masked,
+                                    "data": field_data,
+                                    "style": make_style(state)
+                                })
     
                     elif c == "[":
                         endpos = line[i:].find("]")
