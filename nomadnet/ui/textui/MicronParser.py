@@ -6,6 +6,9 @@ from urwid.util import is_mouse_press
 from urwid.text_layout import calc_coords
 import re
 
+# TODO: remove
+import RNS
+
 DEFAULT_FG_DARK  = "ddd"
 DEFAULT_FG_LIGHT = "222"
 DEFAULT_BG = "default"
@@ -63,13 +66,14 @@ def markup_to_attrmaps(markup, url_delegate = None):
 
     for line in lines:
         if len(line) > 0:
-            display_widget = parse_line(line, state, url_delegate)
+            display_widgets = parse_line(line, state, url_delegate)
         else:
-            display_widget = urwid.Text("")
+            display_widgets = [urwid.Text("")]
         
-        if display_widget != None:
-            attrmap = urwid.AttrMap(display_widget, make_style(state))
-            attrmaps.append(attrmap)
+        if display_widgets != None and len(display_widgets) != 0:
+            for display_widget in display_widgets:
+                attrmap = urwid.AttrMap(display_widget, make_style(state))
+                attrmaps.append(attrmap)
 
     return attrmaps
 
@@ -125,7 +129,7 @@ def parse_line(line, state, url_delegate):
 
                         heading_style = first_style
                         output.insert(0, " "*left_indent(state))
-                        return urwid.AttrMap(urwid.Text(output, align=state["align"]), heading_style)
+                        return [urwid.AttrMap(urwid.Text(output, align=state["align"]), heading_style)]
                     else:
                         return None
                 else:
@@ -138,22 +142,54 @@ def parse_line(line, state, url_delegate):
                 else:
                     divider_char = "\u2500"
                 if state["depth"] == 0:
-                    return urwid.Divider(divider_char)
+                    return [urwid.Divider(divider_char)]
                 else:
-                    return urwid.Padding(urwid.Divider(divider_char), left=left_indent(state), right=right_indent(state))
+                    return [urwid.Padding(urwid.Divider(divider_char), left=left_indent(state), right=right_indent(state))]
 
         output = make_output(state, line, url_delegate)
 
         if output != None:
-            if url_delegate != None:
-                text_widget = LinkableText(output, align=state["align"], delegate=url_delegate)
+            text_only = True
+            for o in output:
+                if not isinstance(o, tuple):
+                    text_only = False
+                    break
+
+            if not text_only:
+                widgets = []
+                for o in output:
+                    if isinstance(o, tuple):
+                        if url_delegate != None:
+                            tw = LinkableText(o, align=state["align"], delegate=url_delegate)
+                        else:
+                            tw = urwid.Text(o, align=state["align"])
+                        
+                        widgets.append(("pack", tw))
+                    else:
+                        if o["type"] == "field":
+                            fw = 32
+                            fd = o["data"]
+                            fn = o["name"]
+                            fs = o["style"]
+                            f = urwid.Edit(caption="", edit_text=fd, align=state["align"], multiline=True)
+                            f.field_name = fn
+                            fa = urwid.AttrMap(f, fs)
+                            widgets.append((fw, fa))
+
+                columns_widget = urwid.Columns(widgets, dividechars=0)
+                text_widget = columns_widget
+                # text_widget = urwid.Text("<"+output+">", align=state["align"])
+
             else:
-                text_widget = urwid.Text(output, align=state["align"])
+                if url_delegate != None:
+                    text_widget = LinkableText(output, align=state["align"], delegate=url_delegate)
+                else:
+                    text_widget = urwid.Text(output, align=state["align"])
 
             if state["depth"] == 0:
-                return text_widget
+                return [text_widget]
             else:
-                return urwid.Padding(text_widget, left=left_indent(state), right=right_indent(state))
+                return [urwid.Padding(text_widget, left=left_indent(state), right=right_indent(state))]
         else:
             return None
     else:
@@ -425,8 +461,6 @@ def make_output(state, line, url_delegate):
                         state["align"] = state["default_align"]
 
                     elif c == "<":
-                        # TODO: remove
-                        import RNS
                         field_name = None
                         field_name_end = line[i:].find("`")
                         if field_name_end == -1:
@@ -448,7 +482,7 @@ def make_output(state, line, url_delegate):
                                 field_data = lr[1:endpos].replace(rsg, "\\>")
                                 skip = len(field_data)+len(field_name)+2
                                 field_data = field_data.replace("\\>", ">")
-                                RNS.log("Field "+str(field_name)+": "+str(field_data))
+                                output.append({"type":"field", "name": field_name, "data": field_data, "style": make_style(state)})
     
                     elif c == "[":
                         endpos = line[i:].find("]")
