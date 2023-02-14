@@ -97,7 +97,7 @@ class Node:
         for directory in directories:
             self.scan_files(base_path+"/"+directory)
 
-    def serve_page(self, path, data, request_id, remote_identity, requested_at):
+    def serve_page(self, path, data, request_id, link_id, remote_identity, requested_at):
         RNS.log("Page request "+RNS.prettyhexrep(request_id)+" for: "+str(path), RNS.LOG_VERBOSE)
         try:
             self.app.peer_settings["served_page_requests"] += 1
@@ -152,7 +152,18 @@ class Node:
             if request_allowed:
                 RNS.log("Serving page: "+file_path, RNS.LOG_VERBOSE)
                 if os.access(file_path, os.X_OK):
-                    generated = subprocess.run([file_path], stdout=subprocess.PIPE)
+                    env_map = {}
+                    if link_id != None:
+                        env_map["link_id"] = RNS.hexrep(link_id, delimit=False)
+                    if remote_identity != None:
+                        env_map["remote_identity"] = RNS.hexrep(remote_identity.hash, delimit=False)
+
+                    if data != None and isinstance(data, dict):
+                        for e in data:
+                            if isinstance(e, str) and e.startswith("field_"):
+                                env_map[e] = data[e]
+
+                    generated = subprocess.run([file_path], stdout=subprocess.PIPE, env=env_map)
                     return generated.stdout
                 else:
                     fh = open(file_path, "rb")

@@ -462,49 +462,52 @@ def make_output(state, line, url_delegate):
                         state["align"] = state["default_align"]
 
                     elif c == "<":
-                        field_name = None
-                        field_name_end = line[i:].find("`")
-                        if field_name_end == -1:
-                            pass
-                        else:
-                            field_name = line[i+1:i+field_name_end]
-                            field_name_skip = len(field_name)
-                            field_masked = False
-                            field_width = 24
-
-                            if "|" in field_name:
-                                f_components = field_name.split("|")
-                                field_flags = f_components[0]
-                                field_name = f_components[1]
-                                if "!" in field_flags:
-                                    field_flags = field_flags.replace("!", "")
-                                    field_masked = True
-                                if len(field_flags) > 0:
-                                    field_width = min(int(field_flags), 256)
-
-                            def sr():
-                                return "@{"+str(random.randint(1000,9999))+"}"
-                            rsg = sr()
-                            while rsg in line[i+field_name_end:]:
-                                rsg = sr()
-                            lr = line[i+field_name_end:].replace("\\>", rsg)
-                            endpos = lr.find(">")
-                            
-                            if endpos == -1:
+                        try:
+                            field_name = None
+                            field_name_end = line[i:].find("`")
+                            if field_name_end == -1:
                                 pass
-                            
                             else:
-                                field_data = lr[1:endpos].replace(rsg, "\\>")
-                                skip = len(field_data)+field_name_skip+2
-                                field_data = field_data.replace("\\>", ">")
-                                output.append({
-                                    "type":"field",
-                                    "name": field_name,
-                                    "width": field_width,
-                                    "masked": field_masked,
-                                    "data": field_data,
-                                    "style": make_style(state)
-                                })
+                                field_name = line[i+1:i+field_name_end]
+                                field_name_skip = len(field_name)
+                                field_masked = False
+                                field_width = 24
+
+                                if "|" in field_name:
+                                    f_components = field_name.split("|")
+                                    field_flags = f_components[0]
+                                    field_name = f_components[1]
+                                    if "!" in field_flags:
+                                        field_flags = field_flags.replace("!", "")
+                                        field_masked = True
+                                    if len(field_flags) > 0:
+                                        field_width = min(int(field_flags), 256)
+
+                                def sr():
+                                    return "@{"+str(random.randint(1000,9999))+"}"
+                                rsg = sr()
+                                while rsg in line[i+field_name_end:]:
+                                    rsg = sr()
+                                lr = line[i+field_name_end:].replace("\\>", rsg)
+                                endpos = lr.find(">")
+                                
+                                if endpos == -1:
+                                    pass
+                                
+                                else:
+                                    field_data = lr[1:endpos].replace(rsg, "\\>")
+                                    skip = len(field_data)+field_name_skip+2
+                                    field_data = field_data.replace("\\>", ">")
+                                    output.append({
+                                        "type":"field",
+                                        "name": field_name,
+                                        "width": field_width,
+                                        "masked": field_masked,
+                                        "data": field_data,
+                                        "style": make_style(state)
+                                    })
+                        except Exception as e:
+                            pass
     
                     elif c == "[":
                         endpos = line[i:].find("]")
@@ -517,13 +520,20 @@ def make_output(state, line, url_delegate):
                             link_components = link_data.split("`")
                             if len(link_components) == 1:
                                 link_label = ""
+                                link_fields = ""
                                 link_url = link_data
                             elif len(link_components) == 2:
                                 link_label = link_components[0]
                                 link_url = link_components[1]
+                                link_fields = ""
+                            elif len(link_components) == 3:
+                                link_label = link_components[0]
+                                link_url = link_components[1]
+                                link_fields = link_components[2]
                             else:
                                 link_url = ""
                                 link_label = ""
+                                link_fields = ""
 
                             if len(link_url) != 0:
                                 if link_label == "":
@@ -551,6 +561,14 @@ def make_output(state, line, url_delegate):
 
                                 if url_delegate != None:
                                     linkspec = LinkSpec(link_url, orig_spec)
+                                    if link_fields != "":
+                                        if link_fields == "*":
+                                            linkspec.link_fields = "all"
+                                        else:
+                                            lf = link_fields.split("|")
+                                            if len(lf) > 0:
+                                                linkspec.link_fields = lf
+
                                     output.append((linkspec, link_label))
                                 else:
                                     output.append(make_part(state, link_label)) 
@@ -593,6 +611,7 @@ def make_output(state, line, url_delegate):
 class LinkSpec(urwid.AttrSpec):
     def __init__(self, link_target, orig_spec):
         self.link_target = link_target
+        self.link_fields = None
 
         urwid.AttrSpec.__init__(self, orig_spec.foreground, orig_spec.background)
 
@@ -611,9 +630,9 @@ class LinkableText(urwid.Text):
         if self.delegate != None:
             self.delegate.last_keypress = 0
 
-    def handle_link(self, link_target):
+    def handle_link(self, link_target, link_fields):
         if self.delegate != None:
-            self.delegate.handle_link(link_target)
+            self.delegate.handle_link(link_target, link_fields)
 
     def find_next_part_pos(self, pos, part_positions):
         for position in part_positions:
@@ -671,7 +690,7 @@ class LinkableText(urwid.Text):
             item = self.find_item_at_pos(self._cursor_position)
             if item != None:
                 if isinstance(item, LinkSpec):
-                    self.handle_link(item.link_target)
+                    self.handle_link(item.link_target, item.link_fields)
 
         elif key == "up":
             self._cursor_position = 0
@@ -761,7 +780,7 @@ class LinkableText(urwid.Text):
 
             if item != None:
                 if isinstance(item, LinkSpec):
-                    self.handle_link(item.link_target)
+                    self.handle_link(item.link_target, item.link_fields)
 
             self._invalidate()
             self._emit("change")

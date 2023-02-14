@@ -81,6 +81,7 @@ class Browser:
         self.aspects = aspects
         self.destination_hash = destination_hash
         self.path = path
+        self.field_data = None
         self.timeout = Browser.DEFAULT_TIMEOUT
         self.last_keypress = None
 
@@ -161,7 +162,31 @@ class Browser:
         else:
             return destination_type
 
-    def handle_link(self, link_target):
+    def handle_link(self, link_target, link_fields = None):
+        field_data = None
+        if link_fields != None:
+            field_data = {}
+            def recurse_down(w):
+                target = None
+                if isinstance(w, list):
+                    for t in w:
+                        recurse_down(t)
+                elif isinstance(w, tuple):
+                    for t in w:
+                        recurse_down(t)
+                elif hasattr(w, "contents"):
+                    recurse_down(w.contents)
+                elif hasattr(w, "original_widget"):
+                    recurse_down(w.original_widget)
+                elif hasattr(w, "_original_widget"):
+                    recurse_down(w._original_widget)
+                else:
+                    if hasattr(w, "field_name") and (link_fields == "all" or w.field_name in link_fields):
+                        field_data["field_"+w.field_name] = w.get_edit_text()
+                
+            recurse_down(self.attr_maps)
+            RNS.log("Found field data: "+str(field_data))
+
         components = link_target.split("@")
         destination_type = None
 
@@ -177,7 +202,7 @@ class Browser:
                 RNS.log("Browser handling link to: "+str(link_target), RNS.LOG_DEBUG)
                 self.browser_footer = urwid.Text("Opening link to: "+str(link_target))
                 try:
-                    self.retrieve_url(link_target)
+                    self.retrieve_url(link_target, field_data)
                 except Exception as e:
                     self.browser_footer = urwid.Text("Could not open link: "+str(e))
                     self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
@@ -365,7 +390,7 @@ class Browser:
         self.update_display()
 
 
-    def retrieve_url(self, url):
+    def retrieve_url(self, url, field_data = None):
         self.previous_destination_hash = self.destination_hash
         self.previous_path = self.path
 
@@ -418,6 +443,7 @@ class Browser:
             else:
                 self.set_destination_hash(destination_hash)
                 self.set_path(path)
+                self.set_field_data(field_data)
                 self.load_page()
 
     def set_destination_hash(self, destination_hash):
@@ -431,6 +457,8 @@ class Browser:
     def set_path(self, path):
         self.path = path
 
+    def set_field_data(self, field_data):
+        self.field_data = field_data
 
     def set_timeout(self, timeout):
         self.timeout = timeout
@@ -637,7 +665,11 @@ class Browser:
 
 
     def load_page(self):
-        cached = self.get_cached(self.current_url())
+        if self.field_data == None:
+            cached = self.get_cached(self.current_url())
+        else:
+            cached = None
+
         if cached:
             self.status = Browser.DONE
             self.page_data = cached
@@ -671,7 +703,11 @@ class Browser:
                 page_data = b"The requested local page did not exist in the file system"
                 if os.path.isfile(page_path):
                     if os.access(page_path, os.X_OK):
-                        generated = subprocess.run([page_path], stdout=subprocess.PIPE)
+                        if self.field_data != None:
+                            env_map = self.field_data
+                        else:
+                            env_map = None
+                        generated = subprocess.run([page_path], stdout=subprocess.PIPE, env=env_map)
                         page_data = generated.stdout
                     else:
                         file = open(page_path, "rb")
@@ -758,7 +794,7 @@ class Browser:
         self.update_display()
         receipt = self.link.request(
             self.path,
-            data = None,
+            data = self.field_data,
             response_callback = self.response_received,
             failed_callback = self.request_failed,
             progress_callback = self.response_progressed
