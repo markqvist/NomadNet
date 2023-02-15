@@ -322,9 +322,12 @@ You can control how long a peer will cache your pages by including the cache hea
 
 You can use a preprocessor such as PHP, bash, Python (or whatever you prefer) to generate dynamic pages. To do so, just set executable permissions on the relevant page file, and be sure to include the interpreter at the beginning of the file, for example `!#!/usr/bin/python3`!.
 
+Data from fields and link variables will be passed to these scipts or programs as environment variables, and can simply be read by any method for acessing such.
+
 In the `!examples`! directory, you can find various small examples for the use of this feature. The currently included examples are:
 
  - A messageboard that receives messages over LXMF, contributed by trippcheng
+ - A simple demonstration on how to create fields and read entered data in node-side scripts
 
 By default, you can find the examples in `!~/.nomadnetwork/examples`!. If you build something neat, that you feel would fit here, you are more than welcome to contribute it.
 
@@ -1002,6 +1005,94 @@ Here is `F00f`_`[a more visible link`72914442a3689add83a09a767963f57c:/page/inde
 
 When links like these are displayed in the built-in browser, clicking on them or activating them using the keyboard will cause the browser to load the specified URL.
 
+>Fields & Requests
+
+Nomad Network let's you use simple input fields for submitting data to node-side applications. Submitted data, along with other session variables will be available to the node-side script / program as environment variables.
+
+>>Request Links
+
+Links can contain request variables and a list of fields to submit to the node-side application. You can include all fields on the page, only specific ones, and any number of request variables. To simply submit all fields on a page to a specified node-side page, create a link like this:
+
+`Faaa
+`=
+`[Submit Fields`:/page/fields.mu`*]
+`=
+``
+
+Note the `!*`! following the extra `!\``! at the end of the path. This `!*`! denotes `*all fields`*. You can also specify a list of fields to include:
+
+`Faaa
+`=
+`[Submit Fields`:/page/fields.mu`username|auth_token]
+`=
+``
+
+If you want to include pre-set variables, you can do it like this:
+
+`Faaa
+`=
+`[Query the System`:/page/fields.mu`username|auth_token|action=view|amount=64]
+`=
+``
+
+>> Fields
+
+Here's an example of creating a field. We'll create a field named `!user_input`! and fill it with the text `!Pre-defined data`!. Note that we are using background color tags to make the field more visible to the user:
+
+`Faaa
+`=
+A simple input field: `B444`<user_input`Pre-defined data>`b
+`=
+``
+
+You must always set a field `*name`*, but you can of course omit the pre-defined value of the field:
+
+`Faaa
+`=
+An empty input field: `B444`<demo_empty`>`b
+`=
+``
+
+You can set the size of the field like this:
+
+`Faaa
+`=
+A sized input field:  `B444`<16|with_size`>`b
+`=
+``
+
+It is possible to mask fields, for example for use with passwords and similar:
+
+`Faaa
+`=
+A masked input field: `B444`<!|masked_demo`hidden text>`b
+`=
+``
+
+And you can of course control all parameters at the same time:
+
+`Faaa
+`=
+Full control: `B444`<!32|all_options`hidden text>`b
+`=
+``
+
+Collecting the above markup produces the following output:
+
+`Faaa`B333
+
+A simple input field: `B444`<user_input`Pre-defined data>`B333
+
+An empty input field: `B444`<demo_empty`>`B333
+
+A sized input field:  `B444`<16|with_size`>`B333
+
+A masked input field: `B444`<!|masked_demo`hidden text>`B333
+
+Full control: `B444`<!32|all_options`hidden text>`B333
+
+``
+
 >Comments
 
 You can insert comments that will not be displayed in the output by starting a line with the # character.
@@ -1034,7 +1125,7 @@ To display literal content, for example source-code, or blocks of text that shou
 `=
 '''
 TOPIC_MARKUP += TOPIC_MARKUP.replace("`=", "\\`=") + "[ micron source for document goes here, we don't want infinite recursion now, do we? ]\n\\`="
-TOPIC_MARKUP += "\n`=\n\n>Closing Remarks\n\nIf you made it all the way here, you should be well equipped to write documents and pages using micron. Thank you for staying with me.\n\n`c\U0001F332\n"
+TOPIC_MARKUP += "\n`=\n\n>Closing Remarks\n\nIf you made it all the way here, you should be well equipped to write documents, pages and applications using micron and Nomad Network. Thank you for staying with me.\n\n`c\U0001F332\n"
 
 
 TOPICS = {
