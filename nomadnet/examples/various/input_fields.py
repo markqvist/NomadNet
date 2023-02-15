@@ -31,6 +31,12 @@ You can `!`[submit`:/page/input_fields.mu`one|password|small]`! other fields, or
 
 Or simply `!`[submit them all`:/page/input_fields.mu`*]`!.
 
+Submission links can also `!`[include pre-configured variables`:/page/input_fields.mu`username|two|entitiy_id=4611|action=view]`!.
+
+Or take all fields and `!`[pre-configured variables`:/page/input_fields.mu`*|entitiy_id=4611|action=view]`!.
+
+Or only `!`[pre-configured variables`:/page/input_fields.mu`entitiy_id=4688|task=something]`!
+
 -=
 
 """

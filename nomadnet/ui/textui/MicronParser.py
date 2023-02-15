@@ -158,6 +158,7 @@ def parse_line(line, state, url_delegate):
                     if isinstance(o, tuple):
                         if url_delegate != None:
                             tw = LinkableText(o, align=state["align"], delegate=url_delegate)
+                            tw.in_columns = True
                         else:
                             tw = urwid.Text(o, align=state["align"])
                         
@@ -621,6 +622,7 @@ class LinkableText(urwid.Text):
         self.delegate = delegate
         self._cursor_position = 0
         self.key_timeout = 3
+        self.in_columns = False
         if self.delegate != None:
             self.delegate.last_keypress = 0
 
@@ -697,16 +699,23 @@ class LinkableText(urwid.Text):
         elif key == "right":
             old = self._cursor_position
             self._cursor_position = self.find_next_part_pos(self._cursor_position, part_positions)
+
             if self._cursor_position == old:
-                self._cursor_position = 0
-                return "down"
+                if self.in_columns:
+                    return "right"
+                else:
+                    self._cursor_position = 0
+                    return "down"
 
             self._invalidate()
         
         elif key == "left":
             if self._cursor_position > 0:
-                self._cursor_position = self.find_prev_part_pos(self._cursor_position, part_positions)
-                self._invalidate()
+                if self.in_columns:
+                    return "left"
+                else:
+                    self._cursor_position = self.find_prev_part_pos(self._cursor_position, part_positions)
+                    self._invalidate()
 
             else:
                 if self.delegate != None:
