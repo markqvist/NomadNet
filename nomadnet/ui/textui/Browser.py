@@ -81,7 +81,7 @@ class Browser:
         self.aspects = aspects
         self.destination_hash = destination_hash
         self.path = path
-        self.field_data = None
+        self.request_data = None
         self.timeout = Browser.DEFAULT_TIMEOUT
         self.last_keypress = None
 
@@ -162,10 +162,21 @@ class Browser:
         else:
             return destination_type
 
-    def handle_link(self, link_target, link_fields = None):
-        field_data = None
-        if link_fields != None:
-            field_data = {}
+    def handle_link(self, link_target, link_data = None):
+        request_data = None
+        if link_data != None:
+            link_fields = []
+            request_data = {}
+            all_fields = True if "*" in link_data else False
+
+            for e in link_data:
+                if "=" in e:
+                    c = e.split("=")
+                    if len(c) == 2:
+                        request_data["var_"+str(c[0])] = str(c[1])
+                else:
+                    link_fields.append(e)
+
             def recurse_down(w):
                 target = None
                 if isinstance(w, list):
@@ -181,11 +192,11 @@ class Browser:
                 elif hasattr(w, "_original_widget"):
                     recurse_down(w._original_widget)
                 else:
-                    if hasattr(w, "field_name") and (link_fields == "all" or w.field_name in link_fields):
-                        field_data["field_"+w.field_name] = w.get_edit_text()
+                    if hasattr(w, "field_name") and (all_fields or w.field_name in link_fields):
+                        request_data["field_"+w.field_name] = w.get_edit_text()
                 
             recurse_down(self.attr_maps)
-            RNS.log("Found field data: "+str(field_data))
+            RNS.log("Including request data: "+str(request_data), RNS.LOG_DEBUG)
 
         components = link_target.split("@")
         destination_type = None
@@ -202,7 +213,7 @@ class Browser:
                 RNS.log("Browser handling link to: "+str(link_target), RNS.LOG_DEBUG)
                 self.browser_footer = urwid.Text("Opening link to: "+str(link_target))
                 try:
-                    self.retrieve_url(link_target, field_data)
+                    self.retrieve_url(link_target, request_data)
                 except Exception as e:
                     self.browser_footer = urwid.Text("Could not open link: "+str(e))
                     self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
@@ -376,6 +387,7 @@ class Browser:
         if self.link != None:
             self.link.teardown()
         
+        self.request_data = None
         self.attr_maps = []
         self.status = Browser.DISCONECTED
         self.response_progress = 0
@@ -390,7 +402,7 @@ class Browser:
         self.update_display()
 
 
-    def retrieve_url(self, url, field_data = None):
+    def retrieve_url(self, url, request_data = None):
         self.previous_destination_hash = self.destination_hash
         self.previous_path = self.path
 
@@ -443,7 +455,7 @@ class Browser:
             else:
                 self.set_destination_hash(destination_hash)
                 self.set_path(path)
-                self.set_field_data(field_data)
+                self.set_request_data(request_data)
                 self.load_page()
 
     def set_destination_hash(self, destination_hash):
@@ -457,8 +469,8 @@ class Browser:
     def set_path(self, path):
         self.path = path
 
-    def set_field_data(self, field_data):
-        self.field_data = field_data
+    def set_request_data(self, request_data):
+        self.request_data = request_data
 
     def set_timeout(self, timeout):
         self.timeout = timeout
@@ -665,7 +677,7 @@ class Browser:
 
 
     def load_page(self):
-        if self.field_data == None:
+        if self.request_data == None:
             cached = self.get_cached(self.current_url())
         else:
             cached = None
@@ -703,10 +715,10 @@ class Browser:
                 page_data = b"The requested local page did not exist in the file system"
                 if os.path.isfile(page_path):
                     if os.access(page_path, os.X_OK):
-                        if self.field_data != None:
-                            env_map = self.field_data
+                        if self.request_data != None:
+                            env_map = self.request_data
                         else:
-                            env_map = None
+                            env_map = {}
                         generated = subprocess.run([page_path], stdout=subprocess.PIPE, env=env_map)
                         page_data = generated.stdout
                     else:
@@ -794,7 +806,7 @@ class Browser:
         self.update_display()
         receipt = self.link.request(
             self.path,
-            data = self.field_data,
+            data = self.request_data,
             response_callback = self.response_received,
             failed_callback = self.request_failed,
             progress_callback = self.response_progressed

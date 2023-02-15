@@ -6,9 +6,6 @@ from urwid.util import is_mouse_press
 from urwid.text_layout import calc_coords
 import re
 
-# TODO: remove
-import RNS
-
 DEFAULT_FG_DARK  = "ddd"
 DEFAULT_FG_LIGHT = "222"
 DEFAULT_BG = "default"
@@ -562,12 +559,9 @@ def make_output(state, line, url_delegate):
                                 if url_delegate != None:
                                     linkspec = LinkSpec(link_url, orig_spec)
                                     if link_fields != "":
-                                        if link_fields == "*":
-                                            linkspec.link_fields = "all"
-                                        else:
-                                            lf = link_fields.split("|")
-                                            if len(lf) > 0:
-                                                linkspec.link_fields = lf
+                                        lf = link_fields.split("|")
+                                        if len(lf) > 0:
+                                            linkspec.link_fields = lf
 
                                     output.append((linkspec, link_label))
                                 else:

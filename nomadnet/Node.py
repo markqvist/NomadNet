@@ -160,7 +160,7 @@ class Node:
 
                     if data != None and isinstance(data, dict):
                         for e in data:
-                            if isinstance(e, str) and e.startswith("field_"):
+                            if isinstance(e, str) and (e.startswith("field_") or e.startswith("var_")):
                                 env_map[e] = data[e]
 
                     generated = subprocess.run([file_path], stdout=subprocess.PIPE, env=env_map)
