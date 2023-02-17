@@ -719,6 +719,10 @@ class Browser:
                             env_map = self.request_data
                         else:
                             env_map = {}
+                            
+                        if "PATH" in os.environ:
+                            env_map["PATH"] = os.environ["PATH"]
+
                         generated = subprocess.run([page_path], stdout=subprocess.PIPE, env=env_map)
                         page_data = generated.stdout
                     else:

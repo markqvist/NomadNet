@@ -153,6 +153,8 @@ class Node:
                 RNS.log("Serving page: "+file_path, RNS.LOG_VERBOSE)
                 if os.access(file_path, os.X_OK):
                     env_map = {}
+                    if "PATH" in os.environ:
+                        env_map["PATH"] = os.environ["PATH"]
                     if link_id != None:
                         env_map["link_id"] = RNS.hexrep(link_id, delimit=False)
                     if remote_identity != None:
