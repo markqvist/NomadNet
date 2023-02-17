@@ -1648,7 +1648,7 @@ class LXMFPeerEntry(urwid.WidgetWrap):
             else:
                 alive_string = "Unresponsive"
 
-        widget = ListEntry(sym+" "+display_str+"\n  "+alive_string+", last heard "+pretty_date(int(peer.last_heard))+"\n  "+str(len(peer.unhandled_messages))+" unhandled LXMs")
+        widget = ListEntry(sym+" "+display_str+"\n  "+alive_string+", last heard "+pretty_date(int(peer.last_heard))+"\n  "+str(len(peer.unhandled_messages))+" unhandled LXMs, "+RNS.prettysize(peer.link_establishment_rate/8, "b")+"/s LER")
         # urwid.connect_signal(widget, "click", delegate.connect_node, node)
 
         self.display_widget = urwid.AttrMap(widget, style, focus_style)
