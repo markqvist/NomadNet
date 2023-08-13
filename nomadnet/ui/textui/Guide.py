@@ -506,6 +506,12 @@ The number of minutes between each automatic sync. The default is equal to 6 hou
 On low-bandwidth networks, it can be useful to limit the amount of messages downloaded in each sync. The default is 8. Set to 0 to download all available messages every time a sync occurs.
 <
 
+>>>
+`!compact_announce_stream = yes`!
+>>>>
+With this option enabled, Nomad Network will only display one entry in the announce stream per destination. Older announces are culled when a new one arrives.
+<
+
 >> Text UI Section
 
 This section hold configuration directives related to the look and feel of the text-based user interface of the program. It is delimited by the `![textui]`! header in the configuration file. Available directives, along with their default values, are as follows:

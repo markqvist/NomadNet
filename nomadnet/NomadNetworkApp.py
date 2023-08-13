@@ -126,6 +126,7 @@ class NomadNetworkApp:
         self.periodic_lxmf_sync = True
         self.lxmf_sync_interval = 360*60
         self.lxmf_sync_limit    = 8
+        self.compact_stream     = False
 
         if not os.path.isdir(self.storagepath):
             os.makedirs(self.storagepath)
@@ -698,6 +699,10 @@ class NomadNetworkApp:
                     else:
                         self.lxmf_sync_limit = None
 
+                if option == "compact_announce_stream":
+                    value = self.config["client"].as_bool(option)
+                    self.compact_stream = value
+
                 if option == "user_interface":
                     value = value.lower()
                     if value == "none":
@@ -928,6 +933,12 @@ lxmf_sync_interval = 360
 # this number, or set the option to 0 to disable
 # the limit, and download everything every time.
 lxmf_sync_limit = 8
+
+# The announce stream will only show one entry
+# per destination or node by default. You can
+# change this to show as many announces as have
+# been received, for every destination.
+compact_announce_stream = yes
 
 [textui]
 

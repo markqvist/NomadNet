@@ -118,6 +118,19 @@ class Directory:
 
     def lxmf_announce_received(self, source_hash, app_data):
         if app_data != None:
+            if self.app.compact_stream:
+                try:
+                    remove_announces = []
+                    for announce in self.announce_stream:
+                        if announce[1] == source_hash:
+                            remove_announces.append(announce)
+
+                    for a in remove_announces:
+                        self.announce_stream.remove(a)
+                
+                except Exception as e:
+                    RNS.log("An error occurred while compacting the announce stream. The contained exception was:"+str(e), RNS.LOG_ERROR)
+
             timestamp = time.time()
             self.announce_stream.insert(0, (timestamp, source_hash, app_data, "peer"))
             while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
@@ -128,6 +141,19 @@ class Directory:
 
     def node_announce_received(self, source_hash, app_data, associated_peer):
         if app_data != None:
+            if self.app.compact_stream:
+                try:
+                    remove_announces = []
+                    for announce in self.announce_stream:
+                        if announce[1] == source_hash:
+                            remove_announces.append(announce)
+
+                    for a in remove_announces:
+                        self.announce_stream.remove(a)
+                
+                except Exception as e:
+                    RNS.log("An error occurred while compacting the announce stream. The contained exception was:"+str(e), RNS.LOG_ERROR)
+
             timestamp = time.time()
             self.announce_stream.insert(0, (timestamp, source_hash, app_data, "node"))
             while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
@@ -155,6 +181,19 @@ class Directory:
                 break
 
         if not found_node:
+            if self.app.compact_stream:
+                try:
+                    remove_announces = []
+                    for announce in self.announce_stream:
+                        if announce[1] == source_hash:
+                            remove_announces.append(announce)
+
+                    for a in remove_announces:
+                        self.announce_stream.remove(a)
+                
+                except Exception as e:
+                    RNS.log("An error occurred while compacting the announce stream. The contained exception was:"+str(e), RNS.LOG_ERROR)
+
             timestamp = time.time()
             self.announce_stream.insert(0, (timestamp, source_hash, app_data, "pn"))
             while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
