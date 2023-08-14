@@ -751,41 +751,45 @@ class LinkableText(urwid.Text):
             return x, y
 
     def mouse_event(self, size, event, button, x, y, focus):
-        if button != 1 or not is_mouse_press(event):
-            return False
-        else:
-            (maxcol,) = size
-            translation = self.get_line_translation(maxcol)
-            line_offset = 0
-
-            if self.align == "center":
-                line_offset = translation[y][1][1]-translation[y][0][0]
-                if x < translation[y][0][0]:
-                    x = translation[y][0][0]
-
-                if x > translation[y][1][0]+translation[y][0][0]:
-                    x = translation[y][1][0]+translation[y][0][0]
-
-            elif self.align == "right":
-                line_offset = translation[y][1][1]-translation[y][0][0]
-                if x < translation[y][0][0]:
-                    x = translation[y][0][0]
-
+        try:
+            if button != 1 or not is_mouse_press(event):
+                return False
             else:
-                line_offset = translation[y][0][1]
-                if x > translation[y][0][0]:
-                    x = translation[y][0][0]
+                (maxcol,) = size
+                translation = self.get_line_translation(maxcol)
+                line_offset = 0
 
-            pos = line_offset+x
+                if self.align == "center":
+                    line_offset = translation[y][1][1]-translation[y][0][0]
+                    if x < translation[y][0][0]:
+                        x = translation[y][0][0]
 
-            self._cursor_position = pos
-            item = self.find_item_at_pos(self._cursor_position)
+                    if x > translation[y][1][0]+translation[y][0][0]:
+                        x = translation[y][1][0]+translation[y][0][0]
 
-            if item != None:
-                if isinstance(item, LinkSpec):
-                    self.handle_link(item.link_target, item.link_fields)
+                elif self.align == "right":
+                    line_offset = translation[y][1][1]-translation[y][0][0]
+                    if x < translation[y][0][0]:
+                        x = translation[y][0][0]
 
-            self._invalidate()
-            self._emit("change")
+                else:
+                    line_offset = translation[y][0][1]
+                    if x > translation[y][0][0]:
+                        x = translation[y][0][0]
+
+                pos = line_offset+x
+
+                self._cursor_position = pos
+                item = self.find_item_at_pos(self._cursor_position)
+
+                if item != None:
+                    if isinstance(item, LinkSpec):
+                        self.handle_link(item.link_target, item.link_fields)
+
+                self._invalidate()
+                self._emit("change")
+                
+                return True
             
-            return True
+        except Exception as e:
+            return False
