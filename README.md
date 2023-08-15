@@ -30,7 +30,29 @@ The easiest way to install Nomad Network is via pip:
 
 ```bash
 # Install Nomad Network and dependencies
-pip3 install nomadnet
+pip install nomadnet
+
+# Run the client
+nomadnet
+
+# Or alternatively run as a daemon, with no user interface
+nomadnet --daemon
+
+# List options
+nomadnet --help
+```
+
+If you are using an operating system that blocks normal user package installation via `pip`, you can use the `pipx` tool to install Nomad Network instead:
+
+```bash
+# Install Nomad Network
+pipx install nomadnet
+
+# Optionally install Reticulum utilities
+pipx install rns
+
+# Optionally install standalone LXMF utilities
+pipx install lxmf
 
 # Run the client
 nomadnet
