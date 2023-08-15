@@ -42,7 +42,14 @@ nomadnet --daemon
 nomadnet --help
 ```
 
-If you are using an operating system that blocks normal user package installation via `pip`, you can use the `pipx` tool to install Nomad Network instead:
+If you are using an operating system that blocks normal user package installation via `pip`, you can return `pip` to normal behaviour by adding editing the `~/.config/pip/pip.conf` file, and adding the following directive in the `[global]` section:
+
+```text
+[global]
+break-system-packages = true
+```
+
+Alternatively, you can use the `pipx` tool to install Nomad Network in an isolated environment:
 
 ```bash
 # Install Nomad Network
