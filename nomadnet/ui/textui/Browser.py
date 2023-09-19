@@ -756,7 +756,7 @@ class Browser:
     def __load(self):
         # If an established link exists, but it doesn't match the target
         # destination, we close and clear it.
-        if self.link != None and self.link.destination.hash != self.destination_hash:
+        if self.link != None and (self.link.destination.hash != self.destination_hash or self.link.status != RNS.Link.ACTIVE):
             self.link.teardown()
             self.link = None
 
@@ -1005,6 +1005,11 @@ class Browser:
                 self.response_transfer_size = None
 
                 self.update_display()
+                if self.link != None:
+                    try:
+                        self.link.teardown()
+                    except Exception as e:
+                        pass
         else:
             self.status = Browser.REQUEST_FAILED
             self.response_progress = 0
@@ -1012,6 +1017,11 @@ class Browser:
             self.response_transfer_size = None
 
             self.update_display()
+            if self.link != None:
+                try:
+                    self.link.teardown()
+                except Exception as e:
+                    pass
 
 
     def request_timeout(self, request_receipt=None):
@@ -1021,6 +1031,11 @@ class Browser:
         self.response_transfer_size = None
 
         self.update_display()
+        if self.link != None:
+            try:
+                self.link.teardown()
+            except Exception as e:
+                pass
 
 
     def response_progressed(self, request_receipt):
