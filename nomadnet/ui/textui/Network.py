@@ -1576,7 +1576,11 @@ class LXMFPeers(urwid.WidgetWrap):
             self.pile = urwid.Pile([urwid.Text(("warning_text", g["info"]+"\n"), align="center"), SelectText(("warning_text", "Currently, no LXMF nodes are peered\n\n"), align="center")])
             self.display_widget = urwid.Filler(self.pile, valign="top", height="pack")
 
-        urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="LXMF Propagation Peers"), widget_style))
+        if hasattr(self, "peer_list") and self.peer_list:
+            pl = len(self.peer_list)
+        else:
+            pl = 0
+        urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title=f"LXMF Propagation Peers ({pl})"), widget_style))
 
     def keypress(self, size, key):
         if key == "up" and (self.no_content or self.ilb.first_item_is_selected()):
@@ -1611,13 +1615,13 @@ class LXMFPeers(urwid.WidgetWrap):
 
     def make_peer_widgets(self):
         widget_list = []
-        for peer_id in self.peer_list:
+        sorted_peers = sorted(self.peer_list, key=lambda pid: self.peer_list[pid].link_establishment_rate, reverse=True)
+        for peer_id in sorted_peers:
             peer = self.peer_list[peer_id]
             pe = LXMFPeerEntry(self.app, peer, self)
             pe.destination_hash = peer.destination_hash
             widget_list.append(pe)
 
-        # TODO: Sort list
         return widget_list
 
 class LXMFPeerEntry(urwid.WidgetWrap):
@@ -1633,7 +1637,7 @@ class LXMFPeerEntry(urwid.WidgetWrap):
             node_hash = RNS.Destination.hash_from_name_and_identity("nomadnetwork.node", node_identity)
             display_name = self.app.directory.alleged_display_str(node_hash)
             if display_name != None:
-                display_str += " "+str(display_name)
+                display_str = str(display_name)+"\n  "+display_str
 
         sym = g["sent"]
         style         = "list_unknown"
@@ -1643,8 +1647,12 @@ class LXMFPeerEntry(urwid.WidgetWrap):
         if hasattr(peer, "alive"):
             if peer.alive:
                 alive_string = "Available"
+                style = "list_normal"
+                focus_style = "list_focus"
             else:
                 alive_string = "Unresponsive"
+                style = "list_unresponsive"
+                focus_style = "list_focus_unresponsive"
 
         widget = ListEntry(sym+" "+display_str+"\n  "+alive_string+", last heard "+pretty_date(int(peer.last_heard))+"\n  "+str(len(peer.unhandled_messages))+" unhandled LXMs, "+RNS.prettysize(peer.link_establishment_rate/8, "b")+"/s LER")
         # urwid.connect_signal(widget, "click", delegate.connect_node, node)
