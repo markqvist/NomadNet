@@ -586,7 +586,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
         def ident_change(sender, userdata):
             pass
 
-        propagation_node_checkbox = urwid.CheckBox("Use as default propagation node", state=(self.app.get_user_selected_propagation_node() == source_hash), on_state_change=pn_change)
+        propagation_node_checkbox = urwid.CheckBox("Use as default propagation node", state=(self.app.get_user_selected_propagation_node() == pn_hash), on_state_change=pn_change)
         connect_identify_checkbox = urwid.CheckBox("Identify when connecting", state=self.app.directory.should_identify_on_connect(source_hash), on_state_change=ident_change)
 
         def save_node(sender):
