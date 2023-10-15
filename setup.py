@@ -30,6 +30,6 @@ setuptools.setup(
     entry_points= {
         'console_scripts': ['nomadnet=nomadnet.nomadnet:main']
     },
-    install_requires=["rns>=0.6.2", "lxmf>=0.3.4", "urwid==2.1.2", "qrcode"],
+    install_requires=["rns>=0.6.2", "lxmf>=0.3.5", "urwid==2.1.2", "qrcode"],
     python_requires=">=3.6",
 )
