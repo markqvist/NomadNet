@@ -259,7 +259,7 @@ class Conversation:
                     return qr_save_path
 
                 elif mode == "save_uri":
-                    lxm_uri = lxm.as_uri()
+                    lxm_uri = lxm.as_uri()+"\n"
                     uri_save_path = self.app.downloads_path+"/LXM_"+str(RNS.hexrep(lxm.hash, delimit=False)+".txt")
                     with open(uri_save_path, "wb") as f:
                         f.write(lxm_uri.encode("utf-8"))
