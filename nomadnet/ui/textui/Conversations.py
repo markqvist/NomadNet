@@ -984,7 +984,7 @@ class ConversationWidget(urwid.WidgetWrap):
             urwid.Pile([
                 urwid.Text("The paper message was saved to:\n\n"+str(path)+"\n", align="center"),
                 urwid.Columns([("weight", 0.6, urwid.Text("")), ("weight", 0.4, urwid.Button("OK", on_press=dismiss_dialog))])
-            ]), title=g["page"]
+            ]), title=g["papermsg"].replace(" ", "")
         )
         dialog.delegate = self
         bottom = self.messagelist

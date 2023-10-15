@@ -480,6 +480,12 @@ class KnownNodeInfo(urwid.WidgetWrap):
         trust_level  = self.app.directory.trust_level(source_hash)
         trust_str    = ""
         node_entry   = self.app.directory.find(source_hash)
+        sort_str     = self.app.directory.sort_rank(source_hash)
+        if sort_str == None:
+            sort_str = "None"
+        else:
+            sort_str = str(sort_str)
+
         if node_entry == None:
             display_str = self.app.directory.simplest_display_str(source_hash)
         else:
@@ -540,6 +546,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
         r_trusted   = urwid.RadioButton(trust_button_group, "Trusted", state=trusted_selected)
 
         e_name = urwid.Edit(caption="Name      : ",edit_text=display_str)
+        e_sort = urwid.Edit(caption="Sort Rank : ",edit_text=sort_str)
 
         node_ident = RNS.Identity.recall(source_hash)
         op_hash = None
@@ -604,8 +611,16 @@ class KnownNodeInfo(urwid.WidgetWrap):
                 trust_level = DirectoryEntry.TRUSTED
 
             display_str = e_name.get_edit_text()
+            sort_rank = e_sort.get_edit_text()
+            try:
+                if int(sort_rank) >= 0:
+                    sort_rank = int(sort_rank)
+                else:
+                    sort_rank = None
+            except:
+                sort_rank = None
 
-            node_entry = DirectoryEntry(source_hash, display_name=display_str, trust_level=trust_level, hosts_node=True, identify_on_connect=connect_identify_checkbox.get_state())
+            node_entry = DirectoryEntry(source_hash, display_name=display_str, trust_level=trust_level, hosts_node=True, identify_on_connect=connect_identify_checkbox.get_state(), sort_rank=sort_rank)
             self.app.directory.remember(node_entry)
             self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
 
@@ -626,6 +641,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
             urwid.Text("Type      : "+type_string, align="left"),
             e_name,
             urwid.Text("Node Addr : "+addr_str, align="left"),
+            e_sort,
             urwid.Divider(g["divider1"]),
             urwid.Text(lxmf_addr_str, align="center"),
             urwid.Divider(g["divider1"]),

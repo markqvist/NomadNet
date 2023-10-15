@@ -66,7 +66,7 @@ class Directory:
             packed_list = []
             for source_hash in self.directory_entries:
                 e = self.directory_entries[source_hash]
-                packed_list.append((e.source_hash, e.display_name, e.trust_level, e.hosts_node, e.preferred_delivery, e.identify))
+                packed_list.append((e.source_hash, e.display_name, e.trust_level, e.hosts_node, e.preferred_delivery, e.identify, e.sort_rank))
 
             directory = {
                 "entry_list": packed_list,
@@ -106,12 +106,16 @@ class Directory:
                     else:
                         identify = False
 
-                    entries[e[0]] = DirectoryEntry(e[0], e[1], e[2], hosts_node, preferred_delivery=preferred_delivery, identify_on_connect=identify)
+                    if len(e) > 6:
+                        sort_rank = e[6]
+                    else:
+                        sort_rank = None
+
+                    entries[e[0]] = DirectoryEntry(e[0], e[1], e[2], hosts_node, preferred_delivery=preferred_delivery, identify_on_connect=identify, sort_rank=sort_rank)
 
                 self.directory_entries = entries
 
                 self.announce_stream = unpacked_directory["announce_stream"]
-
 
             except Exception as e:
                 RNS.log("Could not load directory from disk. The contained exception was: "+str(e), RNS.LOG_ERROR)
@@ -220,7 +224,14 @@ class Directory:
     def simplest_display_str(self, source_hash):
         trust_level = self.trust_level(source_hash)
         if trust_level == DirectoryEntry.WARNING or trust_level == DirectoryEntry.UNTRUSTED:
-            return "<"+RNS.hexrep(source_hash, delimit=False)+">"
+            if source_hash in self.directory_entries:
+                dn = self.directory_entries[source_hash].display_name
+                if dn == None:
+                    return RNS.prettyhexrep(source_hash)
+                else:
+                    return dn+" <"+RNS.hexrep(source_hash, delimit=False)+">"
+            else:
+                return "<"+RNS.hexrep(source_hash, delimit=False)+">"
         else:
             if source_hash in self.directory_entries:
                 dn = self.directory_entries[source_hash].display_name
@@ -252,6 +263,12 @@ class Directory:
                 return self.directory_entries[source_hash].trust_level
         else:
             return DirectoryEntry.UNKNOWN
+
+    def sort_rank(self, source_hash):
+        if source_hash in self.directory_entries:
+            return self.directory_entries[source_hash].sort_rank
+        else:
+            return None
 
     def preferred_delivery(self, source_hash):
         if source_hash in self.directory_entries:
@@ -312,6 +329,7 @@ class Directory:
             if e.hosts_node:
                 node_list.append(e)
 
+        node_list.sort(key = lambda e: (e.sort_rank if e.sort_rank != None else 2^32, DirectoryEntry.TRUSTED-e.trust_level, e.display_name))
         return node_list
 
     def number_of_known_nodes(self):
@@ -336,10 +354,11 @@ class DirectoryEntry:
     DIRECT     = 0x01
     PROPAGATED = 0x02
 
-    def __init__(self, source_hash, display_name=None, trust_level=UNKNOWN, hosts_node=False, preferred_delivery=None, identify_on_connect=False):
+    def __init__(self, source_hash, display_name=None, trust_level=UNKNOWN, hosts_node=False, preferred_delivery=None, identify_on_connect=False, sort_rank=None):
         if len(source_hash) == RNS.Identity.TRUNCATED_HASHLENGTH//8:
             self.source_hash  = source_hash
             self.display_name = display_name
+            self.sort_rank = sort_rank
 
             if preferred_delivery == None:
                 self.preferred_delivery = DirectoryEntry.DIRECT
