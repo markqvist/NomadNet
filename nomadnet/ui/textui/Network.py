@@ -977,12 +977,12 @@ class NodeStorageStats(urwid.WidgetWrap):
 
     def update_stat(self):
         self.stat_string = "None"
-        if self.app.node != None:
+        if self.app.node != None and not self.app.disable_propagation:
 
             limit = self.app.message_router.message_storage_limit
             used = self.app.message_router.message_storage_size()
 
-            if limit != None:
+            if limit != None and used != None:
                 pct = round((used/limit)*100, 1)
                 pct_str = str(pct)+"%, "
                 limit_str = " of "+RNS.prettysize(limit)
@@ -1313,11 +1313,34 @@ class NodeInfo(urwid.WidgetWrap):
             connect_button = urwid.Button("Browse", on_press=connect_query)
             reset_button = urwid.Button("Rst Stats", on_press=stats_query)
 
-            pile = urwid.Pile([
+            if not self.app.disable_propagation:
+                pile = urwid.Pile([
+                    t_id,
+                    e_name,
+                    urwid.Divider(g["divider1"]),
+                    e_lxmf,
+                    urwid.Divider(g["divider1"]),
+                    self.t_last_announce,
+                    self.t_storage_stats,
+                    self.t_active_links,
+                    self.t_total_connections,
+                    self.t_total_pages,
+                    self.t_total_files,
+                    urwid.Divider(g["divider1"]),
+                    urwid.Columns([
+                        ("weight", 5, urwid.Button("Back", on_press=show_peer_info)),
+                        ("weight", 0.5, urwid.Text("")),
+                        ("weight", 6, connect_button),
+                        ("weight", 0.5, urwid.Text("")),
+                        ("weight", 8, reset_button),
+                        ("weight", 0.5, urwid.Text("")),
+                        ("weight", 7, announce_button),
+                    ])
+                ])
+            else:
+                pile = urwid.Pile([
                 t_id,
                 e_name,
-                urwid.Divider(g["divider1"]),
-                e_lxmf,
                 urwid.Divider(g["divider1"]),
                 self.t_last_announce,
                 self.t_storage_stats,

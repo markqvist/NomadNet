@@ -122,6 +122,7 @@ class NomadNetworkApp:
 
         self.peer_announce_at_start  = True
         self.try_propagation_on_fail = True
+        self.disable_propagation     = False
 
         self.periodic_lxmf_sync = True
         self.lxmf_sync_interval = 360*60
@@ -308,15 +309,27 @@ class NomadNetworkApp:
                 except Exception as e:
                     RNS.log("Cannot prioritise "+str(dest_str)+", it is not a valid destination hash", RNS.LOG_ERROR)
 
-            self.message_router.enable_propagation()
-            try:
-                with open(self.pnannouncedpath, "wb") as pnf:
-                    pnf.write(msgpack.packb(time.time()))
-                    pnf.close()
-            except Exception as e:
-                RNS.log("An error ocurred while writing Propagation Node announce timestamp. The contained exception was: "+str(e), RNS.LOG_ERROR)
+            if self.disable_propagation:
+                if os.path.isfile(self.pnannouncedpath):
+                    try:
+                        RNS.log("Sending indication to peered LXMF Propagation Node that this node is no longer participating", RNS.LOG_DEBUG)
+                        self.message_router.disable_propagation()
+                        os.unlink(self.pnannouncedpath)
+                    except Exception as e:
+                        RNS.log("An error ocurred while indicating that this LXMF Propagation Node is no longer participating. The contained exception was: "+str(e), RNS.LOG_ERROR)
+            else:
+                self.message_router.enable_propagation()
+                try:
+                    with open(self.pnannouncedpath, "wb") as pnf:
+                        pnf.write(msgpack.packb(time.time()))
+                        pnf.close()
 
-            RNS.log("LXMF Propagation Node started on: "+RNS.prettyhexrep(self.message_router.propagation_destination.hash))
+                except Exception as e:
+                    RNS.log("An error ocurred while writing Propagation Node announce timestamp. The contained exception was: "+str(e), RNS.LOG_ERROR)
+
+            if not self.disable_propagation:
+                RNS.log("LXMF Propagation Node started on: "+RNS.prettyhexrep(self.message_router.propagation_destination.hash))
+                
             self.node = nomadnet.Node(self)
         else:
             self.node = None
@@ -788,6 +801,11 @@ class NomadNetworkApp:
                 else:
                     self.node_name = self.config["node"]["node_name"]
 
+            if not "disable_propagation" in self.config["node"]:
+                self.disable_propagation = False
+            else:
+                self.disable_propagation = self.config["node"].as_bool("disable_propagation")
+
             if not "announce_at_start" in self.config["node"]:
                 self.node_announce_at_start = False
             else:
@@ -1002,6 +1020,14 @@ announce_interval = 360
 
 # Whether to announce when the node starts.
 announce_at_start = Yes
+
+# By default, when Nomad Network is hosting a
+# node, it will also act as an LXMF propagation
+# node. If there is already a large amount of
+# propagation nodes on the network, or you
+# simply want to run a pageserving-only node,
+# you can disable running a propagation node.
+# disable_propagation = False
 
 # The maximum amount of storage to use for
 # the LXMF Propagation Node message store,

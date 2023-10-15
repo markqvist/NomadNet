@@ -621,6 +621,12 @@ Determines where the node server will look for downloadable files. Must be a rea
 <
 
 >>>
+`!disable_propagation = no`!
+>>>>
+By default, when Nomad Network is hosting a node, it will also run an LXMF propagation node. If there is already a large amount of propagation nodes on the network, or you simply want to run a pageserving-only node, you can disable running a propagation node.
+<
+
+>>>
 `!message_storage_limit = 2000`!
 >>>>
 Configures the maximum amount of storage, in megabytes, that the LXMF Propagation Node will use to store messages.
