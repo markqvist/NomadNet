@@ -263,10 +263,6 @@ class Conversation:
                     uri_save_path = self.app.downloads_path+"/LXM_"+str(RNS.hexrep(lxm.hash, delimit=False)+".txt")
                     with open(uri_save_path, "wb") as f:
                         f.write(lxm_uri.encode("utf-8"))
-                    
-                    # TODO: Remove after LXMF 0.3.5 ####
-                    lxm.determine_transport_encryption()
-                    ####################################
 
                     message_path = Conversation.ingest(lxm, self.app, originator=True)
                     self.messages.append(ConversationMessage(message_path))
