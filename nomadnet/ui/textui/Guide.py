@@ -217,6 +217,15 @@ The different sections of the program has a number of keyboard shortcuts mapped,
  - Ctrl-W   Close conversation
 
 >>`!Network Window`!
+>>>Browser
+ - Ctrl-D   Back
+ - Ctrl-F   Forward
+ - Ctrl-R   Reload page
+ - Ctrl-U   Open URL entry dialog
+ - Ctrl-S   Save connected node
+ - Ctrl-G   Toggle fullscreen browser window
+ - Ctrl-W   Disconnect from node
+
 >>>Announce Stream
  - Ctrl-L   Switch to Known Nodes list
  - Ctrl-X   Delete selected announce
@@ -227,14 +236,10 @@ The different sections of the program has a number of keyboard shortcuts mapped,
  - Ctrl-X   Delete selected node entry
  - Ctrl-P   Display peered LXMF Propagation Nodes
 
->>>Browser
- - Ctrl-D   Back
- - Ctrl-F   Forward
- - Ctrl-R   Reload page
- - Ctrl-U   Open URL entry dialog
- - Ctrl-S   Save connected node
- - Ctrl-G   Toggle fullscreen browser window
- - Ctrl-W   Disconnect from node
+>>>Peered LXMF Propagation Nodes
+ - Ctrl-L   Switch to Announce Stream or Known Nodes
+ - Ctrl-X   Break peering with selected node entry
+ - Ctrl-R   Request immediate delivery sync of unhandled LXMs
 '''
 
 TOPIC_CONCEPTS = '''>Concepts and Terminology
@@ -302,11 +307,13 @@ By default, no content is defined, apart from a short placeholder home page. To 
 
 >>Distributed Message Store
 
-All nodes on the network automatically form a distributed message store that allows users to exchange messages, even when they are not available at the same time.
+All nodes on the network will automatically participate in a distributed message store that allows users to exchange messages, even when they are not connected to the network at the same time.
 
-When Nomad Network is configured to host a node, it also configures itself as an LXMF Propagation Node, and automatically discovers and peers with other propagation nodes on the network. This process is completely automatic and requires no configuration from the node operator.
+When Nomad Network is configured to host a node, by default it also configures itself as an LXMF Propagation Node, and automatically discovers and peers with other propagation nodes on the network. This process is completely automatic and requires no configuration from the node operator.
 
-To view LXMF Propagation nodes that are currently peered with your node, go to the `![ Network ]`! part of the program and press `!Ctrl-P`!.
+If there is already an abundance of Propagation Nodes on the network, or the operator simply wishes to host a pageserving-only node, Propagation Node hosting can be disabled in the configuration file.
+
+To view LXMF Propagation nodes that are currently peered with your node, go to the `![ Network ]`! part of the program and press `!Ctrl-P`!. In the list of peered Propagation Nodes, it is possible to break peering with a node by pressing `!Ctrl-X`!. It is also possible to request an immediate delivery sync of all unhandled messages for a node, by pressing `!Ctrl-R`!.
 
 The distributed message store is resilient to intermittency, and will remain functional as long as at least one node remains on the network. Nodes that were offline for a time will automatically be synced up to date when they regain connectivity.
 

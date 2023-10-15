@@ -264,6 +264,12 @@ class Directory:
         else:
             return DirectoryEntry.UNKNOWN
 
+    def pn_trust_level(self, source_hash):
+        recalled_identity = RNS.Identity.recall(source_hash)
+        if recalled_identity != None:
+            associated_node = RNS.Destination.hash_from_name_and_identity("nomadnetwork.node", recalled_identity)
+            return self.trust_level(associated_node)
+
     def sort_rank(self, source_hash):
         if source_hash in self.directory_entries:
             return self.directory_entries[source_hash].sort_rank

@@ -2,6 +2,7 @@ import RNS
 import urwid
 import nomadnet
 import time
+import threading
 from datetime import datetime
 from nomadnet.Directory import DirectoryEntry
 from nomadnet.vendor.additional_urwid_widgets import IndicativeListBox, MODIFIER_KEY
@@ -1626,6 +1627,8 @@ class LXMFPeers(urwid.WidgetWrap):
             nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.set_focus("header")
         elif key == "ctrl x":
             self.delete_selected_entry()
+        elif key == "ctrl r":
+            self.sync_selected_entry()
             
         return super(LXMFPeers, self).keypress(size, key)
 
@@ -1641,6 +1644,43 @@ class LXMFPeers(urwid.WidgetWrap):
             self.delegate.reinit_lxmf_peers()
             self.delegate.show_peers()
 
+    def sync_selected_entry(self):
+        sync_grace = 10
+        si = self.ilb.get_selected_item()
+        if si != None:
+            destination_hash = si.original_widget.destination_hash
+            if destination_hash in self.app.message_router.peers:
+                peer = self.app.message_router.peers[destination_hash]
+                if time.time() > peer.last_sync_attempt+sync_grace:
+                    peer.next_sync_attempt = time.time()-1
+                    
+                    def job():
+                        peer.sync()
+                    threading.Thread(target=job, daemon=True).start()
+
+                    time.sleep(0.25)
+
+                    def dismiss_dialog(sender):
+                        self.close_list_dialogs()
+
+                    dialog = ListDialogLineBox(
+                        urwid.Pile([
+                            urwid.Text("A delivery sync of all unhandled LXMs was manually requested for the selected node\n", align="center"),
+                            urwid.Columns([("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("OK", on_press=dismiss_dialog))])
+                        ]), title="!"
+                    )
+                    dialog.delegate = self.delegate
+                    bottom = self
+
+                    overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+
+                    options = self.delegate.left_pile.options("weight", 1)
+                    self.delegate.left_pile.contents[0] = (overlay, options)
+
+
+    def close_list_dialogs(self):
+        self.delegate.reinit_lxmf_peers()
+        self.delegate.show_peers()
 
     def rebuild_widget_list(self):
         self.peer_list = self.app.message_router.peers
@@ -1654,17 +1694,18 @@ class LXMFPeers(urwid.WidgetWrap):
 
     def make_peer_widgets(self):
         widget_list = []
-        sorted_peers = sorted(self.peer_list, key=lambda pid: self.peer_list[pid].link_establishment_rate, reverse=True)
+        sorted_peers = sorted(self.peer_list, key=lambda pid: (self.app.directory.pn_trust_level(pid), self.peer_list[pid].link_establishment_rate), reverse=True)
         for peer_id in sorted_peers:
             peer = self.peer_list[peer_id]
-            pe = LXMFPeerEntry(self.app, peer, self)
+            trust_level = self.app.directory.pn_trust_level(peer_id)
+            pe = LXMFPeerEntry(self.app, peer, self, trust_level)
             pe.destination_hash = peer.destination_hash
             widget_list.append(pe)
 
         return widget_list
 
 class LXMFPeerEntry(urwid.WidgetWrap):
-    def __init__(self, app, peer, delegate):
+    def __init__(self, app, peer, delegate, trust_level):
         destination_hash = peer.destination_hash
 
         self.app = app
@@ -1686,16 +1727,18 @@ class LXMFPeerEntry(urwid.WidgetWrap):
         if hasattr(peer, "alive"):
             if peer.alive:
                 alive_string = "Available"
-                style = "list_normal"
-                focus_style = "list_focus"
+                if trust_level == DirectoryEntry.TRUSTED:
+                    style = "list_trusted"
+                    focus_style = "list_focus_trusted"
+                else:
+                    style = "list_normal"
+                    focus_style = "list_focus"
             else:
                 alive_string = "Unresponsive"
                 style = "list_unresponsive"
                 focus_style = "list_focus_unresponsive"
 
         widget = ListEntry(sym+" "+display_str+"\n  "+alive_string+", last heard "+pretty_date(int(peer.last_heard))+"\n  "+str(len(peer.unhandled_messages))+" unhandled LXMs, "+RNS.prettysize(peer.link_establishment_rate/8, "b")+"/s LER")
-        # urwid.connect_signal(widget, "click", delegate.connect_node, node)
-
         self.display_widget = urwid.AttrMap(widget, style, focus_style)
         self.display_widget.destination_hash = destination_hash
         urwid.WidgetWrap.__init__(self, self.display_widget)
