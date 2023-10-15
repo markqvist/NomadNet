@@ -974,7 +974,27 @@ class ConversationWidget(urwid.WidgetWrap):
             else:
                 pass
 
-    def paper_message(self):
+    def paper_message_saved(self, path):
+        g = self.app.ui.glyphs
+        def dismiss_dialog(sender):
+            self.dialog_open = False
+            self.conversation_changed(None)
+
+        dialog = DialogLineBox(
+            urwid.Pile([
+                urwid.Text("The paper message was saved to:\n\n"+str(path)+"\n", align="center"),
+                urwid.Columns([("weight", 0.6, urwid.Text("")), ("weight", 0.4, urwid.Button("OK", on_press=dismiss_dialog))])
+            ]), title=g["page"]
+        )
+        dialog.delegate = self
+        bottom = self.messagelist
+
+        overlay = urwid.Overlay(dialog, bottom, align="center", width=60, valign="middle", height="pack", left=2, right=2)
+
+        self.frame.contents["body"] = (overlay, self.frame.options())
+        self.frame.set_focus("body")
+
+    def print_paper_message_qr(self):
         content = self.content_editor.get_edit_text()
         title = self.title_editor.get_edit_text()
         if not content == "":
@@ -982,6 +1002,67 @@ class ConversationWidget(urwid.WidgetWrap):
                 self.clear_editor()
             else:
                 self.paper_message_failed()
+
+    def save_paper_message_qr(self):
+        content = self.content_editor.get_edit_text()
+        title = self.title_editor.get_edit_text()
+        if not content == "":
+            output_result = self.conversation.paper_output(content, title, mode="save_qr")
+            if output_result != False:
+                self.clear_editor()
+                self.paper_message_saved(output_result)
+            else:
+                self.paper_message_failed()
+
+    def save_paper_message_uri(self):
+        content = self.content_editor.get_edit_text()
+        title = self.title_editor.get_edit_text()
+        if not content == "":
+            output_result = self.conversation.paper_output(content, title, mode="save_uri")
+            if output_result != False:
+                self.clear_editor()
+                self.paper_message_saved(output_result)
+            else:
+                self.paper_message_failed()
+
+    def paper_message(self):
+        def dismiss_dialog(sender):
+            self.dialog_open = False
+            self.conversation_changed(None)
+
+        def print_qr(sender):
+            dismiss_dialog(self)
+            self.print_paper_message_qr()
+
+        def save_qr(sender):
+            dismiss_dialog(self)
+            self.save_paper_message_qr()
+
+        def save_uri(sender):
+            dismiss_dialog(self)
+            self.save_paper_message_uri()
+
+        dialog = DialogLineBox(
+            urwid.Pile([
+                urwid.Text("Select the desired paper message output method.\nSaved files will be written to:\n\n"+str(self.app.downloads_path)+"\n", align="center"),
+                urwid.Columns([
+                    ("weight", 0.5, urwid.Button("Print QR", on_press=print_qr)),
+                    ("weight", 0.1, urwid.Text("")),
+                    ("weight", 0.5, urwid.Button("Save QR", on_press=save_qr)),
+                    ("weight", 0.1, urwid.Text("")),
+                    ("weight", 0.5, urwid.Button("Save URI", on_press=save_uri)),
+                    ("weight", 0.1, urwid.Text("")),
+                    ("weight", 0.5, urwid.Button("Cancel", on_press=dismiss_dialog))
+                ])
+            ]), title="Create Paper Message"
+        )
+        dialog.delegate = self
+        bottom = self.messagelist
+
+        overlay = urwid.Overlay(dialog, bottom, align="center", width=60, valign="middle", height="pack", left=2, right=2)
+
+        self.frame.contents["body"] = (overlay, self.frame.options())
+        self.frame.set_focus("body")
 
     def paper_message_failed(self):
         def dismiss_dialog(sender):

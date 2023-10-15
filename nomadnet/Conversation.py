@@ -227,7 +227,7 @@ class Conversation:
             RNS.log("Destination is not known, cannot create LXMF Message.", RNS.LOG_VERBOSE)
             return False
 
-    def paper_output(self, content="", title=""):
+    def paper_output(self, content="", title="", mode="print_qr"):
         if self.send_destination:
             try:
                 dest = self.send_destination
@@ -235,18 +235,45 @@ class Conversation:
                 desired_method = LXMF.LXMessage.PAPER
 
                 lxm = LXMF.LXMessage(dest, source, content, title=title, desired_method=desired_method)
-                qr_code = lxm.as_qr()
-                qr_tmp_path = self.app.tmpfilespath+"/"+str(RNS.hexrep(lxm.hash, delimit=False))
-                qr_code.save(qr_tmp_path)
 
-                print_result = self.app.print_file(qr_tmp_path)
-                os.unlink(qr_tmp_path)
-                
-                if print_result:
+                if mode == "print_qr":
+                    qr_code = lxm.as_qr()
+                    qr_tmp_path = self.app.tmpfilespath+"/"+str(RNS.hexrep(lxm.hash, delimit=False))
+                    qr_code.save(qr_tmp_path)
+
+                    print_result = self.app.print_file(qr_tmp_path)
+                    os.unlink(qr_tmp_path)
+                    
+                    if print_result:
+                        message_path = Conversation.ingest(lxm, self.app, originator=True)
+                        self.messages.append(ConversationMessage(message_path))
+
+                    return print_result
+
+                elif mode == "save_qr":
+                    qr_code = lxm.as_qr()
+                    qr_save_path = self.app.downloads_path+"/LXM_"+str(RNS.hexrep(lxm.hash, delimit=False)+".png")
+                    qr_code.save(qr_save_path)
                     message_path = Conversation.ingest(lxm, self.app, originator=True)
                     self.messages.append(ConversationMessage(message_path))
+                    return qr_save_path
 
-                return print_result
+                elif mode == "save_uri":
+                    lxm_uri = lxm.as_uri()
+                    uri_save_path = self.app.downloads_path+"/LXM_"+str(RNS.hexrep(lxm.hash, delimit=False)+".txt")
+                    with open(uri_save_path, "wb") as f:
+                        f.write(lxm_uri.encode("utf-8"))
+                    
+                    # TODO: Remove after LXMF 0.3.5 ####
+                    lxm.determine_transport_encryption()
+                    ####################################
+
+                    message_path = Conversation.ingest(lxm, self.app, originator=True)
+                    self.messages.append(ConversationMessage(message_path))
+                    return uri_save_path
+
+                elif mode == "return_uri":
+                    return lxm.as_uri()
 
             except Exception as e:
                 RNS.log("An error occurred while generating paper message, the contained exception was: "+str(e), RNS.LOG_ERROR)
