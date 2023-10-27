@@ -427,16 +427,24 @@ class NomadNetworkApp:
             return "Receiving messages"
         elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_RESPONSE_RECEIVED:
             return "Messages received"
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_NO_PATH:
+            return "No path to node"
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_LINK_FAILED:
+            return "Link establisment failed"
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_TRANSFER_FAILED:
+            return "Sync request failed"
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_NO_IDENTITY_RCVD:
+            return "Remote got no identity"
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_NO_ACCESS:
+            return "Node rejected request"
+        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_FAILED:
+            return "Sync failed"
         elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_COMPLETE:
             new_msgs = self.message_router.propagation_transfer_last_result
             if new_msgs == 0:
                 return "Done, no new messages"
             else:
                 return "Downloaded "+str(new_msgs)+" new messages"
-        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_NO_IDENTITY_RCVD:
-            return "Node did not receive identification"
-        elif self.message_router.propagation_transfer_state == LXMF.LXMRouter.PR_NO_ACCESS:
-            return "Node did not allow request"
         else:
             return "Unknown"
 
