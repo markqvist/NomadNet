@@ -517,7 +517,7 @@ class Browser:
                 self.status = Browser.PATH_REQUESTED
                 self.update_display()
 
-                pr_time = time.time()
+                pr_time = time.time()+RNS.Transport.first_hop_timeout(self.destination_hash)
                 while not RNS.Transport.has_path(self.destination_hash):
                     now = time.time()
                     if now > pr_time+self.timeout:
@@ -770,7 +770,7 @@ class Browser:
                 self.status = Browser.PATH_REQUESTED
                 self.update_display()
 
-                pr_time = time.time()
+                pr_time = time.time()+RNS.Transport.first_hop_timeout(self.destination_hash)
                 while not RNS.Transport.has_path(self.destination_hash):
                     now = time.time()
                     if now > pr_time+self.timeout:
