@@ -894,7 +894,7 @@ class ConversationWidget(urwid.WidgetWrap):
             if allowed:
                 self.frame.contents["footer"] = (self.minimal_editor, None)
             else:
-                warning = urwid.AttrMap(urwid.Padding(urwid.Text("\n"+g["info"]+"\n\nYou cannot currently message this peer, since it's identity keys are not known. The keys have been requested from the network and should arrive shortly, if available. Close this conversation and reopen it to try again.\n\nWait for this announce to arrive from, or query the network manually.\n\nTo query the network, select this conversation in the conversation list, press Ctrl-E, and use the query button.\n", align="center")), "msg_header_caution")
+                warning = urwid.AttrMap(urwid.Padding(urwid.Text("\n"+g["info"]+"\n\nYou cannot currently message this peer, since it's identity keys are not known. The keys have been requested from the network and should arrive shortly, if available. Close this conversation and reopen it to try again.\n\nTo query the network manually, select this conversation in the conversation list, press Ctrl-E, and use the query button.\n", align="center")), "msg_header_caution")
                 self.frame.contents["footer"] = (warning, None)
 
     def toggle_focus_area(self):
