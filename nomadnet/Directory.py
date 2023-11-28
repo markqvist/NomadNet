@@ -90,7 +90,10 @@ class Directory:
 
                 entries = {}
                 for e in unpacked_list:
-                        
+
+                    if e[1] == None:
+                        e[1] = "Undefined"
+
                     if len(e) > 3:
                         hosts_node = e[3]
                     else:
