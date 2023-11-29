@@ -976,7 +976,10 @@ class Browser:
         try:
             file_name = request_receipt.response[0]
             file_data = request_receipt.response[1]
-            file_destination = self.app.downloads_path+"/"+file_name
+            file_destination_name = file_name.split("/")
+            file_destination_name = file_destination_name[len(file_destination_name)-1]
+            file_destination = self.app.downloads_path+"/"+file_destination_name
+
             
             counter = 0
             while os.path.isfile(file_destination):
