@@ -115,10 +115,12 @@ class NomadNetworkApp:
 
         self.downloads_path    = os.path.expanduser("~/Downloads")
 
-        self.firstrun          = False
-        self.should_run_jobs   = True
-        self.job_interval      = 5
-        self.defer_jobs        = 90
+        self.firstrun               = False
+        self.should_run_jobs        = True
+        self.job_interval           = 5
+        self.defer_jobs             = 90
+        self.page_refresh_interval = 0
+        self.file_refresh_interval  = 0
 
         self.peer_announce_at_start  = True
         self.try_propagation_on_fail = True
@@ -827,12 +829,30 @@ class NomadNetworkApp:
                 if value < 1:
                     value = 1
                 self.node_announce_interval = value
-
+                
             if "pages_path" in self.config["node"]:
                 self.pagespath = self.config["node"]["pages_path"]
+                
+            if not "page_refresh_interval" in self.config["node"]:
+                self.page_refresh_interval = 0
+            else:
+                value = self.config["node"].as_int("page_refresh_interval")
+                if value < 0:
+                    value = 0
+                self.page_refresh_interval = value
+                
 
             if "files_path" in self.config["node"]:
                 self.filespath = self.config["node"]["files_path"]
+                
+            if not "file_refresh_interval" in self.config["node"]:
+                self.file_refresh_interval = 0
+            else:
+                value = self.config["node"].as_int("file_refresh_interval")
+                if value < 0:
+                    value = 0
+                self.file_refresh_interval = value
+                
 
             if "prioritise_destinations" in self.config["node"]:
                 self.prioritised_lxmf_destinations = self.config["node"].as_list("prioritise_destinations")

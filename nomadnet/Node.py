@@ -15,7 +15,11 @@ class Node:
         self.identity = self.app.identity
         self.destination = RNS.Destination(self.identity, RNS.Destination.IN, RNS.Destination.SINGLE, "nomadnetwork", "node")
         self.last_announce = time.time()
+        self.last_file_refresh = time.time()
+        self.last_page_refresh = time.time()
         self.announce_interval = self.app.node_announce_interval
+        self.page_refresh_interval = self.app.page_refresh_interval
+        self.file_refresh_interval = self.app.file_refresh_interval
         self.job_interval = Node.JOB_INTERVAL
         self.should_run_jobs = True
         self.app_data = None
@@ -222,6 +226,14 @@ class Node:
             
             if now > self.last_announce + self.announce_interval*60:
                 self.announce()
+                
+            if self.page_refresh_interval > 0:
+                if now > self.last_page_refresh + self.page_refresh_interval*60:
+                    self.register_pages()
+                    
+            if self.file_refresh_interval > 0:
+                if now > self.last_file_refresh + self.file_refresh_interval*60:
+                    self.register_files()
 
             time.sleep(self.job_interval)
 
