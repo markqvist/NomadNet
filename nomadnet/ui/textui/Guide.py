@@ -624,7 +624,7 @@ Determines where the node server will look for hosted pages. Must be a readable 
 >>>
 `!page_refresh_interval = 0`!
 >>>>
-Determines the interval in seconds for rescanning the hosted pages path. By default, this option is disabled, and the pages path will only be scanned on startup.
+Determines the interval in minutes for rescanning the hosted pages path. By default, this option is disabled, and the pages path will only be scanned on startup.
 <
 
 >>>
@@ -636,7 +636,7 @@ Determines where the node server will look for downloadable files. Must be a rea
 >>>
 `!file_refresh_interval = 0`!
 >>>>
-Determines the interval in seconds for rescanning the hosted files path. By default, this option is disabled, and the files path will only be scanned on startup.
+Determines the interval in minutes for rescanning the hosted files path. By default, this option is disabled, and the files path will only be scanned on startup.
 <
 
 >>>

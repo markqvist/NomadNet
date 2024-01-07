@@ -1077,6 +1077,22 @@ announce_at_start = Yes
 # and generally you do not need to use it.
 # prioritise_destinations = 41d20c727598a3fbbdf9106133a3a0ed, d924b81822ca24e68e2effea99bcb8cf
 
+# Automatic rescan interval of the pages directory in minutes.
+# Default: int = 0 (no rescan)
+page_refresh_interval = 0
+
+# You can specify the interval in minutes for
+# rescanning the hosted pages path. By default,
+# this option is disabled, and the pages path
+# will only be scanned on startup.
+# page_refresh_interval = 0
+
+# You can specify the interval in minutes for
+# rescanning the hosted files path. By default,
+# this option is disabled, and the files path
+# will only be scanned on startup.
+# file_refresh_interval = 0
+
 [printing]
 
 # You can configure Nomad Network to print

@@ -50,6 +50,8 @@ class Node:
 
 
     def register_pages(self):
+        # TODO: Deregister previously registered pages
+        # that no longer exist.
         self.servedpages = []
         self.scan_pages(self.app.pagespath)
 
@@ -69,6 +71,8 @@ class Node:
             )
 
     def register_files(self):
+        # TODO: Deregister previously registered files
+        # that no longer exist.
         self.servedfiles = []
         self.scan_files(self.app.filespath)
 
@@ -230,10 +234,12 @@ class Node:
             if self.page_refresh_interval > 0:
                 if now > self.last_page_refresh + self.page_refresh_interval*60:
                     self.register_pages()
-                    
+                    self.last_page_refresh = time.time()
+
             if self.file_refresh_interval > 0:
                 if now > self.last_file_refresh + self.file_refresh_interval*60:
                     self.register_files()
+                    self.last_file_refresh = time.time()
 
             time.sleep(self.job_interval)
 
