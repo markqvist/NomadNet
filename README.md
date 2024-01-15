@@ -23,7 +23,7 @@ If you'd rather want to use an LXMF client with a graphical user interface, you 
  - Page caching in browser
 
 ## Current Status
-The current version of the program should be considered a beta release. The program works well, but there will most probably be bugs and possibly sub-optimal performance in some scenarios. On the other hand, this is the ideal time to have an influence on the direction of the development of Nomad Network. To do so, join the discussion, report bugs and request features here on the GitHub project.
+The current version of the program should be considered a beta release. The program works well, but there will most probably be bugs and possibly sub-optimal performance in some scenarios.
 
 ## How do I get started?
 The easiest way to install Nomad Network is via pip:
@@ -120,6 +120,22 @@ $ docker run -d \
 # Send daemon log output to console instead of file
 $ docker run -i ghcr.io/markqvist/nomadnet:master --daemon --console
 ```
+
+## Tools & Extensions
+
+Nomad Network is a very flexible and extensible platform, and a variety of community-provided tools, utilities and node-side extensions exist:
+
+- [NomadForum](https://codeberg.org/AutumnSpark1226/nomadForum) ([GitHub mirror](https://github.com/AutumnSpark1226/nomadForum))
+- [NomadForecast](https://github.com/faragher/NomadForecast)
+- [micron-blog](https://github.com/randogoth/micron-blog)
+- [md2mu](https://github.com/randogoth/md2mu)
+- [Any2MicronConverter](https://github.com/SebastianObi/Any2MicronConverter)
+- [Some nomadnet page examples](https://github.com/SebastianObi/NomadNet-Pages)
+- [More nomadnet page examples](https://github.com/epenguins/NomadNet_pages)
+- [LXMF-Bot](https://github.com/randogoth/lxmf-bot)
+- [LXMF Messageboard](https://github.com/chengtripp/lxmf_messageboard)
+- [LXMEvent](https://github.com/faragher/LXMEvent)
+- [LXMF Tools](https://github.com/SebastianObi/LXMF-Tools)
 
 ## Help & Discussion
 
