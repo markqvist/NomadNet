@@ -163,9 +163,8 @@ class GuideDisplay():
             entry.display_topic(entry.display_topic, entry.topic_name)
 
     def set_content_widgets(self, new_content):
-        options = self.columns.options(width_type="weight", width_amount=1-GuideDisplay.list_width)
+        options = self.columns.options(width_type="weight", width_amount=1-GuideDisplay.list_width, box_widget=True)
         pile = urwid.Pile(new_content)
-        #content = urwid.LineBox(urwid.Filler(pile, "top"))
         content = urwid.LineBox(urwid.AttrMap(ScrollBar(Scrollable(pile), thumb_char="\u2503", trough_char=" "), "scrollbar"))
 
         self.columns.contents[1] = (content, options)
@@ -398,7 +397,7 @@ You're currently located in the guide section of the program. I'm sorry I had to
 
 To get the most out of Nomad Network, you will need a terminal that supports UTF-8 and at least 256 colors, ideally true-color. If your terminal supports true-color, you can go to the `![ Config ]`! menu item, launch the editor and change the configuration.
 
-It is recommended to use a terminal size of at least 122x32. Nomad Network will work with smaller terminal sizes, but the interface might feel a bit cramped.
+It is recommended to use a terminal size of at least 135x32. Nomad Network will work with smaller terminal sizes, but the interface might feel a bit cramped.
 
 If you don't already have a Nerd Font installed (see https://www.nerdfonts.com/), I also highly recommend to do so, since it will greatly expand the amount of glyphs, icons and graphics that Nomad Network can use. Once you have your terminal set up with a Nerd Font, go to the `![ Config ]`! menu item and enable Nerd Fonts in the configuration instead of normal unicode glyphs.
 
@@ -1156,7 +1155,7 @@ To display literal content, for example source-code, or blocks of text that shou
 `=
 '''
 TOPIC_MARKUP += TOPIC_MARKUP.replace("`=", "\\`=") + "[ micron source for document goes here, we don't want infinite recursion now, do we? ]\n\\`="
-TOPIC_MARKUP += "\n`=\n\n>Closing Remarks\n\nIf you made it all the way here, you should be well equipped to write documents, pages and applications using micron and Nomad Network. Thank you for staying with me.\n\n`c\U0001F332\n"
+TOPIC_MARKUP += "\n`=\n\n>Closing Remarks\n\nIf you made it all the way here, you should be well equipped to write documents, pages and applications using micron and Nomad Network. Thank you for staying with me.\n"
 
 
 TOPICS = {

@@ -116,6 +116,7 @@ class MainDisplay():
 
     def show_log(self, user_data):
         self.sub_displays.active_display = self.sub_displays.log_display
+        self.sub_displays.log_display.show()
         self.update_active_sub_display()
 
     def show_guide(self, user_data):
@@ -125,6 +126,8 @@ class MainDisplay():
     def update_active_sub_display(self):
         self.frame.contents["body"] = (self.sub_displays.active().widget, None)
         self.update_active_shortcuts()
+        if self.sub_displays.active_display != self.sub_displays.log_display:
+            self.sub_displays.log_display.kill()
 
     def update_active_shortcuts(self):
         self.frame.contents["footer"] = (self.sub_displays.active().shortcuts().widget, None)

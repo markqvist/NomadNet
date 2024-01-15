@@ -268,10 +268,10 @@ class Scrollable(urwid.WidgetDecoration):
     def _get_original_widget_size(self, size):
         ow = self._original_widget
         sizing = ow.sizing()
-        if FIXED in sizing:
-            return ()
-        elif FLOW in sizing:
+        if FLOW in sizing:
             return (size[0],)
+        elif FIXED in sizing:
+            return ()
 
     def get_scrollpos(self, size=None, focus=False):
         """Current scrolling position
