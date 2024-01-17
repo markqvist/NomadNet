@@ -22,9 +22,6 @@ If you'd rather want to use an LXMF client with a graphical user interface, you 
  - An easy to use and bandwidth efficient markup language for writing pages
  - Page caching in browser
 
-## Current Status
-The current version of the program should be considered a beta release. The program works well, but there will most probably be bugs and possibly sub-optimal performance in some scenarios.
-
 ## How do I get started?
 The easiest way to install Nomad Network is via pip:
 
