@@ -607,7 +607,7 @@ class LinkSpec(urwid.AttrSpec):
         self.link_target = link_target
         self.link_fields = None
 
-        urwid.AttrSpec.__init__(self, orig_spec.foreground, orig_spec.background)
+        super().__init__(orig_spec.foreground, orig_spec.background)
 
 
 class LinkableText(urwid.Text):
@@ -617,7 +617,7 @@ class LinkableText(urwid.Text):
     signals = ["click", "change"]
 
     def __init__(self, text, align=None, cursor_position=0, delegate=None):
-        self.__super.__init__(text, align=align)
+        super().__init__(text, align=align)
         self.delegate = delegate
         self._cursor_position = 0
         self.key_timeout = 3
@@ -728,7 +728,7 @@ class LinkableText(urwid.Text):
 
     def render(self, size, focus=False):
         now = time.time()
-        c = self.__super.render(size, focus)
+        c = super().render(size, focus)
 
         if focus and (self.delegate == None or now < self.delegate.last_keypress+self.key_timeout):
             c = urwid.CompositeCanvas(c)

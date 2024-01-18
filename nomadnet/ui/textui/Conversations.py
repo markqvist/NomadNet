@@ -931,7 +931,7 @@ class ConversationWidget(urwid.WidgetWrap):
         if source_hash == None:
             self.frame = None
             display_widget = urwid.LineBox(urwid.Filler(urwid.Text("\n  No conversation selected"), "top"))
-            urwid.WidgetWrap.__init__(self, display_widget)
+            super().__init__(display_widget)
         else:
             if source_hash in ConversationsDisplay.cached_conversation_widgets:
                 return ConversationsDisplay.cached_conversation_widgets[source_hash]
@@ -999,7 +999,7 @@ class ConversationWidget(urwid.WidgetWrap):
                     self.frame
                 )
                 
-                urwid.WidgetWrap.__init__(self, self.display_widget)
+                super().__init__(self.display_widget)
 
     def clear_history_dialog(self):
         def dismiss_dialog(sender):
@@ -1323,7 +1323,7 @@ class LXMessageWidget(urwid.WidgetWrap):
             urwid.Text("")
         ])
 
-        urwid.WidgetWrap.__init__(self, display_widget)
+        super().__init__(display_widget)
 
 class SyncProgressBar(urwid.ProgressBar):
     def get_text(self):

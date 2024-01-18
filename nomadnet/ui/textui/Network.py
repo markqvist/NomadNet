@@ -246,7 +246,7 @@ class AnnounceInfo(urwid.WidgetWrap):
 
         self.display_widget = urwid.Filler(pile, valign=urwid.TOP, height=urwid.PACK)
 
-        urwid.WidgetWrap.__init__(self, urwid.LineBox(self.display_widget, title="Announce Info"))
+        super().__init__(urwid.LineBox(self.display_widget, title="Announce Info"))
 
 
 class AnnounceStreamEntry(urwid.WidgetWrap):
@@ -308,7 +308,7 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
         urwid.connect_signal(widget, "click", self.display_announce, announce)
 
         self.display_widget = urwid.AttrMap(widget, style, focus_style)
-        urwid.WidgetWrap.__init__(self, self.display_widget)
+        super().__init__(self.display_widget)
 
     def display_announce(self, event, announce):
       try:
@@ -390,7 +390,7 @@ class AnnounceStream(urwid.WidgetWrap):
         )
 
         self.display_widget = self.ilb
-        urwid.WidgetWrap.__init__(self, urwid.LineBox(self.display_widget, title="Announce Stream"))
+        super().__init__(urwid.LineBox(self.display_widget, title="Announce Stream"))
 
     def keypress(self, size, key):
         if key == "up" and (self.no_content or self.ilb.first_item_is_selected()):
@@ -706,7 +706,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
 
         self.display_widget = urwid.Filler(pile, valign=urwid.TOP, height=urwid.PACK)
 
-        urwid.WidgetWrap.__init__(self, urwid.LineBox(self.display_widget, title="Node Info"))
+        super().__init__(urwid.LineBox(self.display_widget, title="Node Info"))
 
 
 # Yes, this is weird. There is a bug in Urwid/ILB that causes
@@ -760,7 +760,7 @@ class KnownNodes(urwid.WidgetWrap):
             ])
             self.display_widget = urwid.Filler(self.pile, valign=urwid.TOP, height=urwid.PACK)
 
-        urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="Saved Nodes"), widget_style))
+        super().__init__(urwid.AttrMap(urwid.LineBox(self.display_widget, title="Saved Nodes"), widget_style))
 
     def keypress(self, size, key):
         if key == "up" and (self.no_content or self.ilb.first_item_is_selected()):
@@ -916,7 +916,7 @@ class NodeEntry(urwid.WidgetWrap):
 
         self.display_widget = urwid.AttrMap(widget, style, focus_style)
         self.display_widget.source_hash = source_hash
-        urwid.WidgetWrap.__init__(self, self.display_widget)
+        super().__init__(self.display_widget)
 
 
 class AnnounceTime(urwid.WidgetWrap):
@@ -927,7 +927,7 @@ class AnnounceTime(urwid.WidgetWrap):
         self.display_widget = urwid.Text("")
         self.update_time()
 
-        urwid.WidgetWrap.__init__(self, self.display_widget)
+        super().__init__(self.display_widget)
 
     def update_time(self):
         self.last_announce_string = "Never"
@@ -959,7 +959,7 @@ class NodeAnnounceTime(urwid.WidgetWrap):
         self.display_widget = urwid.Text("")
         self.update_time()
 
-        urwid.WidgetWrap.__init__(self, self.display_widget)
+        super().__init__(self.display_widget)
 
     def update_time(self):
         self.last_announce_string = "Never"
@@ -990,7 +990,7 @@ class NodeActiveConnections(urwid.WidgetWrap):
         self.display_widget = urwid.Text("")
         self.update_stat()
 
-        urwid.WidgetWrap.__init__(self, self.display_widget)
+        super().__init__(self.display_widget)
 
     def update_stat(self):
         self.stat_string = "None"
@@ -1021,7 +1021,7 @@ class NodeStorageStats(urwid.WidgetWrap):
         self.display_widget = urwid.Text("")
         self.update_stat()
 
-        urwid.WidgetWrap.__init__(self, self.display_widget)
+        super().__init__(self.display_widget)
 
     def update_stat(self):
         self.stat_string = "None"
@@ -1064,7 +1064,7 @@ class NodeTotalConnections(urwid.WidgetWrap):
         self.display_widget = urwid.Text("")
         self.update_stat()
 
-        urwid.WidgetWrap.__init__(self, self.display_widget)
+        super().__init__(self.display_widget)
 
     def update_stat(self):
         self.stat_string = "None"
@@ -1096,7 +1096,7 @@ class NodeTotalPages(urwid.WidgetWrap):
         self.display_widget = urwid.Text("")
         self.update_stat()
 
-        urwid.WidgetWrap.__init__(self, self.display_widget)
+        super().__init__(self.display_widget)
 
     def update_stat(self):
         self.stat_string = "None"
@@ -1128,7 +1128,7 @@ class NodeTotalFiles(urwid.WidgetWrap):
         self.display_widget = urwid.Text("")
         self.update_stat()
 
-        urwid.WidgetWrap.__init__(self, self.display_widget)
+        super().__init__(self.display_widget)
 
     def update_stat(self):
         self.stat_string = "None"
@@ -1244,7 +1244,7 @@ class LocalPeer(urwid.WidgetWrap):
             ]
         )
 
-        urwid.WidgetWrap.__init__(self, urwid.LineBox(self.display_widget, title="Local Peer Info"))
+        super().__init__(urwid.LineBox(self.display_widget, title="Local Peer Info"))
 
     def start(self):
         self.t_last_announce.start()
@@ -1420,7 +1420,7 @@ class NodeInfo(urwid.WidgetWrap):
 
         self.display_widget = pile
 
-        urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="Local Node Info"), widget_style))
+        super().__init__(urwid.AttrMap(urwid.LineBox(self.display_widget, title="Local Node Info"), widget_style))
 
     def start(self):
         if self.app.node != None:
@@ -1443,7 +1443,7 @@ class UpdatingText(urwid.WidgetWrap):
         self.append_text = append_text
         self.update()
 
-        urwid.WidgetWrap.__init__(self, self.display_widget)
+        super().__init__(self.display_widget)
 
     def update(self):
         self.value = self.value_method()
@@ -1485,7 +1485,7 @@ class NetworkStats(urwid.WidgetWrap):
 
         self.display_widget = urwid.LineBox(pile, title="Network Stats")
 
-        urwid.WidgetWrap.__init__(self, self.display_widget)
+        super().__init__(self.display_widget)
 
     def start(self):
         self.w_heard_peers.start()
@@ -1674,7 +1674,7 @@ class LXMFPeers(urwid.WidgetWrap):
             pl = len(self.peer_list)
         else:
             pl = 0
-        urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title=f"LXMF Propagation Peers ({pl})"), widget_style))
+        super().__init__(urwid.AttrMap(urwid.LineBox(self.display_widget, title=f"LXMF Propagation Peers ({pl})"), widget_style))
 
     def keypress(self, size, key):
         if key == "up" and (self.no_content or self.ilb.first_item_is_selected()):
@@ -1800,7 +1800,7 @@ class LXMFPeerEntry(urwid.WidgetWrap):
         widget = ListEntry(sym+" "+display_str+"\n  "+alive_string+", last heard "+pretty_date(int(peer.last_heard))+"\n  "+str(len(peer.unhandled_messages))+" unhandled LXMs, "+RNS.prettysize(peer.link_establishment_rate/8, "b")+"/s LER")
         self.display_widget = urwid.AttrMap(widget, style, focus_style)
         self.display_widget.destination_hash = destination_hash
-        urwid.WidgetWrap.__init__(self, self.display_widget)
+        super().__init__(self.display_widget)
 
 
 def pretty_date(time=False):

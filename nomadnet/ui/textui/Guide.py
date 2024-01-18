@@ -75,7 +75,7 @@ class GuideEntry(urwid.WidgetWrap):
         style = "topic_list_normal"
         focus_style = "list_focus"
         self.display_widget = urwid.AttrMap(widget, style, focus_style)
-        urwid.WidgetWrap.__init__(self, self.display_widget)
+        super().__init__(self.display_widget)
 
     def display_topic(self, event, topic):
         markup = TOPICS[topic]
@@ -125,7 +125,7 @@ class TopicList(urwid.WidgetWrap):
             highlight_offFocus="list_off_focus"
         )
 
-        urwid.WidgetWrap.__init__(self, urwid.LineBox(self.ilb, title="Topics"))
+        super().__init__(urwid.LineBox(self.ilb, title="Topics"))
 
 
     def keypress(self, size, key):

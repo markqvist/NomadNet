@@ -39,7 +39,7 @@ class LogTerminal(urwid.WidgetWrap):
             escape_sequence="up",
             main_loop=self.app.ui.loop,
         )
-        urwid.WidgetWrap.__init__(self, self.log_term)
+        super().__init__(self.log_term)
 
     def terminate(self):
         self.log_term.terminate()
