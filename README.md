@@ -132,6 +132,7 @@ Nomad Network is a very flexible and extensible platform, and a variety of commu
 - [LXMF-Bot](https://github.com/randogoth/lxmf-bot)
 - [LXMF Messageboard](https://github.com/chengtripp/lxmf_messageboard)
 - [LXMEvent](https://github.com/faragher/LXMEvent)
+- [POPR](https://github.com/faragher/POPR)
 - [LXMF Tools](https://github.com/SebastianObi/LXMF-Tools)
 
 ## Help & Discussion
