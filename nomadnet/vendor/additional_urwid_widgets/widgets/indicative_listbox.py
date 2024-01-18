@@ -269,11 +269,13 @@ class IndicativeListBox(urwid.WidgetWrap):
             
             # mousewheel up
             elif button == 4.0:
-                was_handeled = self._pass_key_to_contained_listbox(modified_size, "page up")
+                # was_handeled = self._pass_key_to_contained_listbox(modified_size, "page up")
+                was_handeled = self._pass_key_to_contained_listbox(modified_size, "up")
                 
             # mousewheel down
             elif button == 5.0:
-                was_handeled = self._pass_key_to_contained_listbox(modified_size, "page down")
+                # was_handeled = self._pass_key_to_contained_listbox(modified_size, "page down")
+                was_handeled = self._pass_key_to_contained_listbox(modified_size, "down")
                 
             focus_position_after_input = self.get_selected_position()
             
