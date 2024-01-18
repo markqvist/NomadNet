@@ -27,13 +27,13 @@ class BrowserFrame(urwid.Frame):
             self.delegate.save_node_dialog()
         elif key == "ctrl g":
             nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.sub_displays.network_display.toggle_fullscreen()
-        elif self.get_focus() == "body":
+        elif self.focus_position == "body":
             if key == "down" or key == "up":
                 try:
                     if hasattr(self.delegate, "page_pile") and self.delegate.page_pile:
                         def df(loop, user_data):
                             st = None
-                            nf = self.delegate.page_pile.get_focus()
+                            nf = self.delegate.page_pile.focus
                             if hasattr(nf, "key_timeout"):
                                 st = nf
                             elif hasattr(nf, "original_widget"):
@@ -279,7 +279,10 @@ class Browser:
         self.browser_footer = urwid.Text("")
 
         self.page_pile = None
-        self.browser_body = urwid.Filler(urwid.Text("Disconnected\n"+self.g["arrow_l"]+"  "+self.g["arrow_r"], align="center"), "middle")
+        self.browser_body = urwid.Filler(
+            urwid.Text("Disconnected\n"+self.g["arrow_l"]+"  "+self.g["arrow_r"], align=urwid.CENTER),
+            urwid.MIDDLE,
+        )
 
         self.frame = BrowserFrame(self.browser_body, header=self.browser_header, footer=self.browser_footer)
         self.frame.delegate = self
@@ -306,28 +309,29 @@ class Browser:
             self.update_display()
 
         columns = urwid.Columns([
-            ("weight", 0.5, urwid.Text(" ")),
+            (urwid.WEIGHT, 0.5, urwid.Text(" ")),
             (8, urwid.Button("Back", on_press=back_action)),
-            ("weight", 0.5, urwid.Text(" "))
+            (urwid.WEIGHT, 0.5, urwid.Text(" ")),
         ])
 
         if len(self.attr_maps) > 0:
             pile = urwid.Pile([
-                    urwid.Text("!\n\n"+self.status_text()+"\n", align="center"),
-                    columns
+                urwid.Text("!\n\n"+self.status_text()+"\n", align=urwid.CENTER),
+                columns
             ])
         else:
-            pile = urwid.Pile([
-                    urwid.Text("!\n\n"+self.status_text(), align="center")
-            ])
+            pile = urwid.Pile([urwid.Text("!\n\n"+self.status_text(), align=urwid.CENTER)])
 
-        return urwid.Filler(pile, "middle")
+        return urwid.Filler(pile, urwid.MIDDLE)
     
     def update_display(self):
         if self.status == Browser.DISCONECTED:
             self.display_widget.set_attr_map({None: "inactive_text"})
             self.page_pile = None
-            self.browser_body = urwid.Filler(urwid.Text("Disconnected\n"+self.g["arrow_l"]+"  "+self.g["arrow_r"], align="center"), "middle")
+            self.browser_body = urwid.Filler(
+                urwid.Text("Disconnected\n"+self.g["arrow_l"]+"  "+self.g["arrow_r"], align=urwid.CENTER),
+                urwid.MIDDLE,
+            )
             self.browser_footer = urwid.Text("")
             self.browser_header = urwid.Text("")
             self.linebox.set_title("Remote Node")
@@ -354,7 +358,10 @@ class Browser:
             
             elif self.status <= Browser.REQUEST_SENT:
                 if len(self.attr_maps) == 0:
-                    self.browser_body = urwid.Filler(urwid.Text("Retrieving\n["+self.current_url()+"]", align="center"), "middle")
+                    self.browser_body = urwid.Filler(
+                        urwid.Text("Retrieving\n["+self.current_url()+"]", align=urwid.CENTER),
+                        urwid.MIDDLE,
+                    )
 
                 self.browser_footer = self.make_status_widget()
             
@@ -608,7 +615,7 @@ class Browser:
             self.load_page()
 
     def close_dialogs(self):
-        options = self.delegate.columns.options("weight", self.delegate.right_area_width)
+        options = self.delegate.columns.options(urwid.WEIGHT, self.delegate.right_area_width)
         self.delegate.columns.contents[1] = (self.display_widget, options)
 
     def url_dialog(self):
@@ -629,7 +636,11 @@ class Browser:
         dialog = UrlDialogLineBox(
             urwid.Pile([
                 e_url,
-                urwid.Columns([("weight", 0.45, urwid.Button("Cancel", on_press=dismiss_dialog)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Go", on_press=confirmed))])
+                urwid.Columns([
+                    (urwid.WEIGHT, 0.45, urwid.Button("Cancel", on_press=dismiss_dialog)),
+                    (urwid.WEIGHT, 0.1, urwid.Text("")),
+                    (urwid.WEIGHT, 0.45, urwid.Button("Go", on_press=confirmed)),
+                ])
             ]), title="Enter URL"
         )
         e_url.confirmed = confirmed
@@ -637,9 +648,18 @@ class Browser:
         dialog.delegate = self
         bottom = self.display_widget
 
-        overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 65), valign="middle", height="pack", left=2, right=2)
+        overlay = urwid.Overlay(
+            dialog,
+            bottom,
+            align=urwid.CENTER,
+            width=(urwid.RELATIVE, 65),
+            valign=urwid.MIDDLE,
+            height=urwid.PACK,
+            left=2,
+            right=2,
+        )
 
-        options = self.delegate.columns.options("weight", self.delegate.right_area_width)
+        options = self.delegate.columns.options(urwid.WEIGHT, self.delegate.right_area_width)
         self.delegate.columns.contents[1] = (overlay, options)
         self.delegate.columns.focus_position = 1
 
@@ -663,7 +683,11 @@ class Browser:
         dialog = UrlDialogLineBox(
             urwid.Pile([
                 urwid.Text("Save connected node"+disp_str+" "+RNS.prettyhexrep(self.destination_hash)+" to Known Nodes?\n"),
-                urwid.Columns([("weight", 0.45, urwid.Button("Cancel", on_press=dismiss_dialog)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Save", on_press=confirmed))])
+                urwid.Columns([
+                    (urwid.WEIGHT, 0.45, urwid.Button("Cancel", on_press=dismiss_dialog)),
+                    (urwid.WEIGHT, 0.1, urwid.Text("")),
+                    (urwid.WEIGHT, 0.45, urwid.Button("Save", on_press=confirmed)),
+                ])
             ]), title="Save Node"
         )
 
@@ -671,9 +695,18 @@ class Browser:
         dialog.delegate = self
         bottom = self.display_widget
 
-        overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 50), valign="middle", height="pack", left=2, right=2)
+        overlay = urwid.Overlay(
+            dialog,
+            bottom,
+            align=urwid.CENTER,
+            width=(urwid.RELATIVE, 50),
+            valign=urwid.MIDDLE,
+            height=urwid.PACK,
+            left=2,
+            right=2,
+        )
 
-        options = self.delegate.columns.options("weight", self.delegate.right_area_width)
+        options = self.delegate.columns.options(urwid.WEIGHT, self.delegate.right_area_width)
         self.delegate.columns.contents[1] = (overlay, options)
         self.delegate.columns.focus_position = 1
 

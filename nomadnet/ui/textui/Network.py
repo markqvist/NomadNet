@@ -52,7 +52,7 @@ class ListEntry(urwid.Text):
 class AnnounceInfo(urwid.WidgetWrap):
     def keypress(self, size, key):
         if key == "esc":
-            options = self.parent.left_pile.options(height_type="weight", height_amount=1)
+            options = self.parent.left_pile.options(height_type=urwid.WEIGHT, height_amount=1)
             self.parent.left_pile.contents[0] = (self.parent.announce_stream_display, options)
         else:
             return super(AnnounceInfo, self).keypress(size, key)
@@ -115,7 +115,7 @@ class AnnounceInfo(urwid.WidgetWrap):
             style         = "list_untrusted"
 
         def show_announce_stream(sender):
-            options = self.parent.left_pile.options(height_type="weight", height_amount=1)
+            options = self.parent.left_pile.options(height_type=urwid.WEIGHT, height_amount=1)
             self.parent.left_pile.contents[0] = (self.parent.announce_stream_display, options)
 
         def connect(sender):
@@ -187,52 +187,64 @@ class AnnounceInfo(urwid.WidgetWrap):
                 RNS.log("Error while setting active propagation node from announce. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
         if is_node:
-            type_button = ("weight", 0.45, urwid.Button("Connect", on_press=connect))
-            msg_button =  ("weight", 0.45, urwid.Button("Msg Op", on_press=msg_op))
-            save_button = ("weight", 0.45, urwid.Button("Save", on_press=save_node))
+            type_button = (urwid.WEIGHT, 0.45, urwid.Button("Connect", on_press=connect))
+            msg_button =  (urwid.WEIGHT, 0.45, urwid.Button("Msg Op", on_press=msg_op))
+            save_button = (urwid.WEIGHT, 0.45, urwid.Button("Save", on_press=save_node))
         elif is_pn:
-            type_button = ("weight", 0.45, urwid.Button("Use as default", on_press=use_pn))
+            type_button = (urwid.WEIGHT, 0.45, urwid.Button("Use as default", on_press=use_pn))
             save_button = None
         else:
-            type_button = ("weight", 0.45, urwid.Button("Converse", on_press=converse))
+            type_button = (urwid.WEIGHT, 0.45, urwid.Button("Converse", on_press=converse))
             save_button = None
 
         if is_node:
-            button_columns = urwid.Columns([("weight", 0.45, urwid.Button("Back", on_press=show_announce_stream)), ("weight", 0.1, urwid.Text("")), type_button, ("weight", 0.1, urwid.Text("")), msg_button, ("weight", 0.1, urwid.Text("")), save_button])
+            button_columns = urwid.Columns([
+                (urwid.WEIGHT, 0.45, urwid.Button("Back", on_press=show_announce_stream)),
+                (urwid.WEIGHT, 0.1, urwid.Text("")),
+                type_button,
+                (urwid.WEIGHT, 0.1, urwid.Text("")),
+                msg_button,
+                (urwid.WEIGHT, 0.1, urwid.Text("")),
+                save_button,
+            ])
         else:
-            button_columns = urwid.Columns([("weight", 0.45, urwid.Button("Back", on_press=show_announce_stream)), ("weight", 0.1, urwid.Text("")), type_button])
+            button_columns = urwid.Columns([
+                (urwid.WEIGHT, 0.45, urwid.Button("Back", on_press=show_announce_stream)),
+                (urwid.WEIGHT, 0.1, urwid.Text("")),
+                type_button,
+            ])
 
         pile_widgets = []
 
         if is_pn:
             pile_widgets = [
-                urwid.Text("Time  : "+ts_string, align="left"),
-                urwid.Text("Addr  : "+addr_str, align="left"),
-                urwid.Text("Type  : "+type_string, align="left"),
+                urwid.Text("Time  : "+ts_string, align=urwid.LEFT),
+                urwid.Text("Addr  : "+addr_str, align=urwid.LEFT),
+                urwid.Text("Type  : "+type_string, align=urwid.LEFT),
                 urwid.Divider(g["divider1"]),
                 button_columns
             ]
 
         else:
             pile_widgets = [
-                urwid.Text("Time  : "+ts_string, align="left"),
-                urwid.Text("Addr  : "+addr_str, align="left"),
-                urwid.Text("Type  : "+type_string, align="left"),
-                urwid.Text("Name  : "+display_str, align="left"),
-                urwid.Text(["Trust : ", (style, trust_str)], align="left"),
+                urwid.Text("Time  : "+ts_string, align=urwid.LEFT),
+                urwid.Text("Addr  : "+addr_str, align=urwid.LEFT),
+                urwid.Text("Type  : "+type_string, align=urwid.LEFT),
+                urwid.Text("Name  : "+display_str, align=urwid.LEFT),
+                urwid.Text(["Trust : ", (style, trust_str)], align=urwid.LEFT),
                 urwid.Divider(g["divider1"]),
-                urwid.Text(["Announce Data: \n", (data_style, data_str)], align="left"),
+                urwid.Text(["Announce Data: \n", (data_style, data_str)], align=urwid.LEFT),
                 urwid.Divider(g["divider1"]),
                 button_columns
             ]
 
             if is_node:
-                operator_entry = urwid.Text("Oprtr : "+op_str, align="left")
+                operator_entry = urwid.Text("Oprtr : "+op_str, align=urwid.LEFT)
                 pile_widgets.insert(4, operator_entry)
 
         pile = urwid.Pile(pile_widgets)
 
-        self.display_widget = urwid.Filler(pile, valign="top", height="pack")
+        self.display_widget = urwid.Filler(pile, valign=urwid.TOP, height=urwid.PACK)
 
         urwid.WidgetWrap.__init__(self, urwid.LineBox(self.display_widget, title="Announce Info"))
 
@@ -302,7 +314,7 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
       try:
         parent = self.app.ui.main_display.sub_displays.network_display
         info_widget = AnnounceInfo(announce, parent, self.app)
-        options = parent.left_pile.options(height_type="weight", height_amount=1)
+        options = parent.left_pile.options(height_type=urwid.WEIGHT, height_amount=1)
         parent.left_pile.contents[0] = (info_widget, options)
       
       except KeyError as e:
@@ -313,17 +325,21 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
             def close_req(sender):
                 self.delegate.parent.close_list_dialogs()
 
-            dialog_pile.contents[0] = (urwid.Text("\nKeys requested from network\n", align="center"), options)
+            dialog_pile.contents[0] = (urwid.Text("\nKeys requested from network\n", align=urwid.CENTER), options)
             RNS.Transport.request_path(announce[1])
 
         confirmed_button = urwid.Button("Request keys", on_press=confirmed)
 
         dialog_pile = urwid.Pile([
-            urwid.Text("The keys for the announced destination could not be recalled. You can wait for an announce to arrive, or request the keys from the network.\n", align="center"),
+            urwid.Text(
+                "The keys for the announced destination could not be recalled. "
+                "You can wait for an announce to arrive, or request the keys from the network.\n",
+                align=urwid.CENTER,
+            ),
             urwid.Columns([
-                ("weight", 0.45, confirmed_button),
-                ("weight", 0.1, urwid.Text("")),
-                ("weight", 0.45, urwid.Button("Close", on_press=dismiss_dialog)),
+                (urwid.WEIGHT, 0.45, confirmed_button),
+                (urwid.WEIGHT, 0.1, urwid.Text("")),
+                (urwid.WEIGHT, 0.45, urwid.Button("Close", on_press=dismiss_dialog)),
             ])
         ])
 
@@ -335,9 +351,18 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
         dialog.delegate = self.delegate.parent
         bottom = self.delegate
 
-        overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+        overlay = urwid.Overlay(
+            dialog,
+            bottom,
+            align=urwid.CENTER,
+            width=urwid.RELATIVE_100,
+            valign=urwid.MIDDLE,
+            height=urwid.PACK,
+            left=2,
+            right=2,
+        )
 
-        options = self.delegate.parent.left_pile.options("weight", 1)
+        options = self.delegate.parent.left_pile.options(urwid.WEIGHT, 1)
         self.delegate.parent.left_pile.contents[0] = (overlay, options)
 
     def timestamp(self):
@@ -369,7 +394,7 @@ class AnnounceStream(urwid.WidgetWrap):
 
     def keypress(self, size, key):
         if key == "up" and (self.no_content or self.ilb.first_item_is_selected()):
-            nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.set_focus("header")
+            nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.focus_position = "header"
         elif key == "ctrl x":
             self.delete_selected_entry()
             
@@ -464,7 +489,7 @@ class ListDialogLineBox(urwid.LineBox):
 class KnownNodeInfo(urwid.WidgetWrap):
     def keypress(self, size, key):
         if key == "esc":
-            options = self.parent.left_pile.options(height_type="weight", height_amount=1)
+            options = self.parent.left_pile.options(height_type=urwid.WEIGHT, height_amount=1)
             self.parent.left_pile.contents[0] = (self.parent.known_nodes_display, options)
         else:
             return super(KnownNodeInfo, self).keypress(size, key)
@@ -559,7 +584,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
             op_str = "Unknown"
 
         def show_known_nodes(sender):
-            options = self.parent.left_pile.options(height_type="weight", height_amount=1)
+            options = self.parent.left_pile.options(height_type=urwid.WEIGHT, height_amount=1)
             self.parent.left_pile.contents[0] = (self.parent.known_nodes_display, options)
 
         def connect(sender):
@@ -630,21 +655,21 @@ class KnownNodeInfo(urwid.WidgetWrap):
 
             show_known_nodes(None)
 
-        back_button = ("weight", 0.2, urwid.Button("Back", on_press=show_known_nodes))
-        connect_button = ("weight", 0.2, urwid.Button("Connect", on_press=connect))
-        save_button = ("weight", 0.2, urwid.Button("Save", on_press=save_node))
-        msg_button = ("weight", 0.2, urwid.Button("Msg Op", on_press=msg_op))
-        bdiv = ("weight", 0.02, urwid.Text(""))
+        back_button = (urwid.WEIGHT, 0.2, urwid.Button("Back", on_press=show_known_nodes))
+        connect_button = (urwid.WEIGHT, 0.2, urwid.Button("Connect", on_press=connect))
+        save_button = (urwid.WEIGHT, 0.2, urwid.Button("Save", on_press=save_node))
+        msg_button = (urwid.WEIGHT, 0.2, urwid.Button("Msg Op", on_press=msg_op))
+        bdiv = (urwid.WEIGHT, 0.02, urwid.Text(""))
 
         button_columns = urwid.Columns([back_button, bdiv, connect_button, bdiv, msg_button, bdiv, save_button])
 
         pile_widgets = [
-            urwid.Text("Type      : "+type_string, align="left"),
+            urwid.Text("Type      : "+type_string, align=urwid.LEFT),
             e_name,
-            urwid.Text("Node Addr : "+addr_str, align="left"),
+            urwid.Text("Node Addr : "+addr_str, align=urwid.LEFT),
             e_sort,
             urwid.Divider(g["divider1"]),
-            urwid.Text(lxmf_addr_str, align="center"),
+            urwid.Text(lxmf_addr_str, align=urwid.CENTER),
             urwid.Divider(g["divider1"]),
             propagation_node_checkbox,
             connect_identify_checkbox,
@@ -656,7 +681,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
             button_columns
         ]
 
-        operator_entry = urwid.Text("Operator  : "+op_str, align="left")
+        operator_entry = urwid.Text("Operator  : "+op_str, align=urwid.LEFT)
         pile_widgets.insert(3, operator_entry)
 
         hops = RNS.Transport.hops_to(source_hash)
@@ -670,7 +695,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
         else:
             hops_str = "Unknown"
 
-        operator_entry = urwid.Text("Distance  : "+hops_str, align="left")
+        operator_entry = urwid.Text("Distance  : "+hops_str, align=urwid.LEFT)
         pile_widgets.insert(4, operator_entry)
 
         pile = urwid.Pile(pile_widgets)
@@ -679,7 +704,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
         button_columns.focus_position = 0
 
 
-        self.display_widget = urwid.Filler(pile, valign="top", height="pack")
+        self.display_widget = urwid.Filler(pile, valign=urwid.TOP, height=urwid.PACK)
 
         urwid.WidgetWrap.__init__(self, urwid.LineBox(self.display_widget, title="Node Info"))
 
@@ -694,9 +719,9 @@ class ExceptionHandlingListBox(IndicativeListBox):
 
         except Exception as e:
             if key == "up":
-                nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.set_focus("header")
+                nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.focus_position = "header"
             elif key == "down":
-                nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.sub_displays.network_display.left_pile.set_focus(1)
+                nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.sub_displays.network_display.left_pile.focus_position = 1
             else:
                 RNS.log("An error occurred while processing an interface event. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
@@ -723,14 +748,23 @@ class KnownNodes(urwid.WidgetWrap):
         else:
             self.no_content = True
             widget_style = "inactive_text"
-            self.pile = urwid.Pile([urwid.Text(("warning_text", g["info"]+"\n"), align="center"), SelectText(("warning_text", "Currently, no nodes are saved\n\nCtrl+L to view the announce stream\n\n"), align="center")])
-            self.display_widget = urwid.Filler(self.pile, valign="top", height="pack")
+            self.pile = urwid.Pile([
+                urwid.Text(("warning_text", g["info"]+"\n"), align=urwid.CENTER),
+                SelectText(
+                    (
+                        "warning_text",
+                        "Currently, no nodes are saved\n\nCtrl+L to view the announce stream\n\n",
+                    ),
+                    align=urwid.CENTER,
+                ),
+            ])
+            self.display_widget = urwid.Filler(self.pile, valign=urwid.TOP, height=urwid.PACK)
 
         urwid.WidgetWrap.__init__(self, urwid.AttrMap(urwid.LineBox(self.display_widget, title="Saved Nodes"), widget_style))
 
     def keypress(self, size, key):
         if key == "up" and (self.no_content or self.ilb.first_item_is_selected()):
-            nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.set_focus("header")
+            nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.focus_position = "header"
         elif key == "ctrl x":
             self.delete_selected_entry()
             
@@ -757,27 +791,27 @@ class KnownNodes(urwid.WidgetWrap):
 
         def show_info(sender):
             info_widget = KnownNodeInfo(source_hash)
-            options = parent.left_pile.options(height_type="weight", height_amount=1)
+            options = parent.left_pile.options(height_type=urwid.WEIGHT, height_amount=1)
             parent.left_pile.contents[0] = (info_widget, options)
 
 
         dialog = ListDialogLineBox(
             urwid.Pile([
-                urwid.Text("Connect to node\n"+self.app.directory.simplest_display_str(source_hash)+"\n", align="center"),
+                urwid.Text("Connect to node\n"+self.app.directory.simplest_display_str(source_hash)+"\n", align=urwid.CENTER),
                 urwid.Columns([
-                    ("weight", 0.45, urwid.Button("Yes", on_press=confirmed)),
-                    ("weight", 0.1, urwid.Text("")),
-                    ("weight", 0.45, urwid.Button("No", on_press=dismiss_dialog)),
-                    ("weight", 0.1, urwid.Text("")),
-                    ("weight", 0.45, urwid.Button("Info", on_press=show_info))])
+                    (urwid.WEIGHT, 0.45, urwid.Button("Yes", on_press=confirmed)),
+                    (urwid.WEIGHT, 0.1, urwid.Text("")),
+                    (urwid.WEIGHT, 0.45, urwid.Button("No", on_press=dismiss_dialog)),
+                    (urwid.WEIGHT, 0.1, urwid.Text("")),
+                    (urwid.WEIGHT, 0.45, urwid.Button("Info", on_press=show_info))])
             ]), title="?"
         )
         dialog.delegate = self.delegate
         bottom = self
 
-        overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+        overlay = urwid.Overlay(dialog, bottom, align=urwid.CENTER, width=urwid.RELATIVE_100, valign=urwid.MIDDLE, height=urwid.PACK, left=2, right=2)
 
-        options = self.delegate.left_pile.options("weight", 1)
+        options = self.delegate.left_pile.options(urwid.WEIGHT, 1)
         self.delegate.left_pile.contents[0] = (overlay, options)
 
     def delete_selected_entry(self):
@@ -796,16 +830,29 @@ class KnownNodes(urwid.WidgetWrap):
 
             dialog = ListDialogLineBox(
                 urwid.Pile([
-                    urwid.Text("Delete Node\n"+self.app.directory.simplest_display_str(source_hash)+"\n", align="center"),
-                    urwid.Columns([("weight", 0.45, urwid.Button("Yes", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("No", on_press=dismiss_dialog))])
+                    urwid.Text("Delete Node\n"+self.app.directory.simplest_display_str(source_hash)+"\n", align=urwid.CENTER),
+                    urwid.Columns([
+                        (urwid.WEIGHT, 0.45, urwid.Button("Yes", on_press=confirmed)),
+                        (urwid.WEIGHT, 0.1, urwid.Text("")),
+                        (urwid.WEIGHT, 0.45, urwid.Button("No", on_press=dismiss_dialog)),
+                    ])
                 ]), title="?"
             )
             dialog.delegate = self.delegate
             bottom = self
 
-            overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+            overlay = urwid.Overlay(
+                dialog,
+                bottom,
+                align=urwid.CENTER,
+                width=urwid.RELATIVE_100,
+                valign=urwid.MIDDLE,
+                height=urwid.PACK,
+                left=2,
+                right=2,
+            )
 
-            options = self.delegate.left_pile.options("weight", 1)
+            options = self.delegate.left_pile.options(urwid.WEIGHT, 1)
             self.delegate.left_pile.contents[0] = (overlay, options)
 
 
@@ -1130,45 +1177,45 @@ class LocalPeer(urwid.WidgetWrap):
 
             dialog = DialogLineBox(
                 urwid.Pile([
-                    urwid.Text("\n\n\nSaved\n\n", align="center"),
+                    urwid.Text("\n\n\nSaved\n\n", align=urwid.CENTER),
                     urwid.Button("OK", on_press=dismiss_dialog)
                 ]), title=g["info"]
             )
             dialog.delegate = self
             bottom = self
 
-            #overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=4, right=4)
+            #overlay = urwid.Overlay(dialog, bottom, align=urwid.CENTER, width=urwid.RELATIVE_100, valign=urwid.MIDDLE, height=urwid.PACK, left=4, right=4)
             overlay = dialog
-            options = self.parent.left_pile.options(height_type="pack", height_amount=None)
+            options = self.parent.left_pile.options(height_type=urwid.PACK, height_amount=None)
             self.dialog_open = True
             self.parent.left_pile.contents[1] = (overlay, options)
 
         def announce_query(sender):
             def dismiss_dialog(sender):
                 self.dialog_open = False
-                options = self.parent.left_pile.options(height_type="pack", height_amount=None)
+                options = self.parent.left_pile.options(height_type=urwid.PACK, height_amount=None)
                 self.parent.left_pile.contents[1] = (LocalPeer(self.app, self.parent), options)
 
             self.app.announce_now()
 
             dialog = DialogLineBox(
                 urwid.Pile([
-                    urwid.Text("\n\n\nAnnounce Sent\n\n\n", align="center"),
+                    urwid.Text("\n\n\nAnnounce Sent\n\n\n", align=urwid.CENTER),
                     urwid.Button("OK", on_press=dismiss_dialog)
                 ]), title=g["info"]
             )
             dialog.delegate = self
             bottom = self
 
-            #overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=4, right=4)
+            #overlay = urwid.Overlay(dialog, bottom, align=urwid.CENTER, width=urwid.RELATIVE_100, valign=urwid.MIDDLE, height=urwid.PACK, left=4, right=4)
             overlay = dialog
             
             self.dialog_open = True
-            options = self.parent.left_pile.options(height_type="pack", height_amount=None)
+            options = self.parent.left_pile.options(height_type=urwid.PACK, height_amount=None)
             self.parent.left_pile.contents[1] = (overlay, options)
 
         def node_info_query(sender):
-            options = self.parent.left_pile.options(height_type="pack", height_amount=None)
+            options = self.parent.left_pile.options(height_type=urwid.PACK, height_amount=None)
             self.parent.left_pile.contents[1] = (self.parent.node_info_display, options)
 
         if LocalPeer.announce_timer == None:
@@ -1189,7 +1236,11 @@ class LocalPeer(urwid.WidgetWrap):
                 self.t_last_announce,
                 announce_button,
                 urwid.Divider(g["divider1"]),
-                urwid.Columns([("weight", 0.45, urwid.Button("Save", on_press=save_query)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Node Info", on_press=node_info_query))])
+                urwid.Columns([
+                    (urwid.WEIGHT, 0.45, urwid.Button("Save", on_press=save_query)),
+                    (urwid.WEIGHT, 0.1, urwid.Text("")),
+                    (urwid.WEIGHT, 0.45, urwid.Button("Node Info", on_press=node_info_query)),
+                ])
             ]
         )
 
@@ -1217,7 +1268,7 @@ class NodeInfo(urwid.WidgetWrap):
         widget_style = ""
 
         def show_peer_info(sender):
-            options = self.parent.left_pile.options(height_type="pack", height_amount=None)
+            options = self.parent.left_pile.options(height_type=urwid.PACK, height_amount=None)
             self.parent.left_pile.contents[1] = (LocalPeer(self.app, self.parent), options)
         
         if self.app.enable_node:
@@ -1241,25 +1292,25 @@ class NodeInfo(urwid.WidgetWrap):
             def announce_query(sender):
                 def dismiss_dialog(sender):
                     self.dialog_open = False
-                    options = self.parent.left_pile.options(height_type="pack", height_amount=None)
+                    options = self.parent.left_pile.options(height_type=urwid.PACK, height_amount=None)
                     self.parent.left_pile.contents[1] = (NodeInfo(self.app, self.parent), options)
 
                 self.app.node.announce()
 
                 dialog = DialogLineBox(
                     urwid.Pile([
-                        urwid.Text("\n\n\nAnnounce Sent\n\n", align="center"),
+                        urwid.Text("\n\n\nAnnounce Sent\n\n", align=urwid.CENTER),
                         urwid.Button("OK", on_press=dismiss_dialog)
                     ]), title=g["info"]
                 )
                 dialog.delegate = self
                 bottom = self
 
-                #overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=4, right=4)
+                #overlay = urwid.Overlay(dialog, bottom, align=urwid.CENTER, width=urwid.RELATIVE_100, valign=urwid.MIDDLE, height=urwid.PACK, left=4, right=4)
                 overlay = dialog
                 
                 self.dialog_open = True
-                options = self.parent.left_pile.options(height_type="pack", height_amount=None)
+                options = self.parent.left_pile.options(height_type=urwid.PACK, height_amount=None)
                 self.parent.left_pile.contents[1] = (overlay, options)
 
             def connect_query(sender):
@@ -1308,7 +1359,7 @@ class NodeInfo(urwid.WidgetWrap):
                 self.t_total_files.update_stat()
 
             lxmf_addr_str = g["sent"]+" LXMF Propagation Node Address is "+RNS.prettyhexrep(RNS.Destination.hash_from_name_and_identity("lxmf.propagation", self.app.node.destination.identity))
-            e_lxmf = urwid.Text(lxmf_addr_str, align="center")
+            e_lxmf = urwid.Text(lxmf_addr_str, align=urwid.CENTER)
 
             announce_button = urwid.Button("Announce", on_press=announce_query)
             connect_button = urwid.Button("Browse", on_press=connect_query)
@@ -1329,13 +1380,13 @@ class NodeInfo(urwid.WidgetWrap):
                     self.t_total_files,
                     urwid.Divider(g["divider1"]),
                     urwid.Columns([
-                        ("weight", 5, urwid.Button("Back", on_press=show_peer_info)),
-                        ("weight", 0.5, urwid.Text("")),
-                        ("weight", 6, connect_button),
-                        ("weight", 0.5, urwid.Text("")),
-                        ("weight", 8, reset_button),
-                        ("weight", 0.5, urwid.Text("")),
-                        ("weight", 7, announce_button),
+                        (urwid.WEIGHT, 5, urwid.Button("Back", on_press=show_peer_info)),
+                        (urwid.WEIGHT, 0.5, urwid.Text("")),
+                        (urwid.WEIGHT, 6, connect_button),
+                        (urwid.WEIGHT, 0.5, urwid.Text("")),
+                        (urwid.WEIGHT, 8, reset_button),
+                        (urwid.WEIGHT, 0.5, urwid.Text("")),
+                        (urwid.WEIGHT, 7, announce_button),
                     ])
                 ])
             else:
@@ -1351,20 +1402,20 @@ class NodeInfo(urwid.WidgetWrap):
                 self.t_total_files,
                 urwid.Divider(g["divider1"]),
                 urwid.Columns([
-                    ("weight", 5, urwid.Button("Back", on_press=show_peer_info)),
-                    ("weight", 0.5, urwid.Text("")),
-                    ("weight", 6, connect_button),
-                    ("weight", 0.5, urwid.Text("")),
-                    ("weight", 8, reset_button),
-                    ("weight", 0.5, urwid.Text("")),
-                    ("weight", 7, announce_button),
+                    (urwid.WEIGHT, 5, urwid.Button("Back", on_press=show_peer_info)),
+                    (urwid.WEIGHT, 0.5, urwid.Text("")),
+                    (urwid.WEIGHT, 6, connect_button),
+                    (urwid.WEIGHT, 0.5, urwid.Text("")),
+                    (urwid.WEIGHT, 8, reset_button),
+                    (urwid.WEIGHT, 0.5, urwid.Text("")),
+                    (urwid.WEIGHT, 7, announce_button),
                 ])
             ])
         else:
             pile = urwid.Pile([
-                urwid.Text("\n"+g["info"], align="center"),
-                urwid.Text("\nThis instance is not hosting a node\n\n", align="center"),
-                urwid.Padding(urwid.Button("Back", on_press=show_peer_info), "center", "pack")
+                urwid.Text("\n"+g["info"], align=urwid.CENTER),
+                urwid.Text("\nThis instance is not hosting a node\n\n", align=urwid.CENTER),
+                urwid.Padding(urwid.Button("Back", on_press=show_peer_info), urwid.CENTER, urwid.PACK)
             ])
 
         self.display_widget = pile
@@ -1486,9 +1537,9 @@ class NetworkDisplay():
 
         self.list_display = 1
         self.left_pile = NetworkLeftPile([
-            ("weight", 1, self.known_nodes_display),
-            # ("pack", self.network_stats_display),
-            ("pack", self.local_peer_display),
+            (urwid.WEIGHT, 1, self.known_nodes_display),
+            # (urwid.PACK, self.network_stats_display),
+            (urwid.PACK, self.local_peer_display),
         ])
 
         self.left_pile.parent = self
@@ -1499,10 +1550,10 @@ class NetworkDisplay():
 
         self.columns = urwid.Columns(
             [
-                # ("weight", NetworkDisplay.list_width, self.left_area),
-                # ("weight", self.right_area_width, self.right_area)
+                # (urwid.WEIGHT, NetworkDisplay.list_width, self.left_area),
+                # (urwid.WEIGHT, self.right_area_width, self.right_area)
                 (NetworkDisplay.given_list_width, self.left_area),
-                ("weight", 1, self.right_area)
+                (urwid.WEIGHT, 1, self.right_area)
             ],
             dividechars=0, focus_column=0
         )
@@ -1512,11 +1563,11 @@ class NetworkDisplay():
 
     def toggle_list(self):
         if self.list_display != 0:
-            options = self.left_pile.options(height_type="weight", height_amount=1)
+            options = self.left_pile.options(height_type=urwid.WEIGHT, height_amount=1)
             self.left_pile.contents[0] = (self.announce_stream_display, options)
             self.list_display = 0
         else:
-            options = self.left_pile.options(height_type="weight", height_amount=1)
+            options = self.left_pile.options(height_type=urwid.WEIGHT, height_amount=1)
             self.left_pile.contents[0] = (self.known_nodes_display, options)
             self.list_display = 1
 
@@ -1531,7 +1582,7 @@ class NetworkDisplay():
         self.widget.contents[0] = (self.left_area, options)
 
     def show_peers(self):
-        options = self.left_pile.options(height_type="weight", height_amount=1)
+        options = self.left_pile.options(height_type=urwid.WEIGHT, height_amount=1)
         self.left_pile.contents[0] = (self.lxmf_peers_display, options)
 
         if self.list_display != 0:
@@ -1548,7 +1599,7 @@ class NetworkDisplay():
                 
                 if selected_node_hash != None:
                     info_widget = KnownNodeInfo(selected_node_hash)
-                    options = parent.left_pile.options(height_type="weight", height_amount=1)
+                    options = parent.left_pile.options(height_type=urwid.WEIGHT, height_amount=1)
                     parent.left_pile.contents[0] = (info_widget, options)
     
     def focus_lists(self):
@@ -1567,10 +1618,10 @@ class NetworkDisplay():
 
     def close_list_dialogs(self):
         if self.list_display == 0:
-            options = self.left_pile.options(height_type="weight", height_amount=1)
+            options = self.left_pile.options(height_type=urwid.WEIGHT, height_amount=1)
             self.left_pile.contents[0] = (self.announce_stream_display, options)
         else:
-            options = self.left_pile.options(height_type="weight", height_amount=1)
+            options = self.left_pile.options(height_type=urwid.WEIGHT, height_amount=1)
             self.left_pile.contents[0] = (self.known_nodes_display, options)
 
     def start(self):
@@ -1613,8 +1664,11 @@ class LXMFPeers(urwid.WidgetWrap):
         else:
             self.no_content = True
             widget_style = "inactive_text"
-            self.pile = urwid.Pile([urwid.Text(("warning_text", g["info"]+"\n"), align="center"), SelectText(("warning_text", "Currently, no LXMF nodes are peered\n\n"), align="center")])
-            self.display_widget = urwid.Filler(self.pile, valign="top", height="pack")
+            self.pile = urwid.Pile([
+                urwid.Text(("warning_text", g["info"]+"\n"), align=urwid.CENTER),
+                SelectText(("warning_text", "Currently, no LXMF nodes are peered\n\n"), align=urwid.CENTER),
+            ])
+            self.display_widget = urwid.Filler(self.pile, valign=urwid.TOP, height=urwid.PACK)
 
         if hasattr(self, "peer_list") and self.peer_list:
             pl = len(self.peer_list)
@@ -1624,7 +1678,7 @@ class LXMFPeers(urwid.WidgetWrap):
 
     def keypress(self, size, key):
         if key == "up" and (self.no_content or self.ilb.first_item_is_selected()):
-            nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.set_focus("header")
+            nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.focus_position = "header"
         elif key == "ctrl x":
             self.delete_selected_entry()
         elif key == "ctrl r":
@@ -1665,16 +1719,21 @@ class LXMFPeers(urwid.WidgetWrap):
 
                     dialog = ListDialogLineBox(
                         urwid.Pile([
-                            urwid.Text("A delivery sync of all unhandled LXMs was manually requested for the selected node\n", align="center"),
-                            urwid.Columns([("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("OK", on_press=dismiss_dialog))])
-                        ]), title="!"
+                            urwid.Text("A delivery sync of all unhandled LXMs was manually requested for the selected node\n", align=urwid.CENTER),
+                            urwid.Columns([
+                                (urwid.WEIGHT, 0.1, urwid.Text("")),
+                                (urwid.WEIGHT, 0.45, urwid.Button("OK", on_press=dismiss_dialog)),
+                            ])
+                        ]),
+                        title="!",
+
                     )
                     dialog.delegate = self.delegate
                     bottom = self
 
-                    overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+                    overlay = urwid.Overlay(dialog, bottom, align=urwid.CENTER, width=urwid.RELATIVE_100, valign=urwid.MIDDLE, height=urwid.PACK, left=2, right=2)
 
-                    options = self.delegate.left_pile.options("weight", 1)
+                    options = self.delegate.left_pile.options(urwid.WEIGHT, 1)
                     self.delegate.left_pile.contents[0] = (overlay, options)
 
 

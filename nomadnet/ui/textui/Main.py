@@ -1,5 +1,4 @@
 import RNS
-import time
 
 from .Network import *
 from .Conversations import *
@@ -158,7 +157,7 @@ class MainDisplay():
 class MenuColumns(urwid.Columns):
     def keypress(self, size, key):
         if key == "tab" or key == "down":
-            self.handler.frame.set_focus("body")
+            self.handler.frame.focus_position = "body"
 
         return super(MenuColumns, self).keypress(size, key)
 
@@ -172,7 +171,7 @@ class MenuDisplay():
 
         self.menu_indicator  = urwid.Text("")
 
-        menu_text            = ("pack", self.menu_indicator)
+        menu_text            = (urwid.PACK, self.menu_indicator)
         button_network       = (11, MenuButton("Network", on_press=handler.show_network))
         button_conversations = (17, MenuButton("Conversations", on_press=handler.show_conversations))
         button_directory     = (13, MenuButton("Directory", on_press=handler.show_directory))

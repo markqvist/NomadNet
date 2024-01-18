@@ -15,7 +15,7 @@ class DirectoryDisplay():
         ])
 
         self.shortcuts_display = DirectoryDisplayShortcuts(self.app)
-        self.widget = urwid.Filler(pile, 'top')
+        self.widget = urwid.Filler(pile, urwid.TOP)
 
     def shortcuts(self):
         return self.shortcuts_display

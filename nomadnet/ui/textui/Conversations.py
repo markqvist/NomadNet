@@ -37,9 +37,9 @@ class ConversationsArea(urwid.LineBox):
         elif key == "ctrl g":
             self.delegate.toggle_fullscreen()
         elif key == "tab":
-            self.delegate.app.ui.main_display.frame.set_focus("header")
+            self.delegate.app.ui.main_display.frame.focus_position = "header"
         elif key == "up" and (self.delegate.ilb.first_item_is_selected() or self.delegate.ilb.body_is_empty()):
-            self.delegate.app.ui.main_display.frame.set_focus("header")
+            self.delegate.app.ui.main_display.frame.focus_position = "header"
         else:
             return super(ConversationsArea, self).keypress(size, key)
 
@@ -69,10 +69,10 @@ class ConversationsDisplay():
 
         self.columns_widget = urwid.Columns(
             [
-                # ("weight", ConversationsDisplay.list_width, self.listbox),
-                # ("weight", 1-ConversationsDisplay.list_width, self.make_conversation_widget(None))
+                # (urwid.WEIGHT, ConversationsDisplay.list_width, self.listbox),
+                # (urwid.WEIGHT, 1-ConversationsDisplay.list_width, self.make_conversation_widget(None))
                 (ConversationsDisplay.given_list_width, self.listbox),
-                ("weight", 1, self.make_conversation_widget(None))
+                (urwid.WEIGHT, 1, self.make_conversation_widget(None))
             ],
             dividechars=0, focus_column=0, box_columns=[0]
         )
@@ -105,7 +105,7 @@ class ConversationsDisplay():
             highlight_offFocus="list_off_focus"
         )
 
-        self.listbox = ConversationsArea(urwid.Filler(self.ilb, height=("relative", 100)), title="Conversations")
+        self.listbox = ConversationsArea(urwid.Filler(self.ilb, height=urwid.RELATIVE_100), title="Conversations")
         self.listbox.delegate = self
 
     def delete_selected_conversation(self):
@@ -127,17 +127,33 @@ class ConversationsDisplay():
 
         dialog = DialogLineBox(
             urwid.Pile([
-                urwid.Text("Delete conversation with\n"+self.app.directory.simplest_display_str(bytes.fromhex(source_hash))+"\n", align="center"),
-                urwid.Columns([("weight", 0.45, urwid.Button("Yes", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("No", on_press=dismiss_dialog))])
+                urwid.Text(
+                    "Delete conversation with\n"+self.app.directory.simplest_display_str(bytes.fromhex(source_hash))+"\n",
+                    align=urwid.CENTER,
+                ),
+                urwid.Columns([
+                    (urwid.WEIGHT, 0.45, urwid.Button("Yes", on_press=confirmed)),
+                    (urwid.WEIGHT, 0.1, urwid.Text("")),
+                    (urwid.WEIGHT, 0.45, urwid.Button("No", on_press=dismiss_dialog)),
+                ])
             ]), title="?"
         )
         dialog.delegate = self
         bottom = self.listbox
 
-        overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+        overlay = urwid.Overlay(
+            dialog,
+            bottom,
+            align=urwid.CENTER,
+            width=urwid.RELATIVE_100,
+            valign=urwid.MIDDLE,
+            height=urwid.PACK,
+            left=2,
+            right=2,
+        )
 
-        # options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
-        options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
+        # options = self.columns_widget.options(urwid.WEIGHT, ConversationsDisplay.list_width)
+        options = self.columns_widget.options(urwid.GIVEN, ConversationsDisplay.given_list_width)
         self.columns_widget.contents[0] = (overlay, options)
 
     def edit_selected_in_directory(self):
@@ -223,9 +239,12 @@ class ConversationsDisplay():
                 RNS.log("Could not save directory entry. The contained exception was: "+str(e), RNS.LOG_VERBOSE)
                 if not dialog_pile.error_display:
                     dialog_pile.error_display = True
-                    options = dialog_pile.options(height_type="pack")
+                    options = dialog_pile.options(height_type=urwid.PACK)
                     dialog_pile.contents.append((urwid.Text(""), options))
-                    dialog_pile.contents.append((urwid.Text(("error_text", "Could not save entry. Check your input."), align="center"), options))
+                    dialog_pile.contents.append((
+                        urwid.Text(("error_text", "Could not save entry. Check your input."), align=urwid.CENTER),
+                        options,)
+                    )
 
         source_is_known = self.app.directory.is_known(bytes.fromhex(source_hash_text))
         if source_is_known:
@@ -234,13 +253,23 @@ class ConversationsDisplay():
             def query_action(sender, user_data):
                 self.close_conversation_by_hash(user_data)
                 nomadnet.Conversation.query_for_peer(user_data)
-                options = dialog_pile.options(height_type="pack")
+                options = dialog_pile.options(height_type=urwid.PACK)
                 dialog_pile.contents = [
                     (urwid.Text("Query sent"), options),
                     (urwid.Button("OK", on_press=dismiss_dialog), options)
                 ]
             query_button = urwid.Button("Query network for keys", on_press=query_action, user_data=source_hash_text)
-            known_section = urwid.Pile([urwid.Divider(g["divider1"]), urwid.Text(g["info"]+"\n", align="center"), urwid.Text("The identity of this peer is not known, and you cannot currently send messages to it. You can query the network to obtain the identity.\n", align="center"), query_button, urwid.Divider(g["divider1"])])
+            known_section = urwid.Pile([
+                urwid.Divider(g["divider1"]),
+                urwid.Text(g["info"]+"\n", align=urwid.CENTER),
+                urwid.Text(
+                    "The identity of this peer is not known, and you cannot currently send messages to it. "
+                    "You can query the network to obtain the identity.\n",
+                    align=urwid.CENTER,
+                ),
+                query_button,
+                urwid.Divider(g["divider1"]),
+            ])
 
         dialog_pile = urwid.Pile([
             selected_id_widget,
@@ -253,7 +282,11 @@ class ConversationsDisplay():
             r_direct,
             r_propagated,
             known_section,
-            urwid.Columns([("weight", 0.45, urwid.Button("Save", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Back", on_press=dismiss_dialog))])
+            urwid.Columns([
+                (urwid.WEIGHT, 0.45, urwid.Button("Save", on_press=confirmed)),
+                (urwid.WEIGHT, 0.1, urwid.Text("")),
+                (urwid.WEIGHT, 0.45, urwid.Button("Back", on_press=dismiss_dialog)),
+            ])
         ])
         dialog_pile.error_display = False
 
@@ -261,10 +294,19 @@ class ConversationsDisplay():
         dialog.delegate = self
         bottom = self.listbox
 
-        overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+        overlay = urwid.Overlay(
+            dialog,
+            bottom,
+            align=urwid.CENTER,
+            width=urwid.RELATIVE_100,
+            valign=urwid.MIDDLE,
+            height=urwid.PACK,
+            left=2,
+            right=2,
+        )
 
-        # options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
-        options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
+        # options = self.columns_widget.options(urwid.WEIGHT, ConversationsDisplay.list_width)
+        options = self.columns_widget.options(urwid.GIVEN, ConversationsDisplay.given_list_width)
         self.columns_widget.contents[0] = (overlay, options)
 
     def new_conversation(self):
@@ -312,9 +354,15 @@ class ConversationsDisplay():
                 RNS.log("Could not start conversation. The contained exception was: "+str(e), RNS.LOG_VERBOSE)
                 if not dialog_pile.error_display:
                     dialog_pile.error_display = True
-                    options = dialog_pile.options(height_type="pack")
+                    options = dialog_pile.options(height_type=urwid.PACK)
                     dialog_pile.contents.append((urwid.Text(""), options))
-                    dialog_pile.contents.append((urwid.Text(("error_text", "Could not start conversation. Check your input."), align="center"), options))
+                    dialog_pile.contents.append((
+                        urwid.Text(
+                            ("error_text", "Could not start conversation. Check your input."),
+                            align=urwid.CENTER,
+                        ),
+                        options,
+                    ))
 
         dialog_pile = urwid.Pile([
             e_id,
@@ -324,7 +372,11 @@ class ConversationsDisplay():
             r_unknown,
             r_trusted,
             urwid.Text(""),
-            urwid.Columns([("weight", 0.45, urwid.Button("Create", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Back", on_press=dismiss_dialog))])
+            urwid.Columns([
+                (urwid.WEIGHT, 0.45, urwid.Button("Create", on_press=confirmed)),
+                (urwid.WEIGHT, 0.1, urwid.Text("")),
+                (urwid.WEIGHT, 0.45, urwid.Button("Back", on_press=dismiss_dialog)),
+            ])
         ])
         dialog_pile.error_display = False
 
@@ -332,10 +384,19 @@ class ConversationsDisplay():
         dialog.delegate = self
         bottom = self.listbox
 
-        overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+        overlay = urwid.Overlay(
+            dialog,
+            bottom,
+            align=urwid.CENTER,
+            width=urwid.RELATIVE_100,
+            valign=urwid.MIDDLE,
+            height=urwid.PACK,
+            left=2,
+            right=2,
+        )
 
-        # options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
-        options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
+        # options = self.columns_widget.options(urwid.WEIGHT, ConversationsDisplay.list_width)
+        options = self.columns_widget.options(urwid.GIVEN, ConversationsDisplay.given_list_width)
         self.columns_widget.contents[0] = (overlay, options)
 
     def ingest_lxm_uri(self):
@@ -366,7 +427,10 @@ class ConversationsDisplay():
                     rdialog_pile = urwid.Pile([
                         urwid.Text("Message was decoded, decrypted successfully, and added to your conversation list."),
                         urwid.Text(""),
-                        urwid.Columns([("weight", 0.6, urwid.Text("")), ("weight", 0.4, urwid.Button("OK", on_press=dismiss_dialog))])
+                        urwid.Columns([
+                            (urwid.WEIGHT, 0.6, urwid.Text("")),
+                            (urwid.WEIGHT, 0.4, urwid.Button("OK", on_press=dismiss_dialog)),
+                        ])
                     ])
                     rdialog_pile.error_display = False
 
@@ -374,16 +438,28 @@ class ConversationsDisplay():
                     rdialog.delegate = self
                     bottom = self.listbox
 
-                    roverlay = urwid.Overlay(rdialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+                    roverlay = urwid.Overlay(
+                        rdialog,
+                        bottom,
+                        align=urwid.CENTER,
+                        width=urwid.RELATIVE_100,
+                        valign=urwid.MIDDLE,
+                        height=urwid.PACK,
+                        left=2,
+                        right=2,
+                    )
 
-                    options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
+                    options = self.columns_widget.options(urwid.GIVEN, ConversationsDisplay.given_list_width)
                     self.columns_widget.contents[0] = (roverlay, options)
                 
                 elif ingest_result == duplicate_signal:
                     rdialog_pile = urwid.Pile([
                         urwid.Text("The decoded message has already been processed by the LXMF Router, and will not be ingested again."),
                         urwid.Text(""),
-                        urwid.Columns([("weight", 0.6, urwid.Text("")), ("weight", 0.4, urwid.Button("OK", on_press=dismiss_dialog))])
+                        urwid.Columns([
+                            (urwid.WEIGHT, 0.6, urwid.Text("")),
+                            (urwid.WEIGHT, 0.4, urwid.Button("OK", on_press=dismiss_dialog)),
+                        ])
                     ])
                     rdialog_pile.error_display = False
 
@@ -391,9 +467,18 @@ class ConversationsDisplay():
                     rdialog.delegate = self
                     bottom = self.listbox
 
-                    roverlay = urwid.Overlay(rdialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+                    roverlay = urwid.Overlay(
+                        rdialog,
+                        bottom,
+                        align=urwid.CENTER,
+                        width=urwid.RELATIVE_100,
+                        valign=urwid.MIDDLE,
+                        height=urwid.PACK,
+                        left=2,
+                        right=2,
+                    )
 
-                    options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
+                    options = self.columns_widget.options(urwid.GIVEN, ConversationsDisplay.given_list_width)
                     self.columns_widget.contents[0] = (roverlay, options)
                 
                 else:
@@ -405,7 +490,10 @@ class ConversationsDisplay():
                     rdialog_pile = urwid.Pile([
                         urwid.Text(propagation_text),
                         urwid.Text(""),
-                        urwid.Columns([("weight", 0.6, urwid.Text("")), ("weight", 0.4, urwid.Button("OK", on_press=dismiss_dialog))])
+                        urwid.Columns([
+                            (urwid.WEIGHT, 0.6, urwid.Text("")),
+                            (urwid.WEIGHT, 0.4, urwid.Button("OK", on_press=dismiss_dialog)),
+                        ])
                     ])
                     rdialog_pile.error_display = False
 
@@ -413,23 +501,36 @@ class ConversationsDisplay():
                     rdialog.delegate = self
                     bottom = self.listbox
 
-                    roverlay = urwid.Overlay(rdialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+                    roverlay = urwid.Overlay(
+                        rdialog,
+                        bottom,
+                        align=urwid.CENTER,
+                        width=urwid.RELATIVE_100,
+                        valign=urwid.MIDDLE,
+                        height=urwid.PACK,
+                        left=2,
+                        right=2,
+                    )
 
-                    options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
+                    options = self.columns_widget.options(urwid.GIVEN, ConversationsDisplay.given_list_width)
                     self.columns_widget.contents[0] = (roverlay, options)
 
             except Exception as e:
                 RNS.log("Could not ingest LXM URI. The contained exception was: "+str(e), RNS.LOG_VERBOSE)
                 if not dialog_pile.error_display:
                     dialog_pile.error_display = True
-                    options = dialog_pile.options(height_type="pack")
+                    options = dialog_pile.options(height_type=urwid.PACK)
                     dialog_pile.contents.append((urwid.Text(""), options))
-                    dialog_pile.contents.append((urwid.Text(("error_text", "Could ingest LXM from URI data. Check your input."), align="center"), options))
+                    dialog_pile.contents.append((urwid.Text(("error_text", "Could ingest LXM from URI data. Check your input."), align=urwid.CENTER), options))
 
         dialog_pile = urwid.Pile([
             e_uri,
             urwid.Text(""),
-            urwid.Columns([("weight", 0.45, urwid.Button("Ingest", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("Back", on_press=dismiss_dialog))])
+            urwid.Columns([
+                (urwid.WEIGHT, 0.45, urwid.Button("Ingest", on_press=confirmed)),
+                (urwid.WEIGHT, 0.1, urwid.Text("")),
+                (urwid.WEIGHT, 0.45, urwid.Button("Back", on_press=dismiss_dialog)),
+            ])
         ])
         dialog_pile.error_display = False
 
@@ -437,9 +538,18 @@ class ConversationsDisplay():
         dialog.delegate = self
         bottom = self.listbox
 
-        overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+        overlay = urwid.Overlay(
+            dialog,
+            bottom,
+            align=urwid.CENTER,
+            width=urwid.RELATIVE_100,
+            valign=urwid.MIDDLE,
+            height=urwid.PACK,
+            left=2,
+            right=2,
+        )
 
-        options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
+        options = self.columns_widget.options(urwid.GIVEN, ConversationsDisplay.given_list_width)
         self.columns_widget.contents[0] = (overlay, options)
 
     def delete_conversation(self, source_hash):
@@ -471,7 +581,7 @@ class ConversationsDisplay():
         r_mall = urwid.RadioButton(max_messages_group, "Download all", state=True)
         r_mlim = urwid.RadioButton(max_messages_group, "Limit to", state=False)
         ie_lim = urwid.IntEdit("", 5)
-        rbs = urwid.GridFlow([r_mlim, ie_lim], 12, 1, 0, align="left")
+        rbs = urwid.GridFlow([r_mlim, ie_lim], 12, 1, 0, align=urwid.LEFT)
 
         def sync_now(sender):
             limit = None
@@ -495,7 +605,11 @@ class ConversationsDisplay():
         else:
             sync_button = hidden_sync_button
 
-        button_columns = urwid.Columns([("weight", 0.45, sync_button), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, cancel_button)])
+        button_columns = urwid.Columns([
+            (urwid.WEIGHT, 0.45, sync_button),
+            (urwid.WEIGHT, 0.1, urwid.Text("")),
+            (urwid.WEIGHT, 0.45, cancel_button),
+        ])
         real_sync_button.bc = button_columns
 
         pn_ident = None
@@ -518,7 +632,7 @@ class ConversationsDisplay():
 
             dialog = DialogLineBox(
                 urwid.Pile([
-                    urwid.Text(""+g["node"]+pn_display_str, align="center"),
+                    urwid.Text(""+g["node"]+pn_display_str, align=urwid.CENTER),
                     urwid.Divider(g["divider1"]),
                     sync_progress,
                     urwid.Divider(g["divider1"]),
@@ -529,12 +643,23 @@ class ConversationsDisplay():
                 ]), title="Message Sync"
             )
         else:
-            button_columns = urwid.Columns([("weight", 0.45, urwid.Text("" )), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, cancel_button)])
+            button_columns = urwid.Columns([
+                (urwid.WEIGHT, 0.45, urwid.Text("" )),
+                (urwid.WEIGHT, 0.1, urwid.Text("")),
+                (urwid.WEIGHT, 0.45, cancel_button),
+            ])
             dialog = DialogLineBox(
                 urwid.Pile([
                     urwid.Text(""),
-                    urwid.Text("No trusted nodes found, cannot sync!\n", align="center"),
-                    urwid.Text("To syncronise messages from the network, one or more nodes must be marked as trusted in the Known Nodes list, or a node must manually be selected as the default propagation node. Nomad Network will then automatically sync from the nearest trusted node, or the manually selected one.", align="left"),
+                    urwid.Text("No trusted nodes found, cannot sync!\n", align=urwid.CENTER),
+                    urwid.Text(
+                        "To synchronise messages from the network, "
+                        "one or more nodes must be marked as trusted in the Known Nodes list, "
+                        "or a node must manually be selected as the default propagation node. "
+                        "Nomad Network will then automatically sync from the nearest trusted node, "
+                        "or the manually selected one.",
+                        align=urwid.LEFT,
+                    ),
                     urwid.Text(""),
                     button_columns
                 ]), title="Message Sync"
@@ -550,10 +675,19 @@ class ConversationsDisplay():
         self.sync_dialog = dialog
         bottom = self.listbox
 
-        overlay = urwid.Overlay(dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+        overlay = urwid.Overlay(
+            dialog,
+            bottom,
+            align=urwid.CENTER,
+            width=urwid.RELATIVE_100,
+            valign=urwid.MIDDLE,
+            height=urwid.PACK,
+            left=2,
+            right=2,
+        )
 
-        # options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
-        options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
+        # options = self.columns_widget.options(urwid.WEIGHT, ConversationsDisplay.list_width)
+        options = self.columns_widget.options(urwid.GIVEN, ConversationsDisplay.given_list_width)
         self.columns_widget.contents[0] = (overlay, options)
 
     def update_sync_dialog(self, loop = None, sender = None):
@@ -561,9 +695,9 @@ class ConversationsDisplay():
             self.sync_dialog.sync_progress.set_completion(self.app.get_sync_progress())
 
             if self.app.get_sync_status() == "Idle" or self.app.message_router.propagation_transfer_state >= LXMF.LXMRouter.PR_COMPLETE:
-                self.sync_dialog.bc.contents[0] = (self.sync_dialog.real_sync_button, self.sync_dialog.bc.options("weight", 0.45))
+                self.sync_dialog.bc.contents[0] = (self.sync_dialog.real_sync_button, self.sync_dialog.bc.options(urwid.WEIGHT, 0.45))
             else:
-                self.sync_dialog.bc.contents[0] = (self.sync_dialog.hidden_sync_button, self.sync_dialog.bc.options("weight", 0.45))
+                self.sync_dialog.bc.contents[0] = (self.sync_dialog.hidden_sync_button, self.sync_dialog.bc.options(urwid.WEIGHT, 0.45))
 
             self.app.ui.loop.set_alarm_in(0.2, self.update_sync_dialog)
 
@@ -574,13 +708,22 @@ class ConversationsDisplay():
     def update_conversation_list(self):
         ilb_position = self.ilb.get_selected_position()
         self.update_listbox()
-        # options = self.columns_widget.options("weight", ConversationsDisplay.list_width)
-        options = self.columns_widget.options("given", ConversationsDisplay.given_list_width)
+        # options = self.columns_widget.options(urwid.WEIGHT, ConversationsDisplay.list_width)
+        options = self.columns_widget.options(urwid.GIVEN, ConversationsDisplay.given_list_width)
         if not (self.dialog_open and self.sync_dialog != None):
             self.columns_widget.contents[0] = (self.listbox, options)
         else:
             bottom = self.listbox
-            overlay = urwid.Overlay(self.sync_dialog, bottom, align="center", width=("relative", 100), valign="middle", height="pack", left=2, right=2)
+            overlay = urwid.Overlay(
+                self.sync_dialog,
+                bottom,
+                align=urwid.CENTER,
+                width=urwid.RELATIVE_100,
+                valign=urwid.MIDDLE,
+                height=urwid.PACK,
+                left=2,
+                right=2,
+            )
             self.columns_widget.contents[0] = (overlay, options)
 
         if ilb_position != None:
@@ -606,17 +749,17 @@ class ConversationsDisplay():
                 self.app.mark_conversation_read(self.currently_displayed_conversation)
 
         self.currently_displayed_conversation = source_hash
-        # options = self.widget.options("weight", 1-ConversationsDisplay.list_width)
-        options = self.widget.options("weight", 1)
+        # options = self.widget.options(urwid.WEIGHT, 1-ConversationsDisplay.list_width)
+        options = self.widget.options(urwid.WEIGHT, 1)
         self.widget.contents[1] = (self.make_conversation_widget(source_hash), options)
         if source_hash == None:
-            self.widget.set_focus_column(0)
+            self.widget.focus_position = 0
         else:
             if self.app.conversation_is_unread(source_hash):
                 self.app.mark_conversation_read(source_hash)
                 self.update_conversation_list()
 
-            self.widget.set_focus_column(1)
+            self.widget.focus_position = 1
             conversation_position = None
             index = 0
             for widget in self.list_widgets:
@@ -756,9 +899,9 @@ class MessageEdit(urwid.Edit):
             y = self.get_cursor_coords(size)[1]
             if y == 0:
                 if self.delegate.full_editor_active and self.name == "title_editor":
-                    self.delegate.frame.set_focus("body")
+                    self.delegate.frame.focus_position = "body"
                 elif not self.delegate.full_editor_active and self.name == "content_editor":
-                    self.delegate.frame.set_focus("body")
+                    self.delegate.frame.focus_position = "body"
                 else:
                     return super(MessageEdit, self).keypress(size, key)
             else:
@@ -769,11 +912,11 @@ class MessageEdit(urwid.Edit):
 
 class ConversationFrame(urwid.Frame):
     def keypress(self, size, key):
-        if self.get_focus() == "body":
+        if self.focus_position == "body":
             if key == "up" and self.delegate.messagelist.top_is_visible:
-                nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.set_focus("header")
+                nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.focus_position = "header"
             elif key == "down" and self.delegate.messagelist.bottom_is_visible:
-                self.set_focus("footer")
+                self.focus_position = "footer"
             else:
                 return super(ConversationFrame, self).keypress(size, key)
         elif key == "ctrl k":
@@ -815,7 +958,11 @@ class ConversationWidget(urwid.WidgetWrap):
 
                 header = None
                 if self.conversation.trust_level == DirectoryEntry.UNTRUSTED:
-                    header = urwid.AttrMap(urwid.Padding(urwid.Text(g["warning"]+" Warning: Conversation with untrusted peer "+g["warning"], align="center")), "msg_warning_untrusted")
+                    header = urwid.AttrMap(
+                        urwid.Padding(
+                            urwid.Text(g["warning"]+" Warning: Conversation with untrusted peer "+g["warning"], align=urwid.CENTER)),
+                        "msg_warning_untrusted",
+                    )
 
                 self.minimal_editor = urwid.AttrMap(msg_editor, "msg_editor")
                 self.minimal_editor.name = "minimal_editor"
@@ -867,17 +1014,30 @@ class ConversationWidget(urwid.WidgetWrap):
 
         dialog = DialogLineBox(
             urwid.Pile([
-                urwid.Text("Clear conversation history\n", align="center"),
-                urwid.Columns([("weight", 0.45, urwid.Button("Yes", on_press=confirmed)), ("weight", 0.1, urwid.Text("")), ("weight", 0.45, urwid.Button("No", on_press=dismiss_dialog))])
+                urwid.Text("Clear conversation history\n", align=urwid.CENTER),
+                urwid.Columns([
+                    (urwid.WEIGHT, 0.45, urwid.Button("Yes", on_press=confirmed)),
+                    (urwid.WEIGHT, 0.1, urwid.Text("")),
+                    (urwid.WEIGHT, 0.45, urwid.Button("No", on_press=dismiss_dialog)),
+                ])
             ]), title="?"
         )
         dialog.delegate = self
         bottom = self.messagelist
 
-        overlay = urwid.Overlay(dialog, bottom, align="center", width=34, valign="middle", height="pack", left=2, right=2)
+        overlay = urwid.Overlay(
+            dialog,
+            bottom,
+            align=urwid.CENTER,
+            width=34,
+            valign=urwid.MIDDLE,
+            height=urwid.PACK,
+            left=2,
+            right=2,
+        )
 
         self.frame.contents["body"] = (overlay, self.frame.options())
-        self.frame.set_focus("body")
+        self.frame.focus_position = "body"
     
     def toggle_editor(self):
         if self.full_editor_active:
@@ -894,7 +1054,17 @@ class ConversationWidget(urwid.WidgetWrap):
             if allowed:
                 self.frame.contents["footer"] = (self.minimal_editor, None)
             else:
-                warning = urwid.AttrMap(urwid.Padding(urwid.Text("\n"+g["info"]+"\n\nYou cannot currently message this peer, since it's identity keys are not known. The keys have been requested from the network and should arrive shortly, if available. Close this conversation and reopen it to try again.\n\nTo query the network manually, select this conversation in the conversation list, press Ctrl-E, and use the query button.\n", align="center")), "msg_header_caution")
+                warning = urwid.AttrMap(
+                    urwid.Padding(urwid.Text(
+                        "\n"+g["info"]+"\n\nYou cannot currently message this peer, since it's identity keys are not known. "
+                                       "The keys have been requested from the network and should arrive shortly, if available. "
+                                       "Close this conversation and reopen it to try again.\n\n"
+                                       "To query the network manually, select this conversation in the conversation list, "
+                                       "press Ctrl-E, and use the query button.\n",
+                        align=urwid.CENTER,
+                    )),
+                    "msg_header_caution",
+                )
                 self.frame.contents["footer"] = (warning, None)
 
     def toggle_focus_area(self):
@@ -905,9 +1075,9 @@ class ConversationWidget(urwid.WidgetWrap):
             pass
 
         if name == "messagelist":
-            self.frame.set_focus("footer")
+            self.frame.focus_position = "footer"
         elif name == "minimal_editor" or name == "full_editor":
-            self.frame.set_focus("body")
+            self.frame.focus_position = "body"
 
     def keypress(self, size, key):
         if key == "tab":
@@ -982,17 +1152,20 @@ class ConversationWidget(urwid.WidgetWrap):
 
         dialog = DialogLineBox(
             urwid.Pile([
-                urwid.Text("The paper message was saved to:\n\n"+str(path)+"\n", align="center"),
-                urwid.Columns([("weight", 0.6, urwid.Text("")), ("weight", 0.4, urwid.Button("OK", on_press=dismiss_dialog))])
+                urwid.Text("The paper message was saved to:\n\n"+str(path)+"\n", align=urwid.CENTER),
+                urwid.Columns([
+                    (urwid.WEIGHT, 0.6, urwid.Text("")),
+                    (urwid.WEIGHT, 0.4, urwid.Button("OK", on_press=dismiss_dialog)),
+                ])
             ]), title=g["papermsg"].replace(" ", "")
         )
         dialog.delegate = self
         bottom = self.messagelist
 
-        overlay = urwid.Overlay(dialog, bottom, align="center", width=60, valign="middle", height="pack", left=2, right=2)
+        overlay = urwid.Overlay(dialog, bottom, align=urwid.CENTER, width=60, valign=urwid.MIDDLE, height=urwid.PACK, left=2, right=2)
 
         self.frame.contents["body"] = (overlay, self.frame.options())
-        self.frame.set_focus("body")
+        self.frame.focus_position = "body"
 
     def print_paper_message_qr(self):
         content = self.content_editor.get_edit_text()
@@ -1044,25 +1217,28 @@ class ConversationWidget(urwid.WidgetWrap):
 
         dialog = DialogLineBox(
             urwid.Pile([
-                urwid.Text("Select the desired paper message output method.\nSaved files will be written to:\n\n"+str(self.app.downloads_path)+"\n", align="center"),
+                urwid.Text(
+                    "Select the desired paper message output method.\nSaved files will be written to:\n\n"+str(self.app.downloads_path)+"\n",
+                    align=urwid.CENTER,
+                ),
                 urwid.Columns([
-                    ("weight", 0.5, urwid.Button("Print QR", on_press=print_qr)),
-                    ("weight", 0.1, urwid.Text("")),
-                    ("weight", 0.5, urwid.Button("Save QR", on_press=save_qr)),
-                    ("weight", 0.1, urwid.Text("")),
-                    ("weight", 0.5, urwid.Button("Save URI", on_press=save_uri)),
-                    ("weight", 0.1, urwid.Text("")),
-                    ("weight", 0.5, urwid.Button("Cancel", on_press=dismiss_dialog))
+                    (urwid.WEIGHT, 0.5, urwid.Button("Print QR", on_press=print_qr)),
+                    (urwid.WEIGHT, 0.1, urwid.Text("")),
+                    (urwid.WEIGHT, 0.5, urwid.Button("Save QR", on_press=save_qr)),
+                    (urwid.WEIGHT, 0.1, urwid.Text("")),
+                    (urwid.WEIGHT, 0.5, urwid.Button("Save URI", on_press=save_uri)),
+                    (urwid.WEIGHT, 0.1, urwid.Text("")),
+                    (urwid.WEIGHT, 0.5, urwid.Button("Cancel", on_press=dismiss_dialog))
                 ])
             ]), title="Create Paper Message"
         )
         dialog.delegate = self
         bottom = self.messagelist
 
-        overlay = urwid.Overlay(dialog, bottom, align="center", width=60, valign="middle", height="pack", left=2, right=2)
+        overlay = urwid.Overlay(dialog, bottom, align=urwid.CENTER, width=60, valign=urwid.MIDDLE, height=urwid.PACK, left=2, right=2)
 
         self.frame.contents["body"] = (overlay, self.frame.options())
-        self.frame.set_focus("body")
+        self.frame.focus_position = "body"
 
     def paper_message_failed(self):
         def dismiss_dialog(sender):
@@ -1071,17 +1247,23 @@ class ConversationWidget(urwid.WidgetWrap):
 
         dialog = DialogLineBox(
             urwid.Pile([
-                urwid.Text("Could not output paper message,\ncheck your settings. See the log\nfile for any error messages.\n", align="center"),
-                urwid.Columns([("weight", 0.6, urwid.Text("")), ("weight", 0.4, urwid.Button("OK", on_press=dismiss_dialog))])
+                urwid.Text(
+                    "Could not output paper message,\ncheck your settings. See the log\nfile for any error messages.\n",
+                    align=urwid.CENTER,
+                ),
+                urwid.Columns([
+                    (urwid.WEIGHT, 0.6, urwid.Text("")),
+                    (urwid.WEIGHT, 0.4, urwid.Button("OK", on_press=dismiss_dialog)),
+                ])
             ]), title="!"
         )
         dialog.delegate = self
         bottom = self.messagelist
 
-        overlay = urwid.Overlay(dialog, bottom, align="center", width=34, valign="middle", height="pack", left=2, right=2)
+        overlay = urwid.Overlay(dialog, bottom, align=urwid.CENTER, width=34, valign=urwid.MIDDLE, height=urwid.PACK, left=2, right=2)
 
         self.frame.contents["body"] = (overlay, self.frame.options())
-        self.frame.set_focus("body")
+        self.frame.focus_position = "body"
 
     def close(self):
         self.delegate.close_conversation(self)

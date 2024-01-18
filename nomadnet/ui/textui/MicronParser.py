@@ -4,7 +4,6 @@ import random
 import time
 from urwid.util import is_mouse_press
 from urwid.text_layout import calc_coords
-import re
 
 DEFAULT_FG_DARK  = "ddd"
 DEFAULT_FG_LIGHT = "222"
@@ -162,7 +161,7 @@ def parse_line(line, state, url_delegate):
                         else:
                             tw = urwid.Text(o, align=state["align"])
                         
-                        widgets.append(("pack", tw))
+                        widgets.append((urwid.PACK, tw))
                     else:
                         if o["type"] == "field":
                             fw = o["width"]
