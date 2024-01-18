@@ -10,7 +10,6 @@ class LogDisplayShortcuts():
 
 class LogDisplay():
     def __init__(self, app):
-        import urwid
         self.app = app
         self.log_term = None
 
@@ -48,6 +47,6 @@ class LogTerminal(urwid.WidgetWrap):
 
     def keypress(self, size, key):
         if key == "up":
-            nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.set_focus("header")
+            nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.focus_position = "header"
             
         return super(LogTerminal, self).keypress(size, key)

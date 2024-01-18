@@ -12,13 +12,13 @@ class ConfigDisplayShortcuts():
 class ConfigFiller(urwid.WidgetWrap):
     def __init__(self, widget, app):
         self.app = app
-        self.filler = urwid.Filler(widget, "top")
+        self.filler = urwid.Filler(widget, urwid.TOP)
         super().__init__(self.filler)
 
 
     def keypress(self, size, key):
         if key == "up":
-            self.app.ui.main_display.frame.set_focus("header")
+            self.app.ui.main_display.frame.focus_position = "header"
             
         return super(ConfigFiller, self).keypress(size, key)
 
@@ -31,12 +31,20 @@ class ConfigDisplay():
             self.editor_term = EditorTerminal(self.app, self)
             self.widget = urwid.LineBox(self.editor_term)
             self.app.ui.main_display.update_active_sub_display()
-            self.app.ui.main_display.frame.set_focus("body")
+            self.app.ui.main_display.frame.focus_position = "body"
             self.editor_term.term.change_focus(True)
 
         pile = urwid.Pile([
-            urwid.Text(("body_text", "\nTo change the configuration, edit the config file located at:\n\n"+self.app.configpath+"\n\nRestart Nomad Network for changes to take effect\n"), align="center"),
-            urwid.Padding(urwid.Button("Open Editor", on_press=open_editor), width=15, align="center"),
+            urwid.Text(
+                (
+                    "body_text",
+                    "\nTo change the configuration, edit the config file located at:\n\n"
+                    +self.app.configpath
+                    +"\n\nRestart Nomad Network for changes to take effect\n",
+                ),
+                align=urwid.CENTER,
+            ),
+            urwid.Padding(urwid.Button("Open Editor", on_press=open_editor), width=15, align=urwid.CENTER),
         ])
 
         self.config_explainer = ConfigFiller(pile, self.app)
@@ -77,5 +85,5 @@ class EditorTerminal(urwid.WidgetWrap):
     def keypress(self, size, key):
         # TODO: Decide whether there should be a way to get out while editing
         #if key == "up":
-        #    nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.set_focus("header")   
+        #    nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.focus_position = "header"
         return super(EditorTerminal, self).keypress(size, key)

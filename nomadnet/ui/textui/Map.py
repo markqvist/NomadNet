@@ -15,7 +15,7 @@ class MapDisplay():
         ])
 
         self.shortcuts_display = MapDisplayShortcuts(self.app)
-        self.widget = urwid.Filler(pile, 'top')
+        self.widget = urwid.Filler(pile, urwid.TOP)
 
     def shortcuts(self):
         return self.shortcuts_display

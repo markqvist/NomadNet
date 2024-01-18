@@ -10,7 +10,7 @@ class GuideDisplayShortcuts():
         self.app = app
         g = app.ui.glyphs
 
-        self.widget = urwid.AttrMap(urwid.Padding(urwid.Text(""), align="left"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Padding(urwid.Text(""), align=urwid.LEFT), "shortcutbar")
 
 class ListEntry(urwid.Text):
     _selectable = True
@@ -130,7 +130,7 @@ class TopicList(urwid.WidgetWrap):
 
     def keypress(self, size, key):
         if key == "up" and (self.ilb.first_item_is_selected()):
-            nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.set_focus("header")
+            nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.focus_position = "header"
             
         return super(TopicList, self).keypress(size, key)
 
@@ -141,16 +141,16 @@ class GuideDisplay():
         self.app = app
         g = self.app.ui.glyphs
 
-        topic_text = urwid.Text("\n  No topic selected", align="left")
+        topic_text = urwid.Text("\n  No topic selected", align=urwid.LEFT)
 
         self.left_area  = TopicList(self.app, self)
-        self.right_area = urwid.LineBox(urwid.Filler(topic_text, "top"))
+        self.right_area = urwid.LineBox(urwid.Filler(topic_text, urwid.TOP))
 
 
         self.columns = urwid.Columns(
             [
-                ("weight", GuideDisplay.list_width, self.left_area),
-                ("weight", 1-GuideDisplay.list_width, self.right_area)
+                (urwid.WEIGHT, GuideDisplay.list_width, self.left_area),
+                (urwid.WEIGHT, 1-GuideDisplay.list_width, self.right_area)
             ],
             dividechars=0, focus_column=0
         )
@@ -163,7 +163,7 @@ class GuideDisplay():
             entry.display_topic(entry.display_topic, entry.topic_name)
 
     def set_content_widgets(self, new_content):
-        options = self.columns.options(width_type="weight", width_amount=1-GuideDisplay.list_width, box_widget=True)
+        options = self.columns.options(width_type=urwid.WEIGHT, width_amount=1-GuideDisplay.list_width, box_widget=True)
         pile = urwid.Pile(new_content)
         content = urwid.LineBox(urwid.AttrMap(ScrollBar(Scrollable(pile), thumb_char="\u2503", trough_char=" "), "scrollbar"))
 
