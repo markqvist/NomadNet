@@ -13,7 +13,7 @@ class ConfigFiller(urwid.WidgetWrap):
     def __init__(self, widget, app):
         self.app = app
         self.filler = urwid.Filler(widget, "top")
-        urwid.WidgetWrap.__init__(self, self.filler)
+        super().__init__(self.filler)
 
 
     def keypress(self, size, key):
@@ -71,7 +71,7 @@ class EditorTerminal(urwid.WidgetWrap):
 
         urwid.connect_signal(self.term, 'closed', quit_term)
 
-        urwid.WidgetWrap.__init__(self, self.term)
+        super().__init__(self.term)
 
 
     def keypress(self, size, key):
