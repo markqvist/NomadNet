@@ -125,6 +125,7 @@ class NomadNetworkApp:
         self.peer_announce_at_start  = True
         self.try_propagation_on_fail = True
         self.disable_propagation     = False
+        self.notify_on_new_message   = True
 
         self.periodic_lxmf_sync = True
         self.lxmf_sync_interval = 360*60
@@ -546,6 +547,9 @@ class NomadNetworkApp:
 
         nomadnet.Conversation.ingest(message, self)
 
+        if self.notify_on_new_message:
+            self.notify_message_recieved()
+
         if self.should_print(message):
             self.print_message(message)
 
@@ -649,6 +653,11 @@ class NomadNetworkApp:
             if os.path.isfile(self.conversationpath + "/" + source_hash + "/unread"):
                 os.unlink(self.conversationpath + "/" + source_hash + "/unread")
 
+    def notify_message_recieved(self):
+        if self.uimode == nomadnet.ui.UI_TEXT:
+            sys.stdout.write("\a")
+            sys.stdout.flush()
+
     def clear_tmp_dir(self):
         if os.path.isdir(self.tmpfilespath):
             for file in os.listdir(self.tmpfilespath):
@@ -725,6 +734,10 @@ class NomadNetworkApp:
                 if option == "compact_announce_stream":
                     value = self.config["client"].as_bool(option)
                     self.compact_stream = value
+
+                if option == "notify_on_new_message":
+                    value = self.config["client"].as_bool(option)
+                    self.notify_on_new_message = value
 
                 if option == "user_interface":
                     value = value.lower()
@@ -953,6 +966,7 @@ destination = file
 enable_client = yes
 user_interface = text
 downloads_path = ~/Downloads
+notify_on_new_message = yes
 
 # By default, the peer is announced at startup
 # to let other peers reach it immediately.
