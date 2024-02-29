@@ -664,52 +664,56 @@ class Browser:
         self.delegate.columns.focus_position = 1
 
     def save_node_dialog(self):
-        def dismiss_dialog(sender):
-            self.close_dialogs()
+        if self.destination_hash != None:
+            try:
+                def dismiss_dialog(sender):
+                    self.close_dialogs()
 
-        display_name = RNS.Identity.recall_app_data(self.destination_hash)
-        disp_str = ""
-        if display_name != None:
-            display_name = display_name.decode("utf-8")
-            disp_str = " \""+display_name+"\""
-            
-        def confirmed(sender):
-            node_entry = DirectoryEntry(self.destination_hash, display_name=display_name, hosts_node=True)
-            self.app.directory.remember(node_entry)
-            self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
+                display_name = RNS.Identity.recall_app_data(self.destination_hash)
+                disp_str = ""
+                if display_name != None:
+                    display_name = display_name.decode("utf-8")
+                    disp_str = " \""+display_name+"\""
+                    
+                def confirmed(sender):
+                    node_entry = DirectoryEntry(self.destination_hash, display_name=display_name, hosts_node=True)
+                    self.app.directory.remember(node_entry)
+                    self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
 
-            self.close_dialogs()
+                    self.close_dialogs()
 
-        dialog = UrlDialogLineBox(
-            urwid.Pile([
-                urwid.Text("Save connected node"+disp_str+" "+RNS.prettyhexrep(self.destination_hash)+" to Known Nodes?\n"),
-                urwid.Columns([
-                    (urwid.WEIGHT, 0.45, urwid.Button("Cancel", on_press=dismiss_dialog)),
-                    (urwid.WEIGHT, 0.1, urwid.Text("")),
-                    (urwid.WEIGHT, 0.45, urwid.Button("Save", on_press=confirmed)),
-                ])
-            ]), title="Save Node"
-        )
+                dialog = UrlDialogLineBox(
+                    urwid.Pile([
+                        urwid.Text("Save connected node"+disp_str+" "+RNS.prettyhexrep(self.destination_hash)+" to Known Nodes?\n"),
+                        urwid.Columns([
+                            (urwid.WEIGHT, 0.45, urwid.Button("Cancel", on_press=dismiss_dialog)),
+                            (urwid.WEIGHT, 0.1, urwid.Text("")),
+                            (urwid.WEIGHT, 0.45, urwid.Button("Save", on_press=confirmed)),
+                        ])
+                    ]), title="Save Node"
+                )
 
-        dialog.confirmed = confirmed
-        dialog.delegate = self
-        bottom = self.display_widget
+                dialog.confirmed = confirmed
+                dialog.delegate = self
+                bottom = self.display_widget
 
-        overlay = urwid.Overlay(
-            dialog,
-            bottom,
-            align=urwid.CENTER,
-            width=(urwid.RELATIVE, 50),
-            valign=urwid.MIDDLE,
-            height=urwid.PACK,
-            left=2,
-            right=2,
-        )
+                overlay = urwid.Overlay(
+                    dialog,
+                    bottom,
+                    align=urwid.CENTER,
+                    width=(urwid.RELATIVE, 50),
+                    valign=urwid.MIDDLE,
+                    height=urwid.PACK,
+                    left=2,
+                    right=2,
+                )
 
-        options = self.delegate.columns.options(urwid.WEIGHT, self.delegate.right_area_width)
-        self.delegate.columns.contents[1] = (overlay, options)
-        self.delegate.columns.focus_position = 1
+                options = self.delegate.columns.options(urwid.WEIGHT, self.delegate.right_area_width)
+                self.delegate.columns.contents[1] = (overlay, options)
+                self.delegate.columns.focus_position = 1
 
+            except Exception as e:
+                pass
 
     def load_page(self):
         if self.request_data == None:
