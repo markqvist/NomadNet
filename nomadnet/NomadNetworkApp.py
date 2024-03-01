@@ -119,13 +119,16 @@ class NomadNetworkApp:
         self.should_run_jobs        = True
         self.job_interval           = 5
         self.defer_jobs             = 90
-        self.page_refresh_interval = 0
+        self.page_refresh_interval  = 0
         self.file_refresh_interval  = 0
 
         self.peer_announce_at_start  = True
         self.try_propagation_on_fail = True
         self.disable_propagation     = False
         self.notify_on_new_message   = True
+
+        self.lxmf_max_propagation_size = None
+        self.lxmf_max_incoming_size    = None
 
         self.periodic_lxmf_sync = True
         self.lxmf_sync_interval = 360*60
@@ -283,7 +286,11 @@ class NomadNetworkApp:
 
         self.directory = nomadnet.Directory(self)
 
-        self.message_router = LXMF.LXMRouter(identity = self.identity, storagepath = self.storagepath, autopeer = True)
+        self.message_router = LXMF.LXMRouter(
+            identity = self.identity, storagepath = self.storagepath, autopeer = True,
+            propagation_limit = self.lxmf_max_propagation_size, delivery_limit = self.lxmf_max_incoming_size,
+        )
+
         self.message_router.register_delivery_callback(self.lxmf_delivery)
 
         for destination_hash in self.ignored_list:
@@ -731,6 +738,14 @@ class NomadNetworkApp:
                     else:
                         self.lxmf_sync_limit = None
 
+                if option == "max_accepted_size":
+                    value = self.config["client"].as_float(option)    
+
+                    if value > 0:
+                        self.lxmf_max_incoming_size = value
+                    else:
+                        self.lxmf_max_incoming_size = 500
+
                 if option == "compact_announce_stream":
                     value = self.config["client"].as_bool(option)
                     self.compact_stream = value
@@ -828,6 +843,14 @@ class NomadNetworkApp:
                 self.disable_propagation = False
             else:
                 self.disable_propagation = self.config["node"].as_bool("disable_propagation")
+
+            if not "max_transfer_size" in self.config["node"]:
+                self.lxmf_max_propagation_size = 256
+            else:
+                value = self.config["node"].as_float("max_transfer_size")
+                if value < 1:
+                    value = 1
+                self.lxmf_max_propagation_size = value
 
             if not "announce_at_start" in self.config["node"]:
                 self.node_announce_at_start = False
@@ -994,6 +1017,13 @@ lxmf_sync_interval = 360
 # the limit, and download everything every time.
 lxmf_sync_limit = 8
 
+# The maximum accepted unpacked size for mes-
+# sages received directly from other peers,
+# specified in kilobytes. Messages larger than
+# this will be rejected before the transfer
+# begins.
+max_accepted_size = 500
+
 # The announce stream will only show one entry
 # per destination or node by default. You can
 # change this to show as many announces as have
@@ -1081,6 +1111,18 @@ announce_at_start = Yes
 # be removed first. This setting is optional
 # and defaults to 2 gigabytes.
 # message_storage_limit = 2000
+
+# The maximum accepted transfer size per in-
+# coming propagation transfer, in kilobytes.
+# This also sets the upper limit for the size
+# of single messages accepted onto this node.
+#
+# If a node wants to propagate a larger number
+# of messages to this node, than what can fit
+# within this limit, it will prioritise sending
+# the smallest, newest messages first, and try
+# with any remaining messages at a later point.
+max_transfer_size = 256
 
 # You can tell the LXMF message router to
 # prioritise storage for one or more

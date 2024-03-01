@@ -516,6 +516,12 @@ On low-bandwidth networks, it can be useful to limit the amount of messages down
 <
 
 >>>
+`!max_accepted_size = 500`!
+>>>>
+The maximum accepted unpacked size for messages received directly from other peers, specified in kilobytes. Messages larger than this will be rejected before the transfer begins.
+<
+
+>>>
 `!compact_announce_stream = yes`!
 >>>>
 With this option enabled, Nomad Network will only display one entry in the announce stream per destination. Older announces are culled when a new one arrives.
@@ -651,6 +657,12 @@ By default, when Nomad Network is hosting a node, it will also run an LXMF propa
 `!message_storage_limit = 2000`!
 >>>>
 Configures the maximum amount of storage, in megabytes, that the LXMF Propagation Node will use to store messages.
+<
+
+>>>
+`!max_transfer_size = 256`!
+>>>>
+The maximum accepted transfer size per incoming propagation transfer, in kilobytes. This also sets the upper limit for the size of single messages accepted onto this propagation node. If a node wants to propagate a larger number of messages to this node, than what can fit within this limit, it will prioritise sending the smallest, newest messages first, and try with any remaining messages at a later point.
 <
 
 >>>
