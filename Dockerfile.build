@@ -1,0 +1,32 @@
+FROM python:alpine
+LABEL authors="Petr Blaha petr.blaha@cleverdata.cz"
+USER root
+RUN apk update
+RUN apk add  build-base libffi-dev cargo pkgconfig   linux-headers py3-virtualenv
+
+RUN addgroup -S myuser && adduser -S -G myuser myuser
+USER myuser
+WORKDIR /home/myuser
+
+RUN pip install --upgrade pip
+RUN pip install setuptools-rust pyopenssl cryptography
+
+
+ENV PATH="/home/myuser/.local/bin:${PATH}"
+
+################### BEGIN NomadNet ###########################################
+
+COPY --chown=myuser:myuser requirements.txt requirements.txt
+
+RUN pip install --user -r requirements.txt
+
+
+COPY --chown=myuser:myuser . .
+
+#Python create virtual environment
+RUN virtualenv /home/myuser/NomadNet/venv
+RUN source /home/myuser/NomadNet/venv/bin/activate
+
+RUN make all
+
+################### END NomadNet ###########################################
