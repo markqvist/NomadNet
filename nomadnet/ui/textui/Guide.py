@@ -300,7 +300,7 @@ To learn how to host your own node, read the `*Hosting a Node`* section of this 
 
 TOPIC_HOSTING = '''>Hosting a Node
 
-To host a node on the network, you must enable it in the configuration file, by setting `*enable_node`* directive to `*yes`*. You should also configure the other node-related parameters such as the node name and announce interval settings. Once node hosting has been enabled in the configuration, Nomad Network will start hosting your node as soon as the program is launched, and other peers on the network will be able to connect and interact with content on your node.
+To host a node on the network, you must enable it in the configuration file, by setting the `*enable_node`* directive to `*yes`*. You should also configure the other node-related parameters such as the node name and announce interval settings. Once node hosting has been enabled in the configuration, Nomad Network will start hosting your node as soon as the program is launched, and other peers on the network will be able to connect and interact with content on your node.
 
 By default, no content is defined, apart from a short placeholder home page. To learn how to add your own content, read on.
 
@@ -310,9 +310,12 @@ All nodes on the network will automatically participate in a distributed message
 
 When Nomad Network is configured to host a node, by default it also configures itself as an LXMF Propagation Node, and automatically discovers and peers with other propagation nodes on the network. This process is completely automatic and requires no configuration from the node operator.
 
-If there is already an abundance of Propagation Nodes on the network, or the operator simply wishes to host a pageserving-only node, Propagation Node hosting can be disabled in the configuration file.
+`!However`!, if there is already an abundance of Propagation Nodes on the network, or the operator simply wishes to host a pageserving-only node, Propagation Node hosting can be disabled in the configuration file.
 
-To view LXMF Propagation nodes that are currently peered with your node, go to the `![ Network ]`! part of the program and press `!Ctrl-P`!. In the list of peered Propagation Nodes, it is possible to break peering with a node by pressing `!Ctrl-X`!. It is also possible to request an immediate delivery sync of all unhandled messages for a node, by pressing `!Ctrl-R`!.
+To view LXMF Propagation nodes that are currently peered with your node, go to the `![ Network ]`! part of the program and press `!Ctrl-P`!. In the list of peered Propagation Nodes, it is possible to:
+
+ - Immediately break peering with a node by pressing `!Ctrl-X`!
+ - Request an immediate delivery sync of all unhandled messages for a node, by pressing `!Ctrl-R`!
 
 The distributed message store is resilient to intermittency, and will remain functional as long as at least one node remains on the network. Nodes that were offline for a time will automatically be synced up to date when they regain connectivity.
 
@@ -326,9 +329,9 @@ You can control how long a peer will cache your pages by including the cache hea
 
 >> Dynamic Pages
 
-You can use a preprocessor such as PHP, bash, Python (or whatever you prefer) to generate dynamic pages. To do so, just set executable permissions on the relevant page file, and be sure to include the interpreter at the beginning of the file, for example `!#!/usr/bin/python3`!.
+You can use a preprocessor such as PHP, bash, Python (or whatever you prefer) to generate dynamic pages and fully interactive applications running over Nomad Network. To do so, just set executable permissions on the relevant page file, and be sure to include the interpreter at the beginning of the file, for example `!#!/usr/bin/python3`!.
 
-Data from fields and link variables will be passed to these scipts or programs as environment variables, and can simply be read by any method for acessing such.
+Data from fields and link variables will be passed to these scipts or programs as environment variables, and can simply be read by any method for accessing such.
 
 In the `!examples`! directory, you can find various small examples for the use of this feature. The currently included examples are:
 
