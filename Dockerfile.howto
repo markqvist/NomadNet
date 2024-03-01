@@ -1,0 +1,6 @@
+# Run docker command one by one(all four), it will build NomadNet artifact and copy to dist directory.
+# No need to build locally and install dependencies
+docker build -t nomadnetdockerimage -f Dockerfile.build .
+docker run -d -it --name nomadnetdockercontainer nomadnetdockerimage /bin/sh
+docker cp nomadnetdockercontainer:/home/myuser/dist .
+docker rm -f nomadnetdockercontainer
