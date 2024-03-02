@@ -257,11 +257,12 @@ class Directory:
             if announced_display_name == None:
                 return self.directory_entries[source_hash].trust_level
             else:
-                for entry in self.directory_entries:
-                    e = self.directory_entries[entry]
-                    if e.display_name == announced_display_name:
-                        if e.source_hash != source_hash:
-                            return DirectoryEntry.WARNING
+                if not self.directory_entries[source_hash].trust_level == DirectoryEntry.TRUSTED:
+                    for entry in self.directory_entries:
+                        e = self.directory_entries[entry]
+                        if e.display_name == announced_display_name:
+                            if e.source_hash != source_hash:
+                                return DirectoryEntry.WARNING
 
                 return self.directory_entries[source_hash].trust_level
         else:
