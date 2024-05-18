@@ -1,6 +1,0 @@
-compiler==0.2.0
-configobj==5.0.8
-lxmf==0.3.2
-rns==0.5.7
-setuptools==68.0.0
-urwid==2.1.2
