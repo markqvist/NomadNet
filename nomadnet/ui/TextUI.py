@@ -97,10 +97,10 @@ GLYPHSETS = {
 }
 
 if platform.system() == "Darwin":
-    urm_char = " \uf0e0 "
+    urm_char = " \uf0e0"
     ur_char = "\uf0e0 "
 else:
-    urm_char = " \uf003 "
+    urm_char = " \uf003"
     ur_char = "\uf003 "
 
 GLYPHS = {
@@ -115,17 +115,17 @@ GLYPHS = {
     ("arrow_u",         "/\\",       "\u2191",      "\u2191"),
     ("arrow_d",         "\\/",       "\u2193",      "\u2193"),
     ("warning",         "!",         "\u26a0",      "\uf12a"),
-    ("info",            "i",         "\u2139",      "\ufb4d"),
+    ("info",            "i",         "\u2139",      "\U000f064e"),
     ("unread",          "[!]",       "\u2709",      ur_char),
     ("divider1",        "-",         "\u2504",      "\u2504"),
     ("peer",            "[P]",       "\u24c5 ",     "\uf415"),
-    ("node",            "[N]",       "\u24c3 ",     "\uf502"),
+    ("node",            "[N]",       "\u24c3 ",     "\U000f0002"),
     ("page",            "",          "\u25a4 ",     "\uf719 "),
-    ("speed",           "",          "\u25F7 ",     "\uf9c4"),
-    ("decoration_menu", " +",        " +",          " \uf93a"),
+    ("speed",           "",          "\u25F7 ",     "\U000f04c5 "),
+    ("decoration_menu", " +",        " +",          " \U000f043b"),
     ("unread_menu",     " !",        " \u2709",     urm_char),
     ("globe",           "",          "",            "\uf484"),
-    ("sent",            "/\\",       "\u2191",      "\ufbf4"),
+    ("sent",            "/\\",       "\u2191",      "\U000f0cd8"),
     ("papermsg",        "P",         "\u25a4",      "\uf719"),
     ("qrcode",          "QR",        "\u25a4",      "\uf029"),
 }

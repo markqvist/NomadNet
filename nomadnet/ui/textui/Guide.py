@@ -783,7 +783,7 @@ The following line should contain a grayscale gradient bar:
 
 Unicode Glyphs   : \u2713  \u2715  \u26a0  \u24c3  \u2193
 
-Nerd Font Glyphs : \uf484  \uf9c4 \uf719  \uf502  \uf415  \uf023  \uf06e
+Nerd Font Glyphs : \uf484  \U000f04c5  \U000f0219  \U000f0002  \uf415  \uf023  \uf06e
 '''
 
 
