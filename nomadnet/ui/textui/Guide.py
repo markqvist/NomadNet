@@ -486,6 +486,12 @@ Sets the filesystem path to store downloaded files in.
 <
 
 >>>
+`!notify_on_new_message = yes`!
+>>>>
+Sets whether to output a notification character (bell or flash) to the terminal when a new message is received.
+<
+
+>>>
 `!announce_at_start = yes`!
 >>>>
 Determines whether your LXMF address is automatically announced when the program starts. Must be a boolean value.
@@ -1064,7 +1070,7 @@ Links can contain request variables and a list of fields to submit to the node-s
 `=
 ``
 
-Note the `!*`! following the extra `!\``! at the end of the path. This `!*`! denotes `*all fields`*. You can also specify a list of fields to include:
+Note the `!*`! following the extra `!\\``! at the end of the path. This `!*`! denotes `*all fields`*. You can also specify a list of fields to include:
 
 `Faaa
 `=
