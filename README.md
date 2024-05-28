@@ -8,7 +8,7 @@ Nomad Network allows you to build private and resilient communications platforms
 
 Nomad Network is build on [LXMF](https://github.com/markqvist/LXMF) and [Reticulum](https://github.com/markqvist/Reticulum), which together provides the cryptographic mesh functionality and peer-to-peer message routing that Nomad Network relies on. This foundation also makes it possible to use the program over a very wide variety of communication mediums, from packet radio to fiber optics.
 
-Nomad Network does not need any connections to the public internet to work. In fact, it doesn't even need an IP or Ethernet network. You can use it entirely over packet radio, LoRa or even serial lines. But if you wish, you can bridge islanded networks over the Internet or private ethernet networks, or you can build networks running completely over the Internet. The choice is yours.
+Nomad Network does not need any connections to the public internet to work. In fact, it doesn't even need an IP or Ethernet network. You can use it entirely over packet radio, LoRa or even serial lines. But if you wish, you can bridge islanded networks over the Internet or private ethernet networks, or you can build networks running completely over the Internet. The choice is yours. Since Nomad Network uses Reticulum, it is efficient enough to run even over *extremely* low-bandwidth medium, and has been succesfully used over 300bps radio links.
 
 If you'd rather want to use an LXMF client with a graphical user interface, you may want to take a look at [Sideband](https://github.com/markqvist/sideband), which is available for Linux, Android and macOS.
 
@@ -161,7 +161,6 @@ You can help support the continued development of open, free and private communi
 - New major features
     - Network-wide propagated bulletins and discussion threads
     - Collaborative maps and geospatial information sharing
-    - Facilitation of trade and barter
 - Minor improvements and fixes
     - Link status (RSSI and SNR) in conversation or conv list
     - Ctrl-M shorcut for jumping to menu
