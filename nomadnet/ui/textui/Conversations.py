@@ -1056,7 +1056,7 @@ class ConversationWidget(urwid.WidgetWrap):
             else:
                 warning = urwid.AttrMap(
                     urwid.Padding(urwid.Text(
-                        "\n"+g["info"]+"\n\nYou cannot currently message this peer, since it's identity keys are not known. "
+                        "\n"+g["info"]+"\n\nYou cannot currently message this peer, since its identity keys are not known. "
                                        "The keys have been requested from the network and should arrive shortly, if available. "
                                        "Close this conversation and reopen it to try again.\n\n"
                                        "To query the network manually, select this conversation in the conversation list, "
