@@ -78,13 +78,10 @@ class LogTail(urwid.WidgetWrap):
 
 
 def log_widget(app, platform=sys.platform):
-    if platform == "linux":
-        return LogTerminal(app)
-    elif platform == "win32":
+    if platform == "win32":
         return LogTail(app)
     else:
-        raise ValueError(f"Unknown platform {platform}. Expected linux/win32")
-
+        return LogTerminal(app)
 
 # https://stackoverflow.com/a/34029605/3713120
 def _tail(f_name, n, offset=0):
