@@ -27,6 +27,13 @@ class Conversation:
                     if Conversation.created_callback != None:
                         Conversation.created_callback()
 
+            # This reformats the new v0.5.0 announce data back to the expected format
+            # for nomadnets storage and other handling functions.
+            dn = LXMF.display_name_from_app_data(app_data)
+            app_data = b""
+            if dn != None:
+                app_data = dn.encode("utf-8")
+            
             # Add the announce to the directory announce
             # stream logger
             app.directory.lxmf_announce_received(destination_hash, app_data)
@@ -281,13 +288,17 @@ class Conversation:
 
     def message_notification(self, message):
         if message.state == LXMF.LXMessage.FAILED and hasattr(message, "try_propagation_on_fail") and message.try_propagation_on_fail:
-            RNS.log("Direct delivery of "+str(message)+" failed. Retrying as propagated message.", RNS.LOG_VERBOSE)
-            message.try_propagation_on_fail = None
-            message.delivery_attempts = 0
-            del message.next_delivery_attempt
-            message.packed = None
-            message.desired_method = LXMF.LXMessage.PROPAGATED
-            self.app.message_router.handle_outbound(message)
+            if hasattr(message, "stamp_generation_failed") and message.stamp_generation_failed == True:
+                RNS.log(f"Could not send {message} due to a stamp generation failure", RNS.LOG_ERROR)
+            else:
+                RNS.log("Direct delivery of "+str(message)+" failed. Retrying as propagated message.", RNS.LOG_VERBOSE)
+                message.try_propagation_on_fail = None
+                message.delivery_attempts = 0
+                if hasattr(message, "next_delivery_attempt"):
+                    del message.next_delivery_attempt
+                message.packed = None
+                message.desired_method = LXMF.LXMessage.PROPAGATED
+                self.app.message_router.handle_outbound(message)
         else:
             message_path = Conversation.ingest(message, self.app, originator=True)
 
@@ -318,10 +329,15 @@ class ConversationMessage:
             self.timestamp = self.lxm.timestamp
             self.sort_timestamp = os.path.getmtime(self.file_path)
 
-            if self.lxm.state > LXMF.LXMessage.DRAFT and self.lxm.state < LXMF.LXMessage.SENT:
+            if self.lxm.state > LXMF.LXMessage.GENERATING and self.lxm.state < LXMF.LXMessage.SENT:
                 found = False
+
                 for pending in nomadnet.NomadNetworkApp.get_shared_instance().message_router.pending_outbound:
                     if pending.hash == self.lxm.hash:
+                        found = True
+
+                for pending_id in nomadnet.NomadNetworkApp.get_shared_instance().message_router.pending_deferred_stamps:
+                    if pending_id == self.lxm.hash:
                         found = True
 
                 if not found:
