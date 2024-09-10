@@ -217,7 +217,11 @@ class Conversation:
                 if self.app.message_router.get_outbound_propagation_node() != None:
                     desired_method = LXMF.LXMessage.PROPAGATED
 
-            lxm = LXMF.LXMessage(dest, source, content, title=title, desired_method=desired_method)
+            dest_is_trusted = False
+            if self.app.directory.trust_level(dest.hash) == DirectoryEntry.TRUSTED:
+                dest_is_trusted = True
+
+            lxm = LXMF.LXMessage(dest, source, content, title=title, desired_method=desired_method, include_ticket=dest_is_trusted)
             lxm.register_delivery_callback(self.message_notification)
             lxm.register_failed_callback(self.message_notification)
 

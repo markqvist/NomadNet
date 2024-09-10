@@ -522,6 +522,18 @@ On low-bandwidth networks, it can be useful to limit the amount of messages down
 <
 
 >>>
+`!required_stamp_cost = None`!
+>>>>
+You can specify a required stamp cost for inbound messages to be accepted. Specifying a stamp cost will require untrusted senders that message you to include a cryptographic stamp in their messages. Performing this operation takes the sender an amount of time proportional to the stamp cost. As a rough estimate, a stamp cost of 8 will take less than a second to compute, and a stamp cost of 20 could take several minutes, even on a fast computer.
+<
+
+>>>
+`!accept_invalid_stamps = False`!
+>>>>
+You can signal stamp requirements to senders, but still accept messages with invalid stamps by setting this option to True.
+<
+
+>>>
 `!max_accepted_size = 500`!
 >>>>
 The maximum accepted unpacked size for messages received directly from other peers, specified in kilobytes. Messages larger than this will be rejected before the transfer begins.
@@ -739,12 +751,11 @@ If you have Internet access, and just want to get started experimenting, you are
 The Testnet also runs the latest version of Reticulum, often even a short while before it is publicly released, which means strange behaviour might occur. If none of that scares you, add the following interface to your Reticulum configuration file to join:
 
 >>
-[[RNS Testnet Zurich]]
+[[RNS Testnet Dublin]]
   type = TCPClientInterface
-  interface_enabled = yes
-  outgoing = True
-  target_host = zurich.connect.reticulum.network
-  target_port = 4242
+  enabled = yes
+  target_host = dublin.connect.reticulum.network
+  target_port = 4965
 <
 
 If you connect to the testnet, you can leave nomadnet running for a while and wait for it to receive announces from other nodes on the network that host pages or services, or you can try connecting directly to some nodes listed here:

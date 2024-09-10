@@ -134,6 +134,10 @@ class NomadNetworkApp:
         self.lxmf_sync_interval = 360*60
         self.lxmf_sync_limit    = 8
         self.compact_stream     = False
+        
+        self.required_stamp_cost   = None
+        self.accept_invalid_stamps = False
+
 
         if not os.path.isdir(self.storagepath):
             os.makedirs(self.storagepath)
@@ -296,8 +300,9 @@ class NomadNetworkApp:
         for destination_hash in self.ignored_list:
             self.message_router.ignore_destination(destination_hash)
 
-        self.lxmf_destination = self.message_router.register_delivery_identity(self.identity, display_name=self.peer_settings["display_name"])
-        self.lxmf_destination.set_default_app_data(self.get_display_name_bytes)
+        self.lxmf_destination = self.message_router.register_delivery_identity(self.identity, display_name=self.peer_settings["display_name"], stamp_cost=self.required_stamp_cost)
+        if not self.accept_invalid_stamps:
+            self.message_router.enforce_stamps()
 
         RNS.Identity.remember(
             packet_hash=None,
@@ -492,7 +497,9 @@ class NomadNetworkApp:
             self.message_router.cancel_propagation_node_requests()
 
     def announce_now(self):
-        self.lxmf_destination.announce()
+        self.message_router.set_inbound_stamp_cost(self.lxmf_destination.hash, self.required_stamp_cost)
+        self.lxmf_destination.display_name = self.peer_settings["display_name"]
+        self.message_router.announce(self.lxmf_destination.hash)
         self.peer_settings["last_announce"] = time.time()
         self.save_peer_settings()
 
@@ -737,6 +744,24 @@ class NomadNetworkApp:
                         self.lxmf_sync_limit = value
                     else:
                         self.lxmf_sync_limit = None
+
+                if option == "required_stamp_cost":
+                    value = self.config["node"]["node_name"]
+                    if value.lower() == "none":
+                        self.required_stamp_cost = None
+                    else:
+                        value = self.config["client"].as_int(option)
+
+                        if value > 0:
+                            if value > 255:
+                                value = 255
+                            self.required_stamp_cost = value
+                        else:
+                            self.required_stamp_cost = None
+
+                if option == "accept_invalid_stamps":
+                    value = self.config["client"].as_bool(option)
+                    self.accept_invalid_stamps = value
 
                 if option == "max_accepted_size":
                     value = self.config["client"].as_float(option)    
@@ -1016,6 +1041,24 @@ lxmf_sync_interval = 360
 # this number, or set the option to 0 to disable
 # the limit, and download everything every time.
 lxmf_sync_limit = 8
+
+# You can specify a required stamp cost for
+# inbound messages to be accepted. Specifying
+# a stamp cost will require untrusted senders
+# that message you to include a cryptographic
+# stamp in their messages. Performing this
+# operation takes the sender an amount of time
+# proportional to the stamp cost. As a rough
+# estimate, a stamp cost of 8 will take less
+# than a second to compute, and a stamp cost
+# of 20 could take several minutes, even on
+# a fast computer.
+required_stamp_cost = None
+
+# You can signal stamp requirements to senders,
+# but still accept messages with invalid stamps
+# by setting this option to True.
+accept_invalid_stamps = False
 
 # The maximum accepted unpacked size for mes-
 # sages received directly from other peers,
