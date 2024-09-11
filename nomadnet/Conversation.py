@@ -102,7 +102,7 @@ class Conversation:
                         unread = True
 
                     if display_name == None and app_data:
-                        display_name = app_data.decode("utf-8")
+                        display_name = LXMF.display_name_from_app_data(app_data)
 
                     if display_name == None:
                         sort_name = ""
