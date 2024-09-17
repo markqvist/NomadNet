@@ -746,7 +746,7 @@ class NomadNetworkApp:
                         self.lxmf_sync_limit = None
 
                 if option == "required_stamp_cost":
-                    value = self.config["node"]["node_name"]
+                    value = self.config["client"][option]
                     if value.lower() == "none":
                         self.required_stamp_cost = None
                     else:
