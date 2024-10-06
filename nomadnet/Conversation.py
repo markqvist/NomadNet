@@ -216,6 +216,10 @@ class Conversation:
             if self.app.directory.preferred_delivery(dest.hash) == DirectoryEntry.PROPAGATED:
                 if self.app.message_router.get_outbound_propagation_node() != None:
                     desired_method = LXMF.LXMessage.PROPAGATED
+            else:
+                if not self.app.message_router.delivery_link_available(dest.hash) and RNS.Identity.current_ratchet_id(dest.hash) != None:
+                    RNS.log(f"Have ratchet for {RNS.prettyhexrep(dest.hash)}, requesting opportunistic delivery of message", RNS.LOG_DEBUG)
+                    desired_method = LXMF.LXMessage.OPPORTUNISTIC
 
             dest_is_trusted = False
             if self.app.directory.trust_level(dest.hash) == DirectoryEntry.TRUSTED:
