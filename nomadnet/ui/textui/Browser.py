@@ -1,4 +1,5 @@
 import RNS
+import LXMF
 import os
 import time
 import urwid
@@ -252,7 +253,7 @@ class Browser:
 
             display_name = None
             if display_name_data != None:
-                display_name = display_name_data.decode("utf-8")
+                display_name = LXMF.display_name_from_app_data(display_name_data)
 
             if not source_hash_text in [c[0] for c in existing_conversations]:
                 entry = DirectoryEntry(bytes.fromhex(source_hash_text), display_name=display_name)
