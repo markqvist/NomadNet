@@ -160,7 +160,6 @@ def parse_line(line, state, url_delegate):
                             tw.in_columns = True
                         else:
                             tw = urwid.Text(o, align=state["align"])
-                        
                         widgets.append((urwid.PACK, tw))
                     else:
                         if o["type"] == "field":
@@ -169,10 +168,37 @@ def parse_line(line, state, url_delegate):
                             fn = o["name"]
                             fs = o["style"]
                             fmask = "*" if o["masked"] else None
-                            f = urwid.Edit(caption="", edit_text=fd, align=state["align"], multiline=True, mask=fmask)
+                            f = urwid.Edit(caption="", edit_text=fd, align=state["align"], multiline=False, mask=fmask)
                             f.field_name = fn
                             fa = urwid.AttrMap(f, fs)
                             widgets.append((fw, fa))
+                        elif o["type"] == "checkbox":
+                            fn = o["name"]
+                            fv = o["value"]
+                            flabel = o["label"]
+                            fs = o["style"]
+                            f = urwid.CheckBox(flabel, state=False)
+                            f.field_name = fn
+                            f.field_value = fv
+                            fa = urwid.AttrMap(f, fs)
+                            widgets.append((urwid.PACK, fa))
+                        elif o["type"] == "radio":
+                            fn = o["name"]
+                            fv = o["value"]
+                            flabel = o["label"]
+                            fs = o["style"]
+                            if not "radio_groups" in state:
+                                state["radio_groups"] = {}
+                            if not fn in state["radio_groups"]:
+                                state["radio_groups"][fn] = []
+                            group = state["radio_groups"][fn]
+                            f = urwid.RadioButton(group, flabel, state=False, user_data=fv)
+                            f.field_name = fn
+                            f.field_value = fv
+                            fa = urwid.AttrMap(f, fs)
+                            widgets.append((urwid.PACK, fa))
+
+
 
                 columns_widget = urwid.Columns(widgets, dividechars=0)
                 text_widget = columns_widget
@@ -458,54 +484,85 @@ def make_output(state, line, url_delegate):
                     elif c == "a":
                         state["align"] = state["default_align"]
 
-                    elif c == "<":
+                    elif c == '<':
+                        if len(part) > 0:
+                            output.append(make_part(state, part))
+                            part = ""
                         try:
-                            field_name = None
-                            field_name_end = line[i:].find("`")
-                            if field_name_end == -1:
-                                pass
+                            field_start = i + 1  # position after '<'
+                            backtick_pos = line.find('`', field_start)
+                            if backtick_pos == -1:
+                                pass  # No '`', invalid field
                             else:
-                                field_name = line[i+1:i+field_name_end]
-                                field_name_skip = len(field_name)
+                                field_content = line[field_start:backtick_pos]
                                 field_masked = False
                                 field_width = 24
+                                field_type = "field"
+                                field_name = field_content
+                                field_value = ""
+                                field_data = ""
 
-                                if "|" in field_name:
-                                    f_components = field_name.split("|")
+                                # check if field_content contains '|'
+                                if '|' in field_content:
+                                    f_components = field_content.split('|')
                                     field_flags = f_components[0]
                                     field_name = f_components[1]
-                                    if "!" in field_flags:
+
+                                    # handle field type indicators
+                                    if '^' in field_flags:
+                                        field_type = "radio"
+                                        field_flags = field_flags.replace("^", "")
+                                    elif '?' in field_flags:
+                                        field_type = "checkbox"
+                                        field_flags = field_flags.replace("?", "")
+                                    elif '!' in field_flags:
                                         field_flags = field_flags.replace("!", "")
                                         field_masked = True
-                                    if len(field_flags) > 0:
-                                        field_width = min(int(field_flags), 256)
 
-                                def sr():
-                                    return "@{"+str(random.randint(1000,9999))+"}"
-                                rsg = sr()
-                                while rsg in line[i+field_name_end:]:
-                                    rsg = sr()
-                                lr = line[i+field_name_end:].replace("\\>", rsg)
-                                endpos = lr.find(">")
-                                
-                                if endpos == -1:
-                                    pass
-                                
+                                    # Handle field width
+                                    if len(field_flags) > 0:
+                                        try:
+                                            field_width = min(int(field_flags), 256)
+                                        except ValueError:
+                                            pass  # Ignore invalid width
+
+                                    if len(f_components) > 2:
+                                        field_value = f_components[2]
                                 else:
-                                    field_data = lr[1:endpos].replace(rsg, "\\>")
-                                    skip = len(field_data)+field_name_skip+2
-                                    field_data = field_data.replace("\\>", ">")
-                                    output.append({
-                                        "type":"field",
-                                        "name": field_name,
-                                        "width": field_width,
-                                        "masked": field_masked,
-                                        "data": field_data,
-                                        "style": make_style(state)
-                                    })
+                                    field_name = field_content
+
+                                # Find the closing '>' character
+                                field_end = line.find('>', backtick_pos)
+                                if field_end == -1:
+                                    pass  # No closing '>', invalid field
+                                else:
+                                    field_data = line[backtick_pos+1:field_end]
+
+                                    # Now, we have all field data
+                                    if field_type in ["checkbox", "radio"]:
+                                        # for checkboxes and radios, field_data is the label
+                                        output.append({
+                                            "type": field_type,
+                                            "name": field_name,
+                                            "value": field_value if field_value else field_data,
+                                            "label": field_data,
+                                            "style": make_style(state)
+                                        })
+                                    else:
+                                        # For text fields field_data is the initial text
+                                        output.append({
+                                            "type": "field",
+                                            "name": field_name,
+                                            "width": field_width,
+                                            "masked": field_masked,
+                                            "data": field_data,
+                                            "style": make_style(state)
+                                        })
+                                    skip = field_end - i
                         except Exception as e:
                             pass
-    
+
+                    
                     elif c == "[":
                         endpos = line[i:].find("]")
                         if endpos == -1:

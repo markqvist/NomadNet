@@ -1152,6 +1152,43 @@ A sized input field:  `B444`<16|with_size`>`B333
 A masked input field: `B444`<!|masked_demo`hidden text>`B333
 
 Full control: `B444`<!32|all_options`hidden text>`B333
+`b
+>>> Checkboxes
+
+In addition to text fields, Checkboxes are another way of submitting data. They allow the user to make a single selection or select multiple options. 
+
+`Faaa
+`=
+`<?|field_name|value`>`b Label Text`
+`=
+When the checkbox is checked, it's field will be set to the provided value. If there are multiple checkboxes that share the same field name, the checked values will be concatenated when they are sent to the node by a comma.
+``
+
+`B444`<?|sign_up|1`>`b Sign me up`
+
+>>> Radio groups
+
+Radio groups are another input that lets the user chose from a set of options. Unlike checkboxes, radio buttons with the same field name are mutually exclusive.
+
+Example:
+
+`=
+`B900`<^|color|Red`>`b  Red
+
+`B090`<^|color|Green`>`b Green
+
+`B009`<^|color|Blue`>`b Blue
+`=
+
+will render:
+
+`B900`<^|color|Red`>`b  Red
+
+`B090`<^|color|Green`>`b Green
+
+`B009`<^|color|Blue`>`b Blue
+
+In this example, when the data is submitted, `B444` field_color`b will be set to whichever value from the list was selected.
 
 ``
 
