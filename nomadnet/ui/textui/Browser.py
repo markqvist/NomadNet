@@ -180,23 +180,47 @@ class Browser:
                 else:
                     link_fields.append(e)
 
-            def recurse_down(w):
-                target = None
-                if isinstance(w, list):
-                    for t in w:
-                        recurse_down(t)
-                elif isinstance(w, tuple):
-                    for t in w:
-                        recurse_down(t)
-                elif hasattr(w, "contents"):
-                    recurse_down(w.contents)
-                elif hasattr(w, "original_widget"):
-                    recurse_down(w.original_widget)
-                elif hasattr(w, "_original_widget"):
-                    recurse_down(w._original_widget)
-                else:
-                    if hasattr(w, "field_name") and (all_fields or w.field_name in link_fields):
-                        request_data["field_"+w.field_name] = w.get_edit_text()
+                def recurse_down(w):
+                    if isinstance(w, list):
+                        for t in w:
+                            recurse_down(t)
+                    elif isinstance(w, tuple):
+                        for t in w:
+                            recurse_down(t)
+                    elif hasattr(w, "contents"):
+                        recurse_down(w.contents)
+                    elif hasattr(w, "original_widget"):
+                        recurse_down(w.original_widget)
+                    elif hasattr(w, "_original_widget"):
+                        recurse_down(w._original_widget)
+                    else:
+                        if hasattr(w, "field_name") and (all_fields or w.field_name in link_fields):
+                            field_key = "field_" + w.field_name
+                            if isinstance(w, urwid.Edit):
+                                request_data[field_key] = w.edit_text
+                            elif isinstance(w, urwid.RadioButton):
+                                if w.state:
+                                    user_data = getattr(w, "field_value", None)  
+                                    if user_data is not None:
+                                        request_data[field_key] = user_data
+                            elif isinstance(w, urwid.CheckBox):
+                                user_data = getattr(w, "field_value", "1")
+                                if w.state:
+                                    existing_value = request_data.get(field_key, '')
+                                    if existing_value:
+                                        # Concatenate the new value with the existing one
+                                        request_data[field_key] = existing_value + ',' + user_data
+                                    else:
+                                        # Initialize the field with the current value
+                                        request_data[field_key] = user_data
+                                else:
+                                    pass  # do nothing if checkbox is not check
+
+
+
+
+                        
+
                 
             recurse_down(self.attr_maps)
             RNS.log("Including request data: "+str(request_data), RNS.LOG_DEBUG)
