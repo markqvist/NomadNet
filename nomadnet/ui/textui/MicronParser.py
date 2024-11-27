@@ -177,7 +177,8 @@ def parse_line(line, state, url_delegate):
                             fv = o["value"]
                             flabel = o["label"]
                             fs = o["style"]
-                            f = urwid.CheckBox(flabel, state=False)
+                            fprechecked = o.get("prechecked", False)  
+                            f = urwid.CheckBox(flabel, state=fprechecked)
                             f.field_name = fn
                             f.field_value = fv
                             fa = urwid.AttrMap(f, fs)
@@ -187,16 +188,18 @@ def parse_line(line, state, url_delegate):
                             fv = o["value"]
                             flabel = o["label"]
                             fs = o["style"]
-                            if not "radio_groups" in state:
+                            fprechecked = o.get("prechecked", False)  
+                            if "radio_groups" not in state:
                                 state["radio_groups"] = {}
-                            if not fn in state["radio_groups"]:
+                            if fn not in state["radio_groups"]:
                                 state["radio_groups"][fn] = []
                             group = state["radio_groups"][fn]
-                            f = urwid.RadioButton(group, flabel, state=False, user_data=fv)
+                            f = urwid.RadioButton(group, flabel, state=fprechecked, user_data=fv)
                             f.field_name = fn
                             f.field_value = fv
                             fa = urwid.AttrMap(f, fs)
                             widgets.append((urwid.PACK, fa))
+
 
 
 
@@ -501,6 +504,7 @@ def make_output(state, line, url_delegate):
                                 field_name = field_content
                                 field_value = ""
                                 field_data = ""
+                                field_prechecked = False  
 
                                 # check if field_content contains '|'
                                 if '|' in field_content:
@@ -526,10 +530,23 @@ def make_output(state, line, url_delegate):
                                         except ValueError:
                                             pass  # Ignore invalid width
 
+                                    # Check for value and pre-checked flag
                                     if len(f_components) > 2:
                                         field_value = f_components[2]
+                                    else:
+                                        field_value = ""
+                                    if len(f_components) > 3:
+                                        if f_components[3] == '*':
+                                            field_prechecked = True
+
                                 else:
+                                    # No '|', so field_name is field_content
                                     field_name = field_content
+                                    field_type = "field"
+                                    field_masked = False
+                                    field_width = 24
+                                    field_value = ""
+                                    field_prechecked = False
 
                                 # Find the closing '>' character
                                 field_end = line.find('>', backtick_pos)
@@ -546,6 +563,7 @@ def make_output(state, line, url_delegate):
                                             "name": field_name,
                                             "value": field_value if field_value else field_data,
                                             "label": field_data,
+                                            "prechecked": field_prechecked,
                                             "style": make_style(state)
                                         })
                                     else:

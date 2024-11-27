@@ -31,7 +31,7 @@ The data can be `!`[submitted`:/page/input_fields.mu`username|two]`!.
 
 >> Checkbox Fields
 
-`B444`<?|sign_up|1`>`b Sign me up
+`B444`<?|sign_up|1|*`>`b Sign me up 
 
 >> Radio group
 

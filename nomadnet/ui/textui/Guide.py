@@ -1166,6 +1166,10 @@ When the checkbox is checked, it's field will be set to the provided value. If t
 
 `B444`<?|sign_up|1`>`b Sign me up`
 
+You can also pre-check both checkboxes and radio groups by appending a |* after the field value.
+
+`B444`<?|checkbox|1|*`>`b Pre-checked checkbox`
+
 >>> Radio groups
 
 Radio groups are another input that lets the user chose from a set of options. Unlike checkboxes, radio buttons with the same field name are mutually exclusive.
