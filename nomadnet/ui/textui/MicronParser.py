@@ -168,7 +168,7 @@ def parse_line(line, state, url_delegate):
                             fn = o["name"]
                             fs = o["style"]
                             fmask = "*" if o["masked"] else None
-                            f = urwid.Edit(caption="", edit_text=fd, align=state["align"], multiline=False, mask=fmask)
+                            f = urwid.Edit(caption="", edit_text=fd, align=state["align"], multiline=True, mask=fmask)
                             f.field_name = fn
                             fa = urwid.AttrMap(f, fs)
                             widgets.append((fw, fa))
