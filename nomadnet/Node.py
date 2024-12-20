@@ -1,4 +1,6 @@
 import os
+import sys
+
 import RNS
 import time
 import threading
@@ -159,7 +161,8 @@ class Node:
         try:
             if request_allowed:
                 RNS.log("Serving page: "+file_path, RNS.LOG_VERBOSE)
-                if os.access(file_path, os.X_OK):
+                is_windows = sys.platform == "win32"
+                if is_windows is False and os.access(file_path, os.X_OK):
                     env_map = {}
                     if "PATH" in os.environ:
                         env_map["PATH"] = os.environ["PATH"]
