@@ -1136,13 +1136,15 @@ announce_interval = 360
 # Whether to announce when the node starts.
 announce_at_start = Yes
 
-# By default, when Nomad Network is hosting a
-# node, it will also act as an LXMF propagation
+# When Nomad Network is hosting a page-serving
+# node, it can also act as an LXMF propagation
 # node. If there is already a large amount of
 # propagation nodes on the network, or you
 # simply want to run a pageserving-only node,
 # you can disable running a propagation node.
-# disable_propagation = False
+# Due to lots of propagation nodes being
+# available, this is currently the default.
+disable_propagation = Yes
 
 # The maximum amount of storage to use for
 # the LXMF Propagation Node message store,
@@ -1175,10 +1177,6 @@ max_transfer_size = 256
 # with this option. This setting is optional,
 # and generally you do not need to use it.
 # prioritise_destinations = 41d20c727598a3fbbdf9106133a3a0ed, d924b81822ca24e68e2effea99bcb8cf
-
-# Automatic rescan interval of the pages directory in minutes.
-# Default: int = 0 (no rescan)
-page_refresh_interval = 0
 
 # You can specify the interval in minutes for
 # rescanning the hosted pages path. By default,
