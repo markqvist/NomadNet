@@ -1594,10 +1594,10 @@ class NetworkDisplay():
         if self.list_display == 1:
             parent = self.app.ui.main_display.sub_displays.network_display
             selected_node_entry = parent.known_nodes_display.ilb.get_selected_item()
-            if selected_node_entry != None:
-                selected_node_hash = selected_node_entry._get_base_widget().display_widget.source_hash
+            if selected_node_entry is not None:
+                selected_node_hash = selected_node_entry.base_widget.display_widget.source_hash
                 
-                if selected_node_hash != None:
+                if selected_node_hash is not None:
                     info_widget = KnownNodeInfo(selected_node_hash)
                     options = parent.left_pile.options(height_type=urwid.WEIGHT, height_amount=1)
                     parent.left_pile.contents[0] = (info_widget, options)
