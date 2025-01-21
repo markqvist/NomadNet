@@ -1802,7 +1802,7 @@ class LXMFPeerEntry(urwid.WidgetWrap):
         else:
             txfer_limit = "No"
         peer_info_str  = sym+" "+display_str+"\n  "+alive_string+", last heard "+pretty_date(int(peer.last_heard))
-        peer_info_str += "\n  "+str(len(peer.unhandled_messages))+f" unhandled LXMs, {txfer_limit} sync limit\n"
+        peer_info_str += "\n  "+str(peer.unhandled_message_count)+f" unhandled LXMs, {txfer_limit} sync limit\n"
         peer_info_str += f"  {RNS.prettyspeed(peer.sync_transfer_rate)} STR, "
         peer_info_str += f"{RNS.prettyspeed(peer.link_establishment_rate)} LER\n"
         widget = ListEntry(peer_info_str)
