@@ -290,9 +290,20 @@ class NomadNetworkApp:
 
         self.directory = nomadnet.Directory(self)
 
+        static_peers = []
+        for static_peer in self.static_peers:
+            try:
+                dh = bytes.fromhex(static_peer)
+                if len(dh) != RNS.Reticulum.TRUNCATED_HASHLENGTH//8:
+                    raise ValueError("Invalid destination length")
+                static_peers.append(dh)
+            except Exception as e:
+                RNS.log(f"Could not decode static peer destination hash {static_peer}: {e}", RNS.LOG_ERROR)
+
         self.message_router = LXMF.LXMRouter(
             identity = self.identity, storagepath = self.storagepath, autopeer = True,
             propagation_limit = self.lxmf_max_propagation_size, delivery_limit = self.lxmf_max_incoming_size,
+            max_peers = self.max_peers, static_peers = static_peers,
         )
 
         self.message_router.register_delivery_callback(self.lxmf_delivery)
@@ -920,6 +931,19 @@ class NomadNetworkApp:
             else:
                 self.prioritised_lxmf_destinations = []
 
+            if "static_peers" in self.config["node"]:
+                self.static_peers = self.config["node"].as_list("static_peers")
+            else:
+                self.static_peers = []
+                
+            if not "max_peers" in self.config["node"]:
+                self.max_peers = None
+            else:
+                value = self.config["node"].as_int("max_peers")
+                if value < 0:
+                    value = 0
+                self.max_peers = value
+
             if not "message_storage_limit" in self.config["node"]:
                 self.message_storage_limit = 2000
             else:
@@ -1177,6 +1201,17 @@ max_transfer_size = 256
 # with this option. This setting is optional,
 # and generally you do not need to use it.
 # prioritise_destinations = 41d20c727598a3fbbdf9106133a3a0ed, d924b81822ca24e68e2effea99bcb8cf
+
+# You can configure the maximum number of other
+# propagation nodes that this node will peer
+# with automatically. The default is 50.
+# max_peers = 25
+
+# You can configure a list of static propagation
+# node peers, that this node will always be
+# peered with, by specifying a list of
+# destination hashes.
+# static_peers = e17f833c4ddf8890dd3a79a6fea8161d, 5a2d0029b6e5ec87020abaea0d746da4
 
 # You can specify the interval in minutes for
 # rescanning the hosted pages path. By default,
