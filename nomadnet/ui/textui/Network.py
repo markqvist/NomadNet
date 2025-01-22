@@ -1753,7 +1753,7 @@ class LXMFPeers(urwid.WidgetWrap):
 
     def make_peer_widgets(self):
         widget_list = []
-        sorted_peers = sorted(self.peer_list, key=lambda pid: (self.app.directory.pn_trust_level(pid), self.peer_list[pid].link_establishment_rate), reverse=True)
+        sorted_peers = sorted(self.peer_list, key=lambda pid: (self.app.directory.pn_trust_level(pid), self.peer_list[pid].sync_transfer_rate), reverse=True)
         for peer_id in sorted_peers:
             peer = self.peer_list[peer_id]
             trust_level = self.app.directory.pn_trust_level(peer_id)
