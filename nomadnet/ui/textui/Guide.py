@@ -666,9 +666,9 @@ Determines the interval in minutes for rescanning the hosted files path. By defa
 <
 
 >>>
-`!disable_propagation = no`!
+`!disable_propagation = yes`!
 >>>>
-By default, when Nomad Network is hosting a node, it will also run an LXMF propagation node. If there is already a large amount of propagation nodes on the network, or you simply want to run a pageserving-only node, you can disable running a propagation node.
+When Nomad Network is hosting a node, it can also run an LXMF propagation node. If there is already a large amount of propagation nodes on the network, or you simply want to run a pageserving-only node, you can disable running a propagation node.
 <
 
 >>>
@@ -687,6 +687,18 @@ The maximum accepted transfer size per incoming propagation transfer, in kilobyt
 `!prioritise_destinations = 41d20c727598a3fbbdf9106133a3a0ed, d924b81822ca24e68e2effea99bcb8cf`!
 >>>>
 Configures the LXMF Propagation Node to prioritise storing messages for certain destinations. If the message store reaches the specified limit, LXMF will prioritise keeping messages for destinations specified with this option. This setting is optional, and generally you do not need to use it.
+<
+
+>>>
+`!max_peers = 25`!
+>>>>
+Configures the maximum number of other nodes the LXMF Propagation Node will automatically peer with. The default is 50, but can be lowered or increased according to available resources.
+<
+
+>>>
+`!static_peers = e17f833c4ddf8890dd3a79a6fea8161d, 5a2d0029b6e5ec87020abaea0d746da4`!
+>>>>
+Configures the LXMF Propagation Node to always maintain propagation node peering with the specified list of destination hashes.
 <
 
 >> Printing Section
