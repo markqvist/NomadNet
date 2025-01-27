@@ -143,8 +143,9 @@ class Directory:
             while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
                 self.announce_stream.pop()
 
-            if hasattr(self.app.ui, "main_display"):
-                self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
+            if hasattr(self.app, "ui") and self.app.ui != None:
+                if hasattr(self.app.ui, "main_display"):
+                    self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
 
     def node_announce_received(self, source_hash, app_data, associated_peer):
         if app_data != None:
