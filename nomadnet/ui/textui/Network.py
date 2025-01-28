@@ -1612,9 +1612,15 @@ class NetworkDisplay():
         self.announce_stream_display.rebuild_widget_list()
 
     def reinit_lxmf_peers(self):
+        if self.lxmf_peers_display:
+            si = self.lxmf_peers_display.ilb.get_selected_position()
+        else:
+            si = None
         self.lxmf_peers_display = LXMFPeers(self.app)
         self.lxmf_peers_display.delegate = self
         self.close_list_dialogs()
+        if si != None:
+            self.lxmf_peers_display.ilb.select_item(si)
 
     def close_list_dialogs(self):
         if self.list_display == 0:
