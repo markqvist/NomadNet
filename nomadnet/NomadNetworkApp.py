@@ -537,7 +537,7 @@ class NomadNetworkApp:
             RNS.log("Could not autoselect a propagation node! LXMF propagation will not be available until a trusted node announces on the network, or a propagation node is manually selected.", RNS.LOG_WARNING)
         else:
             pn_name_str = ""
-            RNS.log("Selecting "+RNS.prettyhexrep(selected_node)+pn_name_str+" as default LXMF propagation node", RNS.LOG_INFO)
+            RNS.log("Selecting "+RNS.prettyhexrep(selected_node)+pn_name_str+" as default LXMF propagation node", RNS.LOG_DEBUG)
             self.message_router.set_outbound_propagation_node(selected_node)
 
     def get_user_selected_propagation_node(self):
