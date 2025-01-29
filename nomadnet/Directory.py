@@ -212,7 +212,7 @@ class Directory:
                 while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
                     self.announce_stream.pop()
                 
-                if hasattr(self.app.ui, "main_display"):
+                if hasattr(self.app, "ui") and hasattr(self.app.ui, "main_display"):
                     self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
 
     def remove_announce_with_timestamp(self, timestamp):
