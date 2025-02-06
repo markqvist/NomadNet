@@ -16,10 +16,6 @@ ENV PATH="/home/myuser/.local/bin:${PATH}"
 
 ################### BEGIN NomadNet ###########################################
 
-COPY --chown=myuser:myuser requirements.txt requirements.txt
-
-RUN pip install --user -r requirements.txt
-
 
 COPY --chown=myuser:myuser . .
 
