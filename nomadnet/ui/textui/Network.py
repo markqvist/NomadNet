@@ -387,9 +387,9 @@ class AnnounceStream(urwid.WidgetWrap):
         self.update_widget_list()
 
         # Create tab buttons
-        self.tab_nodes = urwid.AttrMap(TabButton("Nodes", on_press=self.show_nodes_tab), "tab_active")
-        self.tab_peers = urwid.AttrMap(TabButton("Peers", on_press=self.show_peers_tab), "tab_inactive")
-        self.tab_pn = urwid.AttrMap(TabButton("LXMF Propagation Nodes", on_press=self.show_pn_tab), "tab_inactive")
+        self.tab_nodes = TabButton("Nodes", on_press=self.show_nodes_tab)
+        self.tab_peers = TabButton("Peers", on_press=self.show_peers_tab)
+        self.tab_pn = TabButton("LXMF Propagation Nodes", on_press=self.show_pn_tab)
 
         # Create tab bar with proportional widths
         self.tab_bar = urwid.Columns([
@@ -449,7 +449,7 @@ class AnnounceStream(urwid.WidgetWrap):
             elif self.current_tab == "pn" and announce_type == "pn":
                 new_entries.append(e)
 
-        for e in reversed(new_entries):
+        for e in new_entries:
             nw = AnnounceStreamEntry(self.app, e, self)
             nw.timestamp = e[0]
             self.widget_list.append(nw)
@@ -465,23 +465,14 @@ class AnnounceStream(urwid.WidgetWrap):
 
     def show_nodes_tab(self, button):
         self.current_tab = "nodes"
-        self.tab_nodes.set_attr_map({None: "tab_active"})
-        self.tab_peers.set_attr_map({None: "tab_inactive"})
-        self.tab_pn.set_attr_map({None: "tab_inactive"})
         self.update_widget_list()
 
     def show_peers_tab(self, button):
         self.current_tab = "peers"
-        self.tab_nodes.set_attr_map({None: "tab_inactive"})
-        self.tab_peers.set_attr_map({None: "tab_active"})
-        self.tab_pn.set_attr_map({None: "tab_inactive"})
         self.update_widget_list()
 
     def show_pn_tab(self, button):
         self.current_tab = "pn"
-        self.tab_nodes.set_attr_map({None: "tab_inactive"})
-        self.tab_peers.set_attr_map({None: "tab_inactive"})
-        self.tab_pn.set_attr_map({None: "tab_active"})
         self.update_widget_list()
 
     def list_selection(self, arg1, arg2):
