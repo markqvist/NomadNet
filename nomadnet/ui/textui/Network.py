@@ -141,7 +141,7 @@ class AnnounceInfo(urwid.WidgetWrap):
             if is_node:
                 try:
                     existing_conversations = nomadnet.Conversation.conversation_list(self.app)
-                    
+
                     source_hash_text = RNS.hexrep(op_hash, delimit=False)
                     display_name = op_str
 
@@ -162,7 +162,7 @@ class AnnounceInfo(urwid.WidgetWrap):
             show_announce_stream(None)
             try:
                 existing_conversations = nomadnet.Conversation.conversation_list(self.app)
-                
+
                 source_hash_text = RNS.hexrep(source_hash, delimit=False)
                 display_name = data_str
 
@@ -316,7 +316,7 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
         info_widget = AnnounceInfo(announce, parent, self.app)
         options = parent.left_pile.options(height_type=urwid.WEIGHT, height_amount=1)
         parent.left_pile.contents[0] = (info_widget, options)
-      
+
       except KeyError as e:
         def dismiss_dialog(sender):
             self.delegate.parent.close_list_dialogs()
@@ -368,6 +368,10 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
     def timestamp(self):
         return self.timestamp
 
+class TabButton(urwid.Button):
+    button_left = urwid.Text("[")
+    button_right = urwid.Text("]")
+
 class AnnounceStream(urwid.WidgetWrap):
     def __init__(self, app, parent):
         self.app = app
@@ -376,10 +380,23 @@ class AnnounceStream(urwid.WidgetWrap):
         self.timeout = self.app.config["textui"]["animation_interval"]*2
         self.ilb = None
         self.no_content = True
-        
+        self.current_tab = "nodes"
+
         self.added_entries = []
         self.widget_list = []
         self.update_widget_list()
+
+        # Create tab buttons
+        self.tab_nodes = urwid.AttrMap(TabButton("Nodes", on_press=self.show_nodes_tab), "tab_active")
+        self.tab_peers = urwid.AttrMap(TabButton("Peers", on_press=self.show_peers_tab), "tab_inactive")
+        self.tab_pn = urwid.AttrMap(TabButton("LXMF Propagation Nodes", on_press=self.show_pn_tab), "tab_inactive")
+
+        # Create tab bar with proportional widths
+        self.tab_bar = urwid.Columns([
+            ('weight', 1, self.tab_nodes),
+            ('weight', 1, self.tab_peers),
+            ('weight', 3, self.tab_pn),
+        ], dividechars=1)  # Add 1 character spacing between tabs
 
         self.ilb = ExceptionHandlingListBox(
             self.widget_list,
@@ -389,7 +406,13 @@ class AnnounceStream(urwid.WidgetWrap):
             #highlight_offFocus="list_off_focus"
         )
 
-        self.display_widget = self.ilb
+        # Combine tab bar and list box
+        self.pile = urwid.Pile([
+            ('pack', self.tab_bar),
+            ('weight', 1, self.ilb),
+        ])
+
+        self.display_widget = self.pile
         super().__init__(urwid.LineBox(self.display_widget, title="Announce Stream"))
 
     def keypress(self, size, key):
@@ -397,7 +420,7 @@ class AnnounceStream(urwid.WidgetWrap):
             nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.focus_position = "header"
         elif key == "ctrl x":
             self.delete_selected_entry()
-            
+
         return super(AnnounceStream, self).keypress(size, key)
 
     def delete_selected_entry(self):
@@ -412,28 +435,54 @@ class AnnounceStream(urwid.WidgetWrap):
         self.update_widget_list()
 
     def update_widget_list(self):
+        self.widget_list = []
         new_entries = []
-        for e in self.app.directory.announce_stream:
-            if not e[0] in self.added_entries:
-                self.added_entries.insert(0, e[0])
-                new_entries.insert(0, e)
 
-        for e in new_entries:
+        for e in self.app.directory.announce_stream:
+            announce_type = e[3]
+
+            # Filter based on current tab
+            if self.current_tab == "nodes" and (announce_type == "node" or announce_type == True):
+                new_entries.append(e)
+            elif self.current_tab == "peers" and (announce_type == "peer" or announce_type == False):
+                new_entries.append(e)
+            elif self.current_tab == "pn" and announce_type == "pn":
+                new_entries.append(e)
+
+        for e in reversed(new_entries):
             nw = AnnounceStreamEntry(self.app, e, self)
             nw.timestamp = e[0]
-            self.widget_list.insert(0, nw)
+            self.widget_list.append(nw)
 
         if len(new_entries) > 0:
             self.no_content = False
-            if self.ilb != None:
-                self.ilb.set_body(self.widget_list)
         else:
-            if len(self.widget_list) == 0:
-                self.no_content = True
-            
-            if self.ilb != None:
-                self.ilb.set_body(self.widget_list)
+            self.no_content = True
+            self.widget_list = [urwid.Text(f"No {self.current_tab} announces", align='center')]
 
+        if self.ilb:
+            self.ilb.set_body(self.widget_list)
+
+    def show_nodes_tab(self, button):
+        self.current_tab = "nodes"
+        self.tab_nodes.set_attr_map({None: "tab_active"})
+        self.tab_peers.set_attr_map({None: "tab_inactive"})
+        self.tab_pn.set_attr_map({None: "tab_inactive"})
+        self.update_widget_list()
+
+    def show_peers_tab(self, button):
+        self.current_tab = "peers"
+        self.tab_nodes.set_attr_map({None: "tab_inactive"})
+        self.tab_peers.set_attr_map({None: "tab_active"})
+        self.tab_pn.set_attr_map({None: "tab_inactive"})
+        self.update_widget_list()
+
+    def show_pn_tab(self, button):
+        self.current_tab = "pn"
+        self.tab_nodes.set_attr_map({None: "tab_inactive"})
+        self.tab_peers.set_attr_map({None: "tab_inactive"})
+        self.tab_pn.set_attr_map({None: "tab_active"})
+        self.update_widget_list()
 
     def list_selection(self, arg1, arg2):
         pass
@@ -596,7 +645,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
             if node_ident != None:
                 try:
                     existing_conversations = nomadnet.Conversation.conversation_list(self.app)
-                    
+
                     source_hash_text = RNS.hexrep(op_hash, delimit=False)
                     display_name = op_str
 
@@ -632,7 +681,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
             trust_level = DirectoryEntry.UNTRUSTED
             if r_unknown.get_state() == True:
                 trust_level = DirectoryEntry.UNKNOWN
-            
+
             if r_trusted.get_state() == True:
                 trust_level = DirectoryEntry.TRUSTED
 
@@ -699,7 +748,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
         pile_widgets.insert(4, operator_entry)
 
         pile = urwid.Pile(pile_widgets)
-        
+
         pile.focus_position = len(pile.contents)-1
         button_columns.focus_position = 0
 
@@ -733,7 +782,7 @@ class KnownNodes(urwid.WidgetWrap):
         g = self.app.ui.glyphs
 
         self.widget_list = self.make_node_widgets()
-        
+
         self.ilb = ExceptionHandlingListBox(
             self.widget_list,
             on_selection_change=self.node_list_selection,
@@ -767,7 +816,7 @@ class KnownNodes(urwid.WidgetWrap):
             nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.focus_position = "header"
         elif key == "ctrl x":
             self.delete_selected_entry()
-            
+
         return super(KnownNodes, self).keypress(size, key)
 
 
@@ -910,7 +959,7 @@ class NodeEntry(urwid.WidgetWrap):
             focus_style   = "list_focus_untrusted"
 
         type_symbol = g["node"]
-        
+
         widget = ListEntry(type_symbol+" "+display_str)
         urwid.connect_signal(widget, "click", delegate.connect_node, node)
 
@@ -1209,7 +1258,7 @@ class LocalPeer(urwid.WidgetWrap):
 
             #overlay = urwid.Overlay(dialog, bottom, align=urwid.CENTER, width=urwid.RELATIVE_100, valign=urwid.MIDDLE, height=urwid.PACK, left=4, right=4)
             overlay = dialog
-            
+
             self.dialog_open = True
             options = self.parent.left_pile.options(height_type=urwid.PACK, height_amount=None)
             self.parent.left_pile.contents[1] = (overlay, options)
@@ -1226,7 +1275,7 @@ class LocalPeer(urwid.WidgetWrap):
             self.t_last_announce.update_time()
 
         announce_button = urwid.Button("Announce Now", on_press=announce_query)
-        
+
         self.display_widget = urwid.Pile(
             [
                 t_id,
@@ -1270,13 +1319,13 @@ class NodeInfo(urwid.WidgetWrap):
         def show_peer_info(sender):
             options = self.parent.left_pile.options(height_type=urwid.PACK, height_amount=None)
             self.parent.left_pile.contents[1] = (LocalPeer(self.app, self.parent), options)
-        
+
         if self.app.enable_node:
             if self.app.node != None:
                 display_name = self.app.node.name
             else:
                 display_name = None
-        
+
             if display_name == None:
                 display_name = ""
 
@@ -1308,7 +1357,7 @@ class NodeInfo(urwid.WidgetWrap):
 
                 #overlay = urwid.Overlay(dialog, bottom, align=urwid.CENTER, width=urwid.RELATIVE_100, valign=urwid.MIDDLE, height=urwid.PACK, left=4, right=4)
                 overlay = dialog
-                
+
                 self.dialog_open = True
                 options = self.parent.left_pile.options(height_type=urwid.PACK, height_amount=None)
                 self.parent.left_pile.contents[1] = (overlay, options)
@@ -1596,12 +1645,12 @@ class NetworkDisplay():
             selected_node_entry = parent.known_nodes_display.ilb.get_selected_item()
             if selected_node_entry is not None:
                 selected_node_hash = selected_node_entry.base_widget.display_widget.source_hash
-                
+
                 if selected_node_hash is not None:
                     info_widget = KnownNodeInfo(selected_node_hash)
                     options = parent.left_pile.options(height_type=urwid.WEIGHT, height_amount=1)
                     parent.left_pile.contents[0] = (info_widget, options)
-    
+
     def focus_lists(self):
         self.columns.focus_position = 0
 
@@ -1689,7 +1738,7 @@ class LXMFPeers(urwid.WidgetWrap):
             self.delete_selected_entry()
         elif key == "ctrl r":
             self.sync_selected_entry()
-            
+
         return super(LXMFPeers, self).keypress(size, key)
 
 
@@ -1713,7 +1762,7 @@ class LXMFPeers(urwid.WidgetWrap):
                 peer = self.app.message_router.peers[destination_hash]
                 if time.time() > peer.last_sync_attempt+sync_grace:
                     peer.next_sync_attempt = time.time()-1
-                    
+
                     def job():
                         peer.sync()
                     threading.Thread(target=job, daemon=True).start()
@@ -1778,7 +1827,7 @@ class LXMFPeerEntry(urwid.WidgetWrap):
 
         node_identity = RNS.Identity.recall(destination_hash)
         display_str = RNS.prettyhexrep(destination_hash)
-        if node_identity != None:            
+        if node_identity != None:
             node_hash = RNS.Destination.hash_from_name_and_identity("nomadnetwork.node", node_identity)
             display_name = self.app.directory.alleged_display_str(node_hash)
             if display_name != None:
