@@ -30,7 +30,7 @@ class PNAnnounceHandler:
             RNS.log("The contained exception was: "+str(e), RNS.LOG_DEBUG)
 
 class Directory:
-    ANNOUNCE_STREAM_MAXLENGTH = 64
+    ANNOUNCE_STREAM_MAXLENGTH = 256
 
     aspect_filter = "nomadnetwork.node"
     @staticmethod

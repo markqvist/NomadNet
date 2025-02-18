@@ -389,7 +389,7 @@ class AnnounceStream(urwid.WidgetWrap):
         # Create tab buttons
         self.tab_nodes = TabButton("Nodes", on_press=self.show_nodes_tab)
         self.tab_peers = TabButton("Peers", on_press=self.show_peers_tab)
-        self.tab_pn = TabButton("LXMF Propagation Nodes", on_press=self.show_pn_tab)
+        self.tab_pn = TabButton("Propagation Nodes", on_press=self.show_pn_tab)
 
         # Create tab bar with proportional widths
         self.tab_bar = urwid.Columns([
