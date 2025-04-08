@@ -345,7 +345,7 @@ class Directory:
             if e.hosts_node:
                 node_list.append(e)
 
-        node_list.sort(key = lambda e: (e.sort_rank if e.sort_rank != None else 2^32, DirectoryEntry.TRUSTED-e.trust_level, e.display_name))
+        node_list.sort(key = lambda e: (e.sort_rank if e.sort_rank != None else 2^32, DirectoryEntry.TRUSTED-e.trust_level, e.display_name if e.display_name != None else "_"))
         return node_list
 
     def number_of_known_nodes(self):
