@@ -19,7 +19,7 @@ from datetime import datetime
 import RNS.vendor.umsgpack as msgpack
 
 from ._version import __version__
-from .vendor.configobj import ConfigObj
+from RNS.vendor.configobj import ConfigObj
 
 class NomadNetworkApp:
     time_format      = "%Y-%m-%d %H:%M:%S"
