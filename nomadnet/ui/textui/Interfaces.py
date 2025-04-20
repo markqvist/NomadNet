@@ -15,6 +15,13 @@ INTERFACE_GLYPHS = {
 }
 
 ### HELPER ###
+PLATFORM_IS_LINUX = False
+try:
+    PLATFORM_IS_LINUX = (RNS.vendor.platformutils.is_android() or
+                         RNS.vendor.platformutils.is_linux())
+except Exception:
+    pass
+
 def _get_interface_icon(glyphset, iface_type):
     glyphset_index = 1  # Default to unicode
     if glyphset == "plain":
@@ -23,6 +30,7 @@ def _get_interface_icon(glyphset, iface_type):
         glyphset_index = 2  # nerdfont
 
     type_to_glyph_tuple = {
+        "BackboneInterface": "NetworkInterfaceType",
         "AutoInterface": "NetworkInterfaceType",
         "TCPClientInterface": "NetworkInterfaceType",
         "TCPServerInterface": "NetworkInterfaceType",
@@ -46,10 +54,10 @@ def _get_interface_icon(glyphset, iface_type):
             return glyph_tuple[glyphset_index + 1]
 
     # Fallback
-    return "(#)" if glyphset == "plain" else "🙾" if glyphset == "unicode" else " "
+    return "(#)" if glyphset == "plain" else "\U0001f67e" if glyphset == "unicode" else "\ued95"
 
 def format_bytes(bytes_value):
-    units = ['bytes', 'KB/s', 'MB/s', 'GB/s', 'TB/s']
+    units = ['bytes', 'KB', 'MB', 'GB', 'TB']
     size = float(bytes_value)
     unit_index = 0
 
@@ -61,6 +69,7 @@ def format_bytes(bytes_value):
         return f"{int(size)} {units[unit_index]}"
     else:
         return f"{size:.1f} {units[unit_index]}"
+
 
 ### PORT FUNCTIONS ###
 PYSERIAL_AVAILABLE = False # If NomadNet is installed on environments with rnspure instead of rns, pyserial won't be available
@@ -389,6 +398,66 @@ COMMON_INTERFACE_OPTIONS = [
 ]
 
 INTERFACE_FIELDS = {
+    "BackboneInterface": [
+        {
+            "config_key": "listen_on",
+            "type": "edit",
+            "label": "Listen On: ",
+            "default": "",
+            "placeholder": "e.g., 0.0.0.0",
+            "transform": lambda x: x.strip()
+        },
+        {
+            "config_key": "port",
+            "type": "edit",
+            "label": "Port: ",
+            "default": "",
+            "placeholder": "e.g., 4242",
+            "validation": ["number"],
+            "transform": lambda x: int(x.strip()) if x.strip() else 4242
+        },
+        {
+            "config_key": "device",
+            "type": "edit",
+            "label": "Device: ",
+            "default": "",
+            "placeholder": "e.g., eth0",
+            "transform": lambda x: x.strip()
+        },
+        {
+            "config_key": "remote",
+            "type": "edit",
+            "label": "Remote: ",
+            "default": "",
+            "placeholder": "e.g., a remote TCPServerInterface location",
+            "transform": lambda x: x.strip()
+        },
+        {
+            "config_key": "target_host",
+            "type": "edit",
+            "label": "Target Host: ",
+            "default": "",
+            "placeholder": "e.g., 201:5d78:af73:5caf:a4de:a79f:3278:71e5",
+            "transform": lambda x: x.strip()
+        },
+        {
+            "config_key": "port",
+            "type": "edit",
+            "label": "Target Port: ",
+            "default": "",
+            "placeholder": "e.g., 4242",
+            "validation": ["number"],
+            "transform": lambda x: int(x.strip()) if x.strip() else 4242
+        },
+        {
+            "config_key": "prefer_ipv6",
+            "type": "checkbox",
+            "label": "",
+            "default": False,
+            "validation": [],
+            "transform": lambda x: bool(x)
+        },
+    ],
     "AutoInterface": [
         {
 
@@ -687,6 +756,73 @@ INTERFACE_FIELDS = {
             ]
         }
     ],
+    "RNodeMultiInterface": [
+        get_port_field(),
+        {
+            "config_key": "subinterfaces",
+            "type": "multitable",
+            "fields": {
+                "frequency": {
+                    "label": "Freq (Hz)",
+                    "type": "edit",
+                    "validation": ["required", "float"],
+                    "transform": lambda x: int(x) if x else None
+                },
+                "bandwidth": {
+                    "label": "BW (Hz)",
+                    "type": "edit",
+                    "options": ["7800", "10400", "15600", "20800", "31250", "41700", "62500", "125000", "250000", "500000", "1625000"],
+                    "transform": lambda x: int(x) if x else None
+                },
+                "txpower": {
+                    "label": "TX (dBm)",
+                    "type": "edit",
+                    "validation": ["required", "number"],
+                    "transform": lambda x: int(x) if x else None
+                },
+                "vport": {
+                    "label": "V.Port",
+                    "type": "edit",
+                    "validation": ["required", "number"],
+                    "transform": lambda x: int(x) if x else None
+                },
+                "spreadingfactor": {
+                    "label": "SF",
+                    "type": "edit",
+                    "transform": lambda x: int(x) if x else None
+                },
+                "codingrate": {
+                    "label": "CR",
+                    "type": "edit",
+                    "transform": lambda x: int(x) if x else None
+                }
+            },
+            "validation": ["required"],
+            "transform": lambda x: x
+        },
+        {
+            "additional_options": [
+                {
+                    "config_key": "id_callsign",
+                    "type": "edit",
+                    "label": "Callsign: ",
+                    "default": "",
+                    "placeholder": "e.g. MYCALL-0",
+                    "validation": [""],
+                    "transform": lambda x: x.strip()
+                },
+                {
+                    "config_key": "id_interval",
+                    "type": "edit",
+                    "label": "ID Interval (Seconds): ",
+                    "placeholder": "e.g. 600",
+                    "default": "",
+                    "validation": ['number'],
+                    "transform": lambda x: "" if x == "" else int(x)
+                }
+            ]
+        }
+    ],
     "SerialInterface": [
         get_port_field(),
         {
@@ -954,6 +1090,24 @@ INTERFACE_FIELDS = {
             ]
         }
     ],
+    "CustomInterface": [
+        {
+            "config_key": "type",
+            "type": "edit",
+            "label": "Interface Type: ",
+            "default": "",
+            "placeholder": "Name of custom interface class",
+            "validation": ["required"],
+            "transform": lambda x: x.strip()
+        },
+        {
+            "config_key": "custom_parameters",
+            "type": "keyvaluepairs",
+            "label": "Parameters: ",
+            "validation": [],
+            "transform": lambda x: x
+        },
+    ],
     "default": [
         {
 
@@ -1059,7 +1213,18 @@ class SelectableInterfaceItem(urwid.WidgetWrap):
         return super().render(size, focus=focus)
 
     def keypress(self, size, key):
-        if key == "enter":
+        if key == "up":
+            listbox = self.parent.box_adapter._original_widget
+            walker = listbox.body
+
+            interface_items = [i for i, item in enumerate(walker)
+                               if isinstance(item, SelectableInterfaceItem)]
+
+            if interface_items and walker[listbox.focus_position] is self and \
+                    listbox.focus_position == interface_items[0]:
+                self.parent.app.ui.main_display.frame.focus_position = "header"
+                return None
+        elif key == "enter":
             self.parent.switch_to_show_interface(self.name)
             return None
         return key
@@ -1236,10 +1401,10 @@ class InterfaceFiller(urwid.WidgetWrap):
             # edit interface
             self.app.ui.main_display.sub_displays.interface_display.edit_selected_interface()
             return None
-        elif key == "tab":
-            # navigation
-            self.app.ui.main_display.frame.focus_position = "header"
-            return
+        elif key == "ctrl w":
+            # open config file editor
+            self.app.ui.main_display.sub_displays.interface_display.open_config_editor()
+            return None
 
         return super().keypress(size, key)
 
@@ -1280,7 +1445,6 @@ class AddInterfaceView(urwid.WidgetWrap):
 
         form_pile = urwid.Pile(pile_items)
         form_filler = urwid.Filler(form_pile, valign="top")
-        #todo
         form_box = urwid.LineBox(
             form_filler,
             title="Add Interface",
@@ -1298,7 +1462,6 @@ class AddInterfaceView(urwid.WidgetWrap):
             width=('relative', 85),
             valign='middle',
             height=('relative', 85),
-
         )
         super().__init__(self.overlay)
 
@@ -1306,7 +1469,7 @@ class AddInterfaceView(urwid.WidgetWrap):
         if field["type"] == "dropdown":
             widget = FormDropdown(
                 config_key=field["config_key"],
-                label=field["label"],
+                label=field.get("label", ""),
                 options=field["options"],
                 default=field.get("default"),
                 validation_types=field.get("validation", []),
@@ -1315,7 +1478,7 @@ class AddInterfaceView(urwid.WidgetWrap):
         elif field["type"] == "checkbox":
             widget = FormCheckbox(
                 config_key=field["config_key"],
-                label=field["label"],
+                label=field.get("label", ""),
                 state=field.get("default", False),
                 validation_types=field.get("validation", []),
                 transform=field.get("transform")
@@ -1324,6 +1487,19 @@ class AddInterfaceView(urwid.WidgetWrap):
             widget = FormMultiList(
                 config_key=field["config_key"],
                 placeholder=field.get("placeholder", ""),
+                validation_types=field.get("validation", []),
+                transform=field.get("transform")
+            )
+        elif field["type"] == "multitable":
+            widget = FormMultiTable(
+                config_key=field["config_key"],
+                fields=field.get("fields", {}),
+                validation_types=field.get("validation", []),
+                transform=field.get("transform")
+            )
+        elif field["type"] == "keyvaluepairs":
+            widget = FormKeyValuePairs(
+                config_key=field["config_key"],
                 validation_types=field.get("validation", []),
                 transform=field.get("transform")
             )
@@ -1337,8 +1513,12 @@ class AddInterfaceView(urwid.WidgetWrap):
                 transform=field.get("transform")
             )
 
+        label = field.get("label", "")
+        if not label:
+            label = " ".join(word.capitalize() for word in field["config_key"].split('_')) + ": "
+
         self.fields[field["config_key"]] = {
-            'label': field["label"],
+            'label': label,
             'widget': widget
         }
 
@@ -1349,7 +1529,7 @@ class AddInterfaceView(urwid.WidgetWrap):
                     if option["type"] == "checkbox":
                         widget = FormCheckbox(
                             config_key=option["config_key"],
-                            label=option["label"],
+                            label=option.get("label", ""),
                             state=option.get("default", False),
                             validation_types=option.get("validation", []),
                             transform=option.get("transform")
@@ -1357,7 +1537,7 @@ class AddInterfaceView(urwid.WidgetWrap):
                     elif option["type"] == "dropdown":
                         widget = FormDropdown(
                             config_key=option["config_key"],
-                            label=option["label"],
+                            label=option.get("label", ""),
                             options=option["options"],
                             default=option.get("default"),
                             validation_types=option.get("validation", []),
@@ -1380,44 +1560,47 @@ class AddInterfaceView(urwid.WidgetWrap):
                             transform=option.get("transform")
                         )
 
+                    label = option.get("label", "")
+                    if not label:
+                        label = " ".join(word.capitalize() for word in option["config_key"].split('_')) + ": "
+
                     self.additional_fields[option["config_key"]] = {
-                        'label': option["label"],
+                        'label': label,
                         'widget': widget,
                         'type': option["type"]
                     }
 
     def _initialize_common_fields(self):
-
         if self.parent.app.rns.transport_enabled():
             # Transport mode options
             COMMON_INTERFACE_OPTIONS.extend([
-            {
-                "config_key": "outgoing",
-                "type": "checkbox",
-                "label": "Allow outgoing traffic",
-                "default": True,
-                "validation": [],
-                "transform": lambda x: bool(x)
-            },
-            {
-                "config_key": "mode",
-                "type": "dropdown",
-                "label": "Interface Mode: ",
-                "options": ["full", "gateway", "access_point", "roaming", "boundary"],
-                "default": "full",
-                "validation": [],
-                "transform": lambda x: x
-            },
-            {
-                "config_key": "announce_cap",
-                "type": "edit",
-                "label": "Announce Cap: ",
-                "placeholder": "Default: 2.0",
-                "default": "",
-                "validation": ["float"],
-                "transform": lambda x: float(x) if x.strip() else 2.0
-            }
-        ])
+                {
+                    "config_key": "outgoing",
+                    "type": "checkbox",
+                    "label": "Allow outgoing traffic",
+                    "default": True,
+                    "validation": [],
+                    "transform": lambda x: bool(x)
+                },
+                {
+                    "config_key": "mode",
+                    "type": "dropdown",
+                    "label": "Interface Mode: ",
+                    "options": ["full", "gateway", "access_point", "roaming", "boundary"],
+                    "default": "full",
+                    "validation": [],
+                    "transform": lambda x: x
+                },
+                {
+                    "config_key": "announce_cap",
+                    "type": "edit",
+                    "label": "Announce Cap: ",
+                    "placeholder": "Default: 2.0",
+                    "default": "",
+                    "validation": ["float"],
+                    "transform": lambda x: float(x) if x.strip() else 2.0
+                }
+            ])
 
         for option in COMMON_INTERFACE_OPTIONS:
             if option["type"] == "checkbox":
@@ -1447,8 +1630,6 @@ class AddInterfaceView(urwid.WidgetWrap):
                     transform=option.get("transform")
                 )
 
-
-
             self.common_fields[option["config_key"]] = {
                 'label': option["label"],
                 'widget': widget,
@@ -1461,12 +1642,21 @@ class AddInterfaceView(urwid.WidgetWrap):
 
     def _build_form_layout(self, iface_fields):
         pile_items = []
-        pile_items.append(urwid.Text(("form_title", f"Add new {_get_interface_icon(self.parent.glyphset, self.iface_type)} {self.iface_type}"), align="center"))
+        pile_items.append(urwid.Text(
+            ("form_title", f"Add new {_get_interface_icon(self.parent.glyphset, self.iface_type)} {self.iface_type}"),
+            align="center"))
         pile_items.append(urwid.Divider("─"))
 
         for key in ["name"] + [f["config_key"] for f in iface_fields]:
             field = self.fields[key]
             widget = field["widget"]
+
+            # Special case for multitable and keyvaluepairs - they already have their own layout
+            if isinstance(widget, (FormMultiTable, FormKeyValuePairs)):
+                pile_items.append(urwid.Text(("key", field["label"]), align="left"))
+                pile_items.append(widget)
+                pile_items.append(urwid.Padding(widget.error_widget, left=2))
+                continue
 
             field_pile = urwid.Pile([
                 urwid.Columns([
@@ -1476,7 +1666,8 @@ class AddInterfaceView(urwid.WidgetWrap):
                 urwid.Padding(widget.error_widget, left=24)
             ])
 
-            if self.iface_type in ["RNodeInterface", "SerialInterface", "AX25KISSInterface", "KISSInterface"] and key == "port":
+            if self.iface_type in ["RNodeInterface", "RNodeMultiInterface", "SerialInterface", "AX25KISSInterface",
+                                   "KISSInterface"] and key == "port":
                 refresh_btn = urwid.Button("Refresh Ports", on_press=self.refresh_ports)
                 refresh_btn = urwid.AttrMap(refresh_btn, "button_normal", focus_map="button_focus")
                 refresh_row = urwid.Padding(refresh_btn, left=26, width=20)
@@ -1495,7 +1686,7 @@ class AddInterfaceView(urwid.WidgetWrap):
         self.ifac_options_button = urwid.AttrMap(self.ifac_options_button, "button_normal", focus_map="button_focus")
         self.ifac_options_widget = urwid.Pile([])
 
-        if self.iface_type == "RNodeInterface":
+        if self.iface_type in ["RNodeInterface", "RNodeMultiInterface"]:
             self.calculator_button = urwid.Button("Show On-Air Calculations", on_press=self.toggle_calculator)
             self.calculator_button = urwid.AttrMap(self.calculator_button, "button_normal", focus_map="button_focus")
 
@@ -1512,7 +1703,7 @@ class AddInterfaceView(urwid.WidgetWrap):
             self.more_options_button,
             self.more_options_widget,
         ])
-        if self.iface_type == "RNodeInterface":
+        if self.iface_type in ["RNodeInterface", "RNodeMultiInterface"]:
             self.rnode_calculator = RNodeCalculator(self)
             self.calculator_visible = False
             self.calculator_widget = urwid.Pile([])
@@ -1564,7 +1755,6 @@ class AddInterfaceView(urwid.WidgetWrap):
                     pile_contents.append(urwid.Divider("─"))
 
             if self.common_fields:
-                # pile_contents.append(urwid.Text(("interface_title", "Common "), align="center"))
                 for key, field in self.common_fields.items():
                     widget = field['widget']
 
@@ -1697,17 +1887,35 @@ class AddInterfaceView(urwid.WidgetWrap):
         if not all_valid:
             return
 
-        interface_config = {
-            "type": self.iface_type,
-            "interface_enabled": True
-        }
+        if self.iface_type == "CustomInterface":
+            custom_type = self.fields.get('type', {}).get('widget').get_value()
+            interface_config = {
+                "type": custom_type,
+                "interface_enabled": True
+            }
+        else:
+            interface_config = {
+                "type": self.iface_type,
+                "interface_enabled": True
+            }
 
         for field_key, field in self.fields.items():
-            if field_key != "name":
+            if field_key not in ["name", "custom_parameters", "type"]:
                 widget = field["widget"]
                 value = widget.get_value()
-                if value is not None and value != "":
+
+                if field_key == "subinterfaces" and self.iface_type == "RNodeMultiInterface" and isinstance(value,
+                                                                                                            dict):
+                    for subname, subconfig in value.items():
+                        interface_config[f"{subname}"] = subconfig
+                elif value is not None and value != "":
                     interface_config[widget.config_key] = value
+
+        if self.iface_type == "CustomInterface" and "custom_parameters" in self.fields:
+            custom_params = self.fields["custom_parameters"]["widget"].get_value()
+            if isinstance(custom_params, dict):
+                for param_key, param_value in custom_params.items():
+                    interface_config[param_key] = param_value
 
         for field_key, field in self.additional_fields.items():
             widget = field["widget"]
@@ -1721,23 +1929,22 @@ class AddInterfaceView(urwid.WidgetWrap):
             if value is not None and value != "":
                 interface_config[widget.config_key] = value
 
-        # Add interface to RNS config
         try:
             interfaces = self.parent.app.rns.config['interfaces']
-
             interfaces[name] = interface_config
-
             self.parent.app.rns.config.write()
-            print(self.parent.glyphset)
+
+            display_type = custom_type if self.iface_type == "CustomInterface" else self.iface_type
+
             new_item = SelectableInterfaceItem(
                 parent=self.parent,
                 name=name,
                 is_connected=False,  # will always be false until restart
                 is_enabled=True,
-                iface_type=self.iface_type,
+                iface_type=display_type,
                 tx=0,
                 rx=0,
-                icon=_get_interface_icon(self.parent.glyphset, self.iface_type),
+                icon=_get_interface_icon(self.parent.glyphset, display_type),
                 iface_options=interface_config
             )
 
@@ -1754,7 +1961,6 @@ class AddInterfaceView(urwid.WidgetWrap):
         self.parent.switch_to_list()
 
     def show_message(self, message, title="Notice"):
-
         def dismiss_dialog(button):
             self.parent.switch_to_list()
 
@@ -1781,127 +1987,106 @@ class AddInterfaceView(urwid.WidgetWrap):
         self.parent.widget = overlay
         self.parent.app.ui.main_display.update_active_sub_display()
 
+
 class EditInterfaceView(AddInterfaceView):
     def __init__(self, parent, iface_name):
         self.parent = parent
         self.iface_name = iface_name
 
         self.interface_config = parent.app.rns.config['interfaces'][iface_name]
-        self.iface_type = self.interface_config.get("type", "Unknown")
+        config_type = self.interface_config.get("type", "Unknown")
+
+        # check if this is a custom interface type
+        known_types = list(INTERFACE_FIELDS.keys())
+        if config_type not in known_types:
+            self.original_type = config_type
+            self.iface_type = "CustomInterface"
+        else:
+            self.original_type = None
+            self.iface_type = config_type
 
         super().__init__(parent, self.iface_type)
 
         self.overlay.top_w.title_widget.set_text(f"Edit Interface: {iface_name}")
+
         self._populate_form_fields()
 
     def _populate_form_fields(self):
-
         self.fields['name']['widget'].edit_text = self.iface_name
 
+        if self.original_type and self.iface_type == "CustomInterface":
+            if "type" in self.fields:
+                self.fields["type"]["widget"].edit_text = self.original_type
+
+            if "custom_parameters" in self.fields:
+                custom_params = {}
+                standard_keys = ["type", "interface_enabled", "enabled", "description",
+                                 "network_name", "bitrate", "passphrase", "ifac_size",
+                                 "mode", "outgoing", "announce_cap"]
+
+                for key, value in self.interface_config.items():
+                    if key not in standard_keys:
+                        custom_params[key] = value
+
+                self.fields["custom_parameters"]["widget"].set_value(custom_params)
+
         for key, field in self.fields.items():
-            if key != 'name' and key in self.interface_config:
+            if key not in ['name', 'type', 'custom_parameters']:
                 widget = field['widget']
-                value = self.interface_config[key]
 
-                if key == 'frequency':
-                    # convert Hz back to MHz
-                    value = float(value) / 1000000
-                    # decimal format
-                    value = f"{value:.6f}".rstrip('0').rstrip('.') if '.' in f"{value:.6f}" else f"{value}"
+                if key == "subinterfaces" and isinstance(widget, FormMultiTable):
+                    self._populate_subinterfaces(widget)
+                    continue
 
-                if hasattr(widget, 'edit_text'):
-                    # For text input fields, set edit_text
-                    widget.edit_text = str(value)
-                elif hasattr(widget, 'set_state'):
-                    # For checkboxes
-                    widget.set_state(bool(value))
-                elif isinstance(widget, FormDropdown):
-                    # For dropdowns - update selected and update display
-                    str_value = str(value)
-                    if str_value in widget.options:
-                        widget.selected = str_value
-                        widget.main_button.base_widget.set_text(str_value)
-                    else:
-                        for opt in widget.options:
-                            try:
-                                if widget.transform(opt) == value:
-                                    widget.selected = opt
-                                    widget.main_button.base_widget.set_text(opt)
-                                    break
-                            except:
-                                pass
-                elif isinstance(widget, FormMultiList):
-                    if isinstance(value, str):
-                        items = [item.strip() for item in value.split(',') if item.strip()]
-                        self._populate_multilist(widget, items)
-                    elif isinstance(value, list):
-                        self._populate_multilist(widget, value)
+                if key in self.interface_config:
+                    value = self.interface_config[key]
+
+                    if key == 'frequency':
+                        value = float(value) / 1000000
+                        value = f"{value:.6f}".rstrip('0').rstrip('.') if '.' in f"{value:.6f}" else f"{value}"
+
+                    self._set_field_value(widget, value)
 
         for key, field in self.additional_fields.items():
             if key in self.interface_config:
-                widget = field['widget']
-                value = self.interface_config[key]
-
-                if hasattr(widget, 'edit_text'):
-                    widget.edit_text = str(value)
-                elif hasattr(widget, 'set_state'):
-                    # RNS.log(f"KEY: {key} VAL: {value}")
-                    checkbox_state = value if isinstance(value, bool) else value.strip().lower() not in ('false', 'off', 'no', '0')
-                    widget.set_state(checkbox_state)
-                elif isinstance(widget, FormDropdown):
-                    str_value = str(value)
-                    if str_value in widget.options:
-                        widget.selected = str_value
-                        widget.main_button.base_widget.set_text(str_value)
-                    else:
-                        # Try to match after transform
-                        for opt in widget.options:
-                            try:
-                                if widget.transform(opt) == value:
-                                    widget.selected = opt
-                                    widget.main_button.base_widget.set_text(opt)
-                                    break
-                            except:
-                                pass
-                elif isinstance(widget, FormMultiList):
-                    if isinstance(value, str):
-                        items = [item.strip() for item in value.split(',') if item.strip()]
-                        self._populate_multilist(widget, items)
-                    elif isinstance(value, list):
-                        self._populate_multilist(widget, value)
+                self._set_field_value(field['widget'], self.interface_config[key])
 
         for key, field in self.common_fields.items():
             if key in self.interface_config:
-                widget = field['widget']
-                value = self.interface_config[key]
+                self._set_field_value(field['widget'], self.interface_config[key])
 
-                if hasattr(widget, 'edit_text'):
-                    widget.edit_text = str(value)
-                elif hasattr(widget, 'set_state'):
-                    widget.set_state(bool(value))
-                elif isinstance(widget, FormDropdown):
-                    str_value = str(value)
-                    if str_value in widget.options:
-                        widget.selected = str_value
-                        widget.main_button.base_widget.set_text(str_value)
-                    else:
-                        # Try to match after transform
-                        for opt in widget.options:
-                            try:
-                                if widget.transform(opt) == value:
-                                    widget.selected = opt
-                                    widget.main_button.base_widget.set_text(opt)
-                                    break
-                            except:
-                                pass
-                elif isinstance(widget, FormMultiList):
-                    if isinstance(value, str):
-                        items = [item.strip() for item in value.split(',') if item.strip()]
-                        self._populate_multilist(widget, items)
-                    elif isinstance(value, list):
-                        self._populate_multilist(widget, value)
+    def _set_field_value(self, widget, value):
+        if hasattr(widget, 'edit_text'):
+            widget.edit_text = str(value)
+        elif hasattr(widget, 'set_state'):
+            checkbox_state = value if isinstance(value, bool) else value.strip().lower() not in (
+                'false', 'off', 'no', '0')
+            widget.set_state(checkbox_state)
+        elif isinstance(widget, FormDropdown):
+            str_value = str(value)
+            if str_value in widget.options:
+                widget.selected = str_value
+                widget.main_button.base_widget.set_text(str_value)
+            else:
+                # Try to match after transform
+                for opt in widget.options:
+                    try:
+                        if widget.transform(opt) == value:
+                            widget.selected = opt
+                            widget.main_button.base_widget.set_text(opt)
+                            break
+                    except:
+                        pass
+        elif isinstance(widget, FormMultiList):
+            self._populate_multilist(widget, value)
 
-    def _populate_multilist(self, widget, items):
+    def _populate_multilist(self, widget, value):
+        items = []
+        if isinstance(value, str):
+            items = [item.strip() for item in value.split(',') if item.strip()]
+        elif isinstance(value, list):
+            items = value
+
         while len(widget.entries) > 1:
             widget.remove_entry(None, widget.entries[-1])
 
@@ -1917,23 +2102,63 @@ class EditInterfaceView(AddInterfaceView):
                 edit_widget = entry.contents[0][0]
                 edit_widget.edit_text = items[i]
 
+    def _populate_subinterfaces(self, widget):
+        subinterfaces = {}
+
+        for key, value in self.interface_config.items():
+            if isinstance(value, dict):
+                if key.startswith('[[[') and key.endswith(']]]'):
+                    clean_key = key[3:-3]  # removes [[[...]]]
+                    subinterfaces[clean_key] = value
+                elif key not in ["type", "interface_enabled", "enabled", "port",
+                                 "id_callsign", "id_interval"]:
+                    subinterfaces[key] = value
+
+        if subinterfaces:
+            widget.set_value(subinterfaces)
+
     def on_save(self, button):
         if not self.validate_all():
             return
 
         new_name = self.fields['name']["widget"].get_value() or self.iface_name
 
+        if new_name != self.iface_name and new_name in self.parent.app.rns.config['interfaces']:
+            self.fields['name']["widget"].error = f"Interface name '{new_name}' already exists"
+            self.fields['name']["widget"].error_widget.set_text(("error", self.fields['name']["widget"].error))
+            return
+
+        if self.iface_type == "CustomInterface":
+            interface_type = self.fields.get('type', {}).get('widget').get_value()
+        else:
+            interface_type = self.iface_type
+
         updated_config = {
-            "type": self.iface_type,
+            "type": interface_type,
             "interface_enabled": True
         }
 
         for field_key, field in self.fields.items():
-            if field_key != "name":
+            if field_key not in ["name", "custom_parameters", "type"]:
                 widget = field["widget"]
                 value = widget.get_value()
                 if value is not None and value != "":
                     updated_config[widget.config_key] = value
+
+        if self.iface_type == "CustomInterface" and "custom_parameters" in self.fields:
+            custom_params = self.fields["custom_parameters"]["widget"].get_value()
+            if isinstance(custom_params, dict):
+                for param_key, param_value in custom_params.items():
+                    updated_config[param_key] = param_value
+
+        elif self.iface_type == "RNodeMultiInterface" and "subinterfaces" in self.fields:
+            subinterfaces = self.fields["subinterfaces"]["widget"].get_value()
+
+            for subname, subconfig in subinterfaces.items():
+                if any(k.startswith('[[[') for k in self.interface_config.keys()):
+                    updated_config[f"[[[{subname}]]]"] = subconfig
+                else:
+                    updated_config[subname] = subconfig
 
         for field_key, field in self.additional_fields.items():
             widget = field["widget"]
@@ -1963,13 +2188,14 @@ class EditInterfaceView(AddInterfaceView):
 
             self.parent.app.rns.config.write()
 
+            display_type = interface_type
+
             for item in self.parent.interface_items:
                 if item.name == new_name:
-                    item.iface_type = self.iface_type
+                    item.iface_type = display_type
                     break
 
             self.parent._rebuild_list()
-
             self.show_message(f"Interface {new_name} updated. Restart NomadNet for these changes to take effect")
 
         except Exception as e:
@@ -1991,6 +2217,8 @@ class ShowInterface(urwid.WidgetWrap):
         self.parent.shortcuts_display.set_show_interface_shortcuts()
 
         self.config_rows = []
+
+        self.history_length=60
 
         # get interface stats
         interface_stats = self.parent.app.rns.get_interface_stats()
@@ -2070,7 +2298,7 @@ class ShowInterface(urwid.WidgetWrap):
         self.info_rows.append(self.stat_row)
         self.info_rows.append(urwid.Divider("-"))
 
-        self.bandwidth_chart = InterfaceBandwidthChart(history_length=60, glyphset=self.parent.glyphset)
+        self.bandwidth_chart = InterfaceBandwidthChart(history_length=self.history_length, glyphset=self.parent.glyphset)
         self.bandwidth_chart.update(self.rx, self.tx)
 
         self.rx_chart_text = urwid.Text("Loading RX data...", align='left')
@@ -2117,7 +2345,8 @@ class ShowInterface(urwid.WidgetWrap):
 
         screen = urwid.raw_display.Screen()
         screen_cols, _ = screen.get_cols_rows()
-        if screen_cols >= 100:
+        # RNS.log(screen_cols)
+        if screen_cols >= 145:
             self.charts_widget = self.horizontal_charts
             self.is_horizontal = True
 
@@ -2410,12 +2639,11 @@ class ShowInterface(urwid.WidgetWrap):
                 self.frame.focus_position = 'footer'
                 footer_pile = self.frame.footer
                 if isinstance(footer_pile, urwid.Pile):
-                    footer_pile.focus_position = 1 # button row
+                    footer_pile.focus_position = 1  # button row
                     button_row = footer_pile.contents[1][0]
                     if isinstance(button_row, urwid.Columns):
                         button_row.focus_position = 0
                 return None
-            # If we're currently in footer change the focus
             elif self.frame.focus_position == 'footer':
                 footer_pile = self.frame.footer
                 if isinstance(footer_pile, urwid.Pile):
@@ -2451,6 +2679,33 @@ class ShowInterface(urwid.WidgetWrap):
                         elif button_row.focus_position == 0:  # back button
                             self.frame.focus_position = 'body'
                             return None
+        elif key == 'down':
+            if self.frame.focus_position == 'body':
+                result = super().keypress(size, key)
+                # if the key wasn't consumed, we're at the bottom
+                if result == 'down':
+                    self.frame.focus_position = 'footer'
+                    footer_pile = self.frame.footer
+                    if isinstance(footer_pile, urwid.Pile):
+                        footer_pile.focus_position = 1  # button row
+                        button_row = footer_pile.contents[1][0]
+                        if isinstance(button_row, urwid.Columns):
+                            button_row.focus_position = 0  # focus on back button
+                    return None
+                return result
+        elif key == 'up':
+            if self.frame.focus_position == 'footer':
+                self.frame.focus_position = 'body'
+                listbox = self.frame.body
+                if hasattr(listbox, 'body') and len(listbox.body) > 0:
+                    listbox.focus_position = len(listbox.body) - 1
+                return None
+            elif self.frame.focus_position == 'body':
+                result = super().keypress(size, key)
+                # if the key wasn't consumed, we're at the top
+                if result == 'up':
+                    pass
+                return result
         elif key == "h" and self.is_connected:  # horizontal layout
             if not self.is_horizontal:
                 self.switch_to_horizontal()
@@ -2496,37 +2751,60 @@ class ShowInterface(urwid.WidgetWrap):
         if not self.started:
             return
 
-        interface_stats = self.parent.app.rns.get_interface_stats()
-        stats_lookup = {iface['short_name']: iface for iface in interface_stats['interfaces']}
-        stats = stats_lookup.get(self.iface_name, {})
+        try:
+            interface_stats = self.parent.app.rns.get_interface_stats()
+            stats_lookup = {iface['short_name']: iface for iface in interface_stats['interfaces']}
+            stats = stats_lookup.get(self.iface_name, {})
 
-        tx = stats.get("txb", self.tx)
-        rx = stats.get("rxb", self.rx)
+            tx = stats.get("txb", self.tx)
+            rx = stats.get("rxb", self.rx)
 
-        new_connection_status = stats.get("status", False)
-        if new_connection_status != self.is_connected:
-            self.update_connection_display(new_connection_status)
+            new_connection_status = stats.get("status", False)
+            if new_connection_status != self.is_connected:
+                self.update_connection_display(new_connection_status)
 
-            if not self.is_connected:
-                return
+                if not self.is_connected:
+                    return
 
-        self.tx_text.set_text(("value", format_bytes(tx)))
-        self.rx_text.set_text(("value", format_bytes(rx)))
+            self.tx_text.set_text(("value", format_bytes(tx)))
+            self.rx_text.set_text(("value", format_bytes(rx)))
 
-        self.bandwidth_chart.update(rx, tx)
+            self.bandwidth_chart.update(rx, tx)
 
-        rx_chart, tx_chart, peak_rx, peak_tx = self.bandwidth_chart.get_charts(height=8)
+            rx_chart, tx_chart, peak_rx, peak_tx = self.bandwidth_chart.get_charts(height=8)
 
-        self.rx_chart_text.set_text(rx_chart)
-        self.tx_chart_text.set_text(tx_chart)
-        self.rx_peak_text.set_text(f"Peak: {peak_rx}")
-        self.tx_peak_text.set_text(f"Peak: {peak_tx}")
+            self.rx_chart_text.set_text(rx_chart)
+            self.tx_chart_text.set_text(tx_chart)
+            self.rx_peak_text.set_text(f"Peak: {peak_rx}")
+            self.tx_peak_text.set_text(f"Peak: {peak_tx}")
 
-        self.tx = tx
-        self.rx = rx
+            self.tx = tx
+            self.rx = rx
+        except Exception as e:
+            if not hasattr(self.parent,
+                           'disconnect_overlay') or self.parent.widget is not self.parent.disconnect_overlay:
+                dialog_text = urwid.Pile([
+                    urwid.Text(("disconnected_status", "(!) RNS Instance Disconnected"), align="center"),
+                    urwid.Text("Waiting to Reconnect...", align="center")
+                ])
+                dialog_content = urwid.Filler(dialog_text)
+                dialog_box = urwid.LineBox(dialog_content)
 
-        if self.started:
-            loop.set_alarm_in(1, self.update_bandwidth_charts)
+                self.parent.disconnect_overlay = urwid.Overlay(
+                    dialog_box,
+                    self,
+                    align='center',
+                    width=35,
+                    valign='middle',
+                    height=4
+                )
+
+                self.parent.widget = self.parent.disconnect_overlay
+                self.parent.app.ui.main_display.update_active_sub_display()
+                self.started = False
+        finally:
+            if self.started:
+                loop.set_alarm_in(1, self.update_bandwidth_charts)
 
     def on_back(self, button):
         self.started = False
@@ -2666,18 +2944,44 @@ class InterfaceDisplay:
             loop.set_alarm_in(5, self.check_terminal_size)
 
     def poll_stats(self, loop, user_data):
-        interface_stats = self.app.rns.get_interface_stats()
-        stats_lookup = {iface['short_name']: iface for iface in interface_stats['interfaces']}
-        for item in self.interface_items:
-            # use interface name as the key
-            stats_for_interface = stats_lookup.get(item.name)
-            if stats_for_interface:
-                tx = stats_for_interface.get("txb", 0)
-                rx = stats_for_interface.get("rxb", 0)
-                item.update_stats(tx, rx)
+        try:
+            if hasattr(self, 'disconnect_overlay') and self.widget is self.disconnect_overlay:
+                self.widget = self.interfaces_display
+                self.app.ui.main_display.update_active_sub_display()
 
-        loop.set_alarm_in(1, self.poll_stats)
+            interface_stats = self.app.rns.get_interface_stats()
+            stats_lookup = {iface['short_name']: iface for iface in interface_stats['interfaces']}
+            for item in self.interface_items:
+                # use interface name as the key
+                stats_for_interface = stats_lookup.get(item.name)
+                if stats_for_interface:
+                    tx = stats_for_interface.get("txb", 0)
+                    rx = stats_for_interface.get("rxb", 0)
+                    item.update_stats(tx, rx)
+        except Exception as e:
+            if not hasattr(self, 'disconnect_overlay') or self.widget is not self.disconnect_overlay:
+                dialog_text = urwid.Pile([
+                    urwid.Text(("disconnected_status", "(!) RNS Instance Disconnected"), align="center"),
+                    urwid.Text(("Waiting to Reconnect..."), align="center")
+                    ])
+                dialog_content = urwid.Filler(dialog_text)
+                dialog_box = urwid.LineBox(dialog_content)
 
+                self.disconnect_overlay = urwid.Overlay(
+                    dialog_box,
+                    self.interfaces_display,
+                    align='center',
+                    width=35,
+                    valign='middle',
+                    height=4
+                )
+
+                if self.widget is self.interfaces_display:
+                    self.widget = self.disconnect_overlay
+                    self.app.ui.main_display.update_active_sub_display()
+        finally:
+            if self.started:
+                loop.set_alarm_in(1, self.poll_stats)
 
     def shortcuts(self):
         return self.shortcuts_display
@@ -2717,19 +3021,23 @@ class InterfaceDisplay:
         add_option("TCP Server Interface", "TCPServerInterface")
         add_option("UDP Interface", "UDPInterface")
         add_option("I2P Interface", "I2PInterface")
+        if PLATFORM_IS_LINUX:
+            add_option("Backbone Interface", "BackboneInterface")
 
-        add_heading(f"{rnode_icon}  RNodes")
-        add_option("RNode Interface", "RNodeInterface")
-        # add_option("RNode Multi Interface", "RNodeMultiInterface") TODO
+        if PYSERIAL_AVAILABLE:
+            add_heading(f"{rnode_icon}  RNodes")
+            add_option("RNode Interface", "RNodeInterface")
+            add_option("RNode Multi Interface", "RNodeMultiInterface")
 
-        add_heading(f"{serial_icon}  Hardware")
-        add_option("Serial Interface", "SerialInterface")
-        add_option("KISS Interface", "KISSInterface")
-        add_option("AX.25 KISS Interface", "AX25KISSInterface")
+            add_heading(f"{serial_icon}  Hardware")
+            add_option("Serial Interface", "SerialInterface")
+            add_option("KISS Interface", "KISSInterface")
+            add_option("AX.25 KISS Interface", "AX25KISSInterface")
 
         add_heading(f"{other_icon}  Other")
         add_option("Pipe Interface", "PipeInterface")
-        # add_option("Custom Interface", "CustomInterface") TODO
+        add_option("Custom Interface", "CustomInterface")
+
 
         listbox = urwid.ListBox(urwid.SimpleFocusListWalker(dialog_widgets))
         dialog = DialogLineBox(listbox, parent=self, title="Select Interface Type")
@@ -2834,11 +3142,38 @@ class InterfaceDisplay:
         self.box_adapter._original_widget.body = walker
         self.box_adapter._original_widget.focus_position = len(new_list) - 1
 
+    def open_config_editor(self):
+        import platform
+
+        editor_cmd = self.app.config["textui"]["editor"]
+
+        if platform.system() == "Darwin" and editor_cmd == "editor":
+            editor_cmd = "nano"
+
+        editor_term = urwid.Terminal(
+            (editor_cmd, self.app.rns.configpath),
+            encoding='utf-8',
+            main_loop=self.app.ui.loop,
+        )
+
+        def quit_term(*args, **kwargs):
+            self.widget = self.interfaces_display
+            self.app.ui.main_display.update_active_sub_display()
+            self.app.ui.main_display.request_redraw()
+
+        urwid.connect_signal(editor_term, 'closed', quit_term)
+
+        editor_box = urwid.LineBox(editor_term, title="Editing RNS Config")
+        self.widget = editor_box
+        self.app.ui.main_display.update_active_sub_display()
+        self.app.ui.main_display.frame.focus_position = "body"
+        editor_term.change_focus(True)
+
 ### SHORTCUTS ###
 class InterfaceDisplayShortcuts:
     def __init__(self, app):
         self.app = app
-        self.default_shortcuts = "[C-a] Add Interface [C-e] Edit Interface [C-x] Remove Interface [Enter] Show Interface"
+        self.default_shortcuts = "[C-a] Add Interface [C-e] Edit Interface [C-x] Remove Interface [Enter] Show Interface [C-w] Open Text Editor"
         self.current_shortcuts = self.default_shortcuts
         self.widget = urwid.AttrMap(
             urwid.Text(self.current_shortcuts),
@@ -2853,7 +3188,7 @@ class InterfaceDisplayShortcuts:
         self.update_shortcuts(self.default_shortcuts)
 
     def set_show_interface_shortcuts(self):
-        show_shortcuts = "[Back] Return to List [Tab] Navigate [Shift-tab] Change Focus [h] Horizontal Charts [v] Vertical Charts [Up/Down] Scroll"
+        show_shortcuts = "[Up/Down] Navigate [Tab] Switch Focus [h] Horizontal Charts [v] Vertical Charts "
         self.update_shortcuts(show_shortcuts)
 
     def set_add_interface_shortcuts(self):
