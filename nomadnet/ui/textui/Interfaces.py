@@ -1686,7 +1686,7 @@ class AddInterfaceView(urwid.WidgetWrap):
         self.ifac_options_button = urwid.AttrMap(self.ifac_options_button, "button_normal", focus_map="button_focus")
         self.ifac_options_widget = urwid.Pile([])
 
-        if self.iface_type in ["RNodeInterface", "RNodeMultiInterface"]:
+        if self.iface_type in ["RNodeInterface"]:
             self.calculator_button = urwid.Button("Show On-Air Calculations", on_press=self.toggle_calculator)
             self.calculator_button = urwid.AttrMap(self.calculator_button, "button_normal", focus_map="button_focus")
 
@@ -1703,7 +1703,7 @@ class AddInterfaceView(urwid.WidgetWrap):
             self.more_options_button,
             self.more_options_widget,
         ])
-        if self.iface_type in ["RNodeInterface", "RNodeMultiInterface"]:
+        if self.iface_type in ["RNodeInterface"]:
             self.rnode_calculator = RNodeCalculator(self)
             self.calculator_visible = False
             self.calculator_widget = urwid.Pile([])
@@ -2139,7 +2139,7 @@ class EditInterfaceView(AddInterfaceView):
         }
 
         for field_key, field in self.fields.items():
-            if field_key not in ["name", "custom_parameters", "type"]:
+            if field_key not in ["name", "custom_parameters", "type", "subinterfaces"]:
                 widget = field["widget"]
                 value = widget.get_value()
                 if value is not None and value != "":
@@ -2153,12 +2153,8 @@ class EditInterfaceView(AddInterfaceView):
 
         elif self.iface_type == "RNodeMultiInterface" and "subinterfaces" in self.fields:
             subinterfaces = self.fields["subinterfaces"]["widget"].get_value()
-
             for subname, subconfig in subinterfaces.items():
-                if any(k.startswith('[[[') for k in self.interface_config.keys()):
-                    updated_config[f"[[[{subname}]]]"] = subconfig
-                else:
-                    updated_config[subname] = subconfig
+                updated_config[subname] = subconfig
 
         for field_key, field in self.additional_fields.items():
             widget = field["widget"]

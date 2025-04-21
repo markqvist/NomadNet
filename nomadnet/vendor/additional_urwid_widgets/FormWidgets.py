@@ -386,8 +386,7 @@ class FormMultiTable(urwid.Pile, FormField):
                             try:
                                 value = transform(value)
                             except (ValueError, TypeError):
-                                pass
-                        value = ""
+                                value = ""
 
                     if value:
                         subinterface[field_key] = value
