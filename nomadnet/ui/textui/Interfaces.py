@@ -414,7 +414,7 @@ INTERFACE_FIELDS = {
             "default": "",
             "placeholder": "e.g., 4242",
             "validation": ["number"],
-            "transform": lambda x: int(x.strip()) if x.strip() else 4242
+            "transform": lambda x: int(x.strip()) if x.strip() else None
         },
         {
             "config_key": "device",
@@ -447,7 +447,7 @@ INTERFACE_FIELDS = {
             "default": "",
             "placeholder": "e.g., 4242",
             "validation": ["number"],
-            "transform": lambda x: int(x.strip()) if x.strip() else 4242
+            "transform": lambda x: int(x.strip()) if x.strip() else None
         },
         {
             "config_key": "prefer_ipv6",
@@ -525,8 +525,8 @@ INTERFACE_FIELDS = {
             "label": "Listen Port: ",
             "default": "",
             "placeholder": "e.g., 4242",
-            "validation": ["required", "number"],
-            "transform": lambda x: int(x.strip()) if x.strip() else 4242
+            "validation": ["number"],
+            "transform": lambda x: int(x.strip()) if x.strip() else None
         },
         {
             "additional_options": [
@@ -553,7 +553,7 @@ INTERFACE_FIELDS = {
                     "placeholder": "A specific network device to listen on - e.g. eth0",
                     "default": "",
                     "validation": [],
-                    "transform": lambda x: x.strip()
+                    "transform": lambda x: x.strip() if x.strip() else None
                 },
                 {
                     "config_key": "port",
@@ -562,7 +562,7 @@ INTERFACE_FIELDS = {
                     "default": "",
                     "placeholder": "e.g., 4242",
                     "validation": ["number"],
-                    "transform": lambda x: int(x.strip()) if x.strip() else 4242
+                    "transform": lambda x: int(x.strip()) if x.strip() else None
                 },
             ]
         }
@@ -584,7 +584,7 @@ INTERFACE_FIELDS = {
             "default": "",
             "placeholder": "e.g., 8080",
             "validation": ["required", "number"],
-            "transform": lambda x: int(x.strip()) if x.strip() else 4242
+            "transform": lambda x: int(x.strip()) if x.strip() else None
         },
         {
             "additional_options": [
@@ -623,8 +623,8 @@ INTERFACE_FIELDS = {
             "label": "Listen Port: ",
             "default": "",
             "placeholder": "e.g., 4242",
-            "validation": ["required", "number"],
-            "transform": lambda x: int(x.strip()) if x.strip() else 4242
+            "validation": ["number"],
+            "transform": lambda x: int(x.strip()) if x.strip() else None
         },
         {
             "config_key": "forward_ip",
@@ -642,7 +642,7 @@ INTERFACE_FIELDS = {
             "default": "",
             "placeholder": "e.g., 4242",
             "validation": ["required", "number"],
-            "transform": lambda x: int(x.strip()) if x.strip() else 4242
+            "transform": lambda x: int(x.strip()) if x.strip() else None
         },
         {
             "additional_options": [
@@ -662,7 +662,7 @@ INTERFACE_FIELDS = {
                     "default": "",
                     "placeholder": "e.g., 4242",
                     "validation": ["number"],
-                    "transform": lambda x: int(x.strip()) if x.strip() else 4242
+                    "transform": lambda x: int(x.strip()) if x.strip() else None
                 },
             ]
         }
