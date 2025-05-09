@@ -51,7 +51,15 @@ THEMES = {
             ("browser_controls",            "light gray", "default",                "default",                  "#bbb", "default"),
             ("progress_full",               "black", "light gray",                  "standout",                 "#111", "#bbb"),
             ("progress_empty",              "light gray", "default",                "default",                  "#ddd", "default"),
-        ],        
+            ("interface_title",             "", "",                                 "default",                  "", ""),
+            ("interface_title_selected",    "bold", "",                             "bold",                     "", ""),
+            ("connected_status",            "dark green", "default",                "default",                  "dark green", "default"),
+            ("disconnected_status",         "dark red", "default",                  "default",                  "dark red", "default"),
+            ("placeholder",                 "dark gray", "default",                 "default",                  "dark gray", "default"),
+            ("placeholder_text",            "dark gray", "default",                 "default",                  "dark gray", "default"),
+            ("error",                       "light red,blink",                      "default", "blink",         "#f44,blink", "default"),
+
+        ],
     },
     THEME_LIGHT: {
         "urwid_theme": [
@@ -69,6 +77,7 @@ THEMES = {
             ("msg_header_ok",               "black", "dark green",                 "standout",                 "#111", "#6b2"),
             ("msg_header_caution",          "black", "yellow",                     "standout",                 "#111", "#fd3"),
             ("msg_header_sent",             "black", "dark gray",                  "standout",                 "#111", "#ddd"),
+            ("msg_header_propagated",       "black", "light blue",                 "standout",                 "#111", "#28b"),
             ("msg_header_delivered",        "black", "light blue",                 "standout",                 "#111", "#28b"),
             ("msg_header_failed",           "black", "dark gray",                  "standout",                 "#000", "#777"),
             ("msg_warning_untrusted",       "black", "dark red",                   "standout",                 "#111", "dark red"),
@@ -86,6 +95,13 @@ THEMES = {
             ("browser_controls",            "dark gray", "default",                "default",                  "#444", "default"),
             ("progress_full",               "black", "dark gray",                  "standout",                 "#111", "#bbb"),
             ("progress_empty",              "dark gray", "default",                "default",                  "#ddd", "default"),
+            ("interface_title",             "dark gray", "default",                "default",                  "#444", "default"),
+            ("interface_title_selected",    "dark gray,bold", "default",           "bold",                     "#444,bold", "default"),
+            ("connected_status",            "dark green", "default",               "default",                  "#4a0", "default"),
+            ("disconnected_status",         "dark red", "default",                 "default",                  "#a22", "default"),
+            ("placeholder",                 "light gray", "default",               "default",                  "#999", "default"),
+            ("placeholder_text",            "light gray", "default",               "default",                  "#999", "default"),
+            ("error",                       "dark red,blink", "default",           "blink",                    "#a22,blink", "default"),
         ],        
     }
 }
@@ -128,6 +144,8 @@ GLYPHS = {
     ("sent",            "/\\",       "\u2191",      "\U000f0cd8"),
     ("papermsg",        "P",         "\u25a4",      "\uf719"),
     ("qrcode",          "QR",        "\u25a4",      "\uf029"),
+    ("selected",        "[*] ",      "\u25CF",      "\u25CF"),
+    ("unselected",      "[ ] ",      "\u25CB",      "\u25CB"),
 }
 
 class TextUI:
@@ -163,7 +181,7 @@ class TextUI:
 
         if self.app.config["textui"]["glyphs"] == "plain":
             glyphset = "plain"
-        elif self.app.config["textui"]["glyphs"] == "unicoode":
+        elif self.app.config["textui"]["glyphs"] == "unicode":
             glyphset = "unicode"
         elif self.app.config["textui"]["glyphs"] == "nerdfont":
             glyphset = "nerdfont"
