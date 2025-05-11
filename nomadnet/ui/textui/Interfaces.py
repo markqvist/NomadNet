@@ -2218,8 +2218,12 @@ class ShowInterface(urwid.WidgetWrap):
 
         self.config_rows = []
 
-        self.history_length=60
-        RNS.log(f"Col/rows: {_get_cols_rows()}")
+        screen_cols, _ = _get_cols_rows()
+        margin = 22
+        if screen_cols >= 145:
+            self.history_length = screen_cols//2-margin
+        else:
+            self.history_length = screen_cols-margin
 
         # get interface stats
         interface_stats = self.parent.app.rns.get_interface_stats()
