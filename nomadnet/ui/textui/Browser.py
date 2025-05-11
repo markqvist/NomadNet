@@ -8,7 +8,7 @@ import shutil
 import nomadnet
 import subprocess
 import threading
-from .MicronParser import markup_to_attrmaps
+from .MicronParser import markup_to_attrmaps, make_style, default_state
 from nomadnet.Directory import DirectoryEntry
 from nomadnet.vendor.Scrollable import *
 
@@ -99,6 +99,8 @@ class Browser:
         self.response_speed = None
         self.response_size = None
         self.response_transfer_size = None
+        self.page_background_color = None
+        self.page_foreground_color = None
         self.saved_file_name = None
         self.page_data = None
         self.displayed_page_data = None
@@ -157,10 +159,16 @@ class Browser:
                 self.browser_footer = self.make_status_widget()
                 self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
                 self.link_status_showing = False
+                if self.page_background_color != None or self.page_foreground_color != None:
+                    style_name = make_style(default_state(fg=self.page_foreground_color, bg=self.page_background_color))
+                    self.browser_footer.set_attr_map({None: style_name})
         else:
             self.link_status_showing = True
             self.browser_footer = urwid.AttrMap(urwid.Pile([urwid.Divider(self.g["divider1"]), urwid.Text("Link to: "+str(link_target))]), "browser_controls")
             self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
+            if self.page_background_color != None or self.page_foreground_color != None:
+                style_name = make_style(default_state(fg=self.page_foreground_color, bg=self.page_background_color))
+                self.browser_footer.set_attr_map({None: style_name})
 
     def expand_shorthands(self, destination_type):
         if destination_type == "nnn":
@@ -321,7 +329,14 @@ class Browser:
 
     def make_status_widget(self):
         if self.response_progress > 0:
-            pb = ResponseProgressBar("progress_empty" , "progress_full", current=self.response_progress, done=1.0, satt=None, owner=self)
+            if self.page_background_color != None or self.page_foreground_color != None:
+                style_name = make_style(default_state(fg=self.page_foreground_color, bg=self.page_background_color))
+                style_name_inverted = make_style(default_state(bg=self.page_foreground_color, fg=self.page_background_color))
+            else:
+                style_name = "progress_empty"
+                style_name_inverted = "progress_full"
+
+            pb = ResponseProgressBar(style_name , style_name_inverted, current=self.response_progress, done=1.0, satt=None, owner=self)
             widget = urwid.Pile([urwid.Divider(self.g["divider1"]), pb])
         else:
             widget = urwid.Pile([urwid.Divider(self.g["divider1"]), urwid.Text(self.status_text())])
@@ -368,6 +383,10 @@ class Browser:
         else:
             self.display_widget.set_attr_map({None: "body_text"})
             self.browser_header = self.make_control_widget()
+            if self.page_background_color != None or self.page_foreground_color != None:
+                style_name = make_style(default_state(fg=self.page_foreground_color, bg=self.page_background_color))
+                self.browser_header.set_attr_map({None: style_name})
+
             if self.destination_hash != None:
                 remote_display_string = self.app.directory.simplest_display_str(self.destination_hash)
             else:
@@ -381,6 +400,13 @@ class Browser:
             if self.status == Browser.DONE:
                 self.browser_footer = self.make_status_widget()
                 self.update_page_display()
+
+                if self.page_background_color != None or self.page_foreground_color != None:
+                    style_name = make_style(default_state(fg=self.page_foreground_color, bg=self.page_background_color))
+                    self.browser_body.set_attr_map({None: style_name})
+                    self.browser_footer.set_attr_map({None: style_name})
+                    self.browser_header.set_attr_map({None: style_name})
+                    self.display_widget.set_attr_map({None: style_name})
             
             elif self.status == Browser.LINK_TIMEOUT:
                 self.browser_body = self.make_request_failed_widget()
@@ -394,6 +420,12 @@ class Browser:
                     )
 
                 self.browser_footer = self.make_status_widget()
+
+                if self.page_background_color != None or self.page_foreground_color != None:
+                    style_name = make_style(default_state(fg=self.page_foreground_color, bg=self.page_background_color))
+                    self.browser_footer.set_attr_map({None: style_name})
+                    self.browser_header.set_attr_map({None: style_name})
+                    self.display_widget.set_attr_map({None: style_name})
             
             elif self.status == Browser.REQUEST_FAILED:
                 self.browser_body = self.make_request_failed_widget()
@@ -764,7 +796,24 @@ class Browser:
             self.status = Browser.DONE
             self.page_data = cached
             self.markup = self.page_data.decode("utf-8")
-            self.attr_maps = markup_to_attrmaps(self.markup, url_delegate=self)
+            
+            self.page_background_color = None
+            bgpos = self.markup.find("#!bg=")
+            if bgpos:
+                endpos = self.markup.find("\n", bgpos)
+                if endpos-(bgpos+5) == 3:
+                    bg = self.markup[bgpos+5:endpos]
+                    self.page_background_color = bg
+
+            self.page_foreground_color = None
+            fgpos = self.markup.find("#!fg=")
+            if fgpos:
+                endpos = self.markup.find("\n", fgpos)
+                if endpos-(fgpos+5) == 3:
+                    fg = self.markup[fgpos+5:endpos]
+                    self.page_foreground_color = fg
+
+            self.attr_maps = markup_to_attrmaps(self.markup, url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
             
             self.response_progress = 0
             self.response_speed = None
@@ -814,7 +863,24 @@ class Browser:
                 self.status = Browser.DONE
                 self.page_data = page_data
                 self.markup = self.page_data.decode("utf-8")
-                self.attr_maps = markup_to_attrmaps(self.markup, url_delegate=self)
+                
+                self.page_background_color = None
+                bgpos = self.markup.find("#!bg=")
+                if bgpos:
+                    endpos = self.markup.find("\n", bgpos)
+                    if endpos-(bgpos+5) == 3:
+                        bg = self.markup[bgpos+5:endpos]
+                        self.page_background_color = bg
+
+                self.page_foreground_color = None
+                fgpos = self.markup.find("#!fg=")
+                if fgpos:
+                    endpos = self.markup.find("\n", fgpos)
+                    if endpos-(fgpos+5) == 3:
+                        fg = self.markup[fgpos+5:endpos]
+                        self.page_foreground_color = fg
+
+                self.attr_maps = markup_to_attrmaps(self.markup, url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
                 
                 self.response_progress = 0
                 self.response_speed = None
@@ -949,7 +1015,24 @@ class Browser:
             self.status = Browser.DONE
             self.page_data = request_receipt.response
             self.markup = self.page_data.decode("utf-8")
-            self.attr_maps = markup_to_attrmaps(self.markup, url_delegate=self)
+
+            self.page_background_color = None
+            bgpos = self.markup.find("#!bg=")
+            if bgpos:
+                endpos = self.markup.find("\n", bgpos)
+                if endpos-(bgpos+5) == 3:
+                    bg = self.markup[bgpos+5:endpos]
+                    self.page_background_color = bg
+
+            self.page_foreground_color = None
+            fgpos = self.markup.find("#!fg=")
+            if fgpos:
+                endpos = self.markup.find("\n", fgpos)
+                if endpos-(fgpos+5) == 3:
+                    fg = self.markup[fgpos+5:endpos]
+                    self.page_foreground_color = fg
+
+            self.attr_maps = markup_to_attrmaps(self.markup, url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
             self.response_progress = 0
             self.response_speed = None
             self.progress_updated_at = None

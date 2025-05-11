@@ -1268,6 +1268,9 @@ You can use `B5d5`F222 color `f`B333 `Ff00f`Ff80o`Ffd0r`F9f0m`F0f2a`F0fdt`F07ft`
 
 ``
 
+>Page Foreground and Background Colors
+
+To specify a background color for the entire page, place the `!#!bg=X`! header on one of the first lines of your page, where `!X`! is the color you want to use, for example `!444`!. If you're also using the cache control header, the background specifier must come `*after`* the cache control header. Likewise, you can specify the default text color by using the `!#!fg=X`! header.
 
 >Links
 
@@ -1385,6 +1388,7 @@ A masked input field: `B444`<!|masked_demo`hidden text>`B333
 
 Full control: `B444`<!32|all_options`hidden text>`B333
 `b
+
 >>> Checkboxes
 
 In addition to text fields, Checkboxes are another way of submitting data. They allow the user to make a single selection or select multiple options. 
