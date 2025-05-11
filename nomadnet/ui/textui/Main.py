@@ -4,6 +4,7 @@ from .Network import *
 from .Conversations import *
 from .Directory import *
 from .Config import *
+from .Interfaces import *
 from .Map import *
 from .Log import *
 from .Guide import *
@@ -16,6 +17,7 @@ class SubDisplays():
         self.conversations_display = ConversationsDisplay(self.app)
         self.directory_display = DirectoryDisplay(self.app)
         self.config_display = ConfigDisplay(self.app)
+        self.interface_display = InterfaceDisplay(self.app)
         self.map_display = MapDisplay(self.app)
         self.log_display = LogDisplay(self.app)
         self.guide_display = GuideDisplay(self.app)
@@ -113,6 +115,11 @@ class MainDisplay():
         self.sub_displays.active_display = self.sub_displays.config_display
         self.update_active_sub_display()
 
+    def show_interfaces(self, user_data):
+        self.sub_displays.active_display = self.sub_displays.interface_display
+        self.update_active_sub_display()
+        self.sub_displays.interface_display.start()
+
     def show_log(self, user_data):
         self.sub_displays.active_display = self.sub_displays.log_display
         self.sub_displays.log_display.show()
@@ -171,21 +178,22 @@ class MenuDisplay():
 
         self.menu_indicator  = urwid.Text("")
 
-        menu_text            = (urwid.PACK, self.menu_indicator)
-        button_network       = (11, MenuButton("Network", on_press=handler.show_network))
-        button_conversations = (17, MenuButton("Conversations", on_press=handler.show_conversations))
-        button_directory     = (13, MenuButton("Directory", on_press=handler.show_directory))
-        button_map           = (7,  MenuButton("Map", on_press=handler.show_map))
-        button_log           = (7,  MenuButton("Log", on_press=handler.show_log))
-        button_config        = (10, MenuButton("Config", on_press=handler.show_config))
-        button_guide         = (9,  MenuButton("Guide", on_press=handler.show_guide))
-        button_quit          = (8,  MenuButton("Quit", on_press=handler.quit))
+        menu_text             = (urwid.PACK, self.menu_indicator)
+        button_network        = (11, MenuButton("Network", on_press=handler.show_network))
+        button_conversations  = (17, MenuButton("Conversations", on_press=handler.show_conversations))
+        button_directory      = (13, MenuButton("Directory", on_press=handler.show_directory))
+        button_map            = (7,  MenuButton("Map", on_press=handler.show_map))
+        button_log            = (7,  MenuButton("Log", on_press=handler.show_log))
+        button_config         = (10, MenuButton("Config", on_press=handler.show_config))
+        button_interfaces     = (14, MenuButton("Interfaces", on_press=handler.show_interfaces))
+        button_guide          = (9,  MenuButton("Guide", on_press=handler.show_guide))
+        button_quit           = (8,  MenuButton("Quit", on_press=handler.quit))
 
         # buttons = [menu_text, button_conversations, button_node, button_directory, button_map]
         if self.app.config["textui"]["hide_guide"]:
-            buttons = [menu_text, button_conversations, button_network, button_log, button_config, button_quit]
+            buttons = [menu_text, button_conversations, button_network, button_log, button_interfaces, button_config, button_quit]
         else:
-            buttons = [menu_text, button_conversations, button_network, button_log, button_config, button_guide, button_quit]
+            buttons = [menu_text, button_conversations, button_network, button_log, button_interfaces, button_config, button_guide, button_quit]
 
         columns = MenuColumns(buttons, dividechars=1)
         columns.handler = handler
