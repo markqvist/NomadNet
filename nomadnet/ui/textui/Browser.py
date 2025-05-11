@@ -93,7 +93,10 @@ class Browser:
         self.link = None
         self.loopback = None
         self.status = Browser.DISCONECTED
+        self.progress_updated_at = None
+        self.previous_progress = 0
         self.response_progress = 0
+        self.response_speed = None
         self.response_size = None
         self.response_transfer_size = None
         self.saved_file_name = None
@@ -318,7 +321,7 @@ class Browser:
 
     def make_status_widget(self):
         if self.response_progress > 0:
-            pb = ResponseProgressBar("progress_empty" , "progress_full", current=self.response_progress, done=1.0, satt=None)
+            pb = ResponseProgressBar("progress_empty" , "progress_full", current=self.response_progress, done=1.0, satt=None, owner=self)
             widget = urwid.Pile([urwid.Divider(self.g["divider1"]), pb])
         else:
             widget = urwid.Pile([urwid.Divider(self.g["divider1"]), urwid.Text(self.status_text())])
@@ -427,6 +430,9 @@ class Browser:
         self.attr_maps = []
         self.status = Browser.DISCONECTED
         self.response_progress = 0
+        self.response_speed = None
+        self.progress_updated_at = None
+        self.previous_progress = 0
         self.response_size = None
         self.response_transfer_size = None
 
@@ -537,6 +543,9 @@ class Browser:
 
             self.status = Browser.DONE
             self.response_progress = 0
+            self.response_speed = None
+            self.progress_updated_at = None
+            self.previous_progress = 0
             
         except Exception as e:
             RNS.log("An error occurred while handling file response. The contained exception was: "+str(e), RNS.LOG_ERROR)
@@ -586,6 +595,9 @@ class Browser:
             # Send the request
             self.status = Browser.REQUESTING
             self.response_progress = 0
+            self.response_speed = None
+            self.progress_updated_at = None
+            self.previous_progress = 0
             self.response_size = None
             self.response_transfer_size = None
             self.saved_file_name = None
@@ -755,6 +767,9 @@ class Browser:
             self.attr_maps = markup_to_attrmaps(self.markup, url_delegate=self)
             
             self.response_progress = 0
+            self.response_speed = None
+            self.progress_updated_at = None
+            self.previous_progress = 0
             self.response_size = None
             self.response_transfer_size = None
             self.saved_file_name = None
@@ -802,6 +817,9 @@ class Browser:
                 self.attr_maps = markup_to_attrmaps(self.markup, url_delegate=self)
                 
                 self.response_progress = 0
+                self.response_speed = None
+                self.progress_updated_at = None
+                self.previous_progress = 0
                 self.response_size = None
                 self.response_transfer_size = None
                 self.saved_file_name = None
@@ -868,6 +886,9 @@ class Browser:
         # Send the request
         self.status = Browser.REQUESTING
         self.response_progress = 0
+        self.response_speed = None
+        self.progress_updated_at = None
+        self.previous_progress = 0
         self.response_size = None
         self.response_transfer_size = None
         self.saved_file_name = None
@@ -913,6 +934,9 @@ class Browser:
     def link_establishment_timeout(self):
         self.status = Browser.LINK_TIMEOUT
         self.response_progress = 0
+        self.response_speed = None
+        self.progress_updated_at = None
+        self.previous_progress = 0
         self.response_size = None
         self.response_transfer_size = None
         self.link = None
@@ -927,6 +951,9 @@ class Browser:
             self.markup = self.page_data.decode("utf-8")
             self.attr_maps = markup_to_attrmaps(self.markup, url_delegate=self)
             self.response_progress = 0
+            self.response_speed = None
+            self.progress_updated_at = None
+            self.previous_progress = 0
             self.loaded_from_cache = False
 
             # Simple header handling. Should be expanded when more
@@ -1070,6 +1097,9 @@ class Browser:
                 self.saved_file_name = file_destination.replace(self.app.downloads_path+"/", "", 1)
             self.status = Browser.DONE
             self.response_progress = 0
+            self.response_speed = None
+            self.progress_updated_at = None
+            self.previous_progress = 0
 
             self.update_display()
         except Exception as e:
@@ -1081,6 +1111,9 @@ class Browser:
             if request_receipt.request_id == self.last_request_id:
                 self.status = Browser.REQUEST_FAILED
                 self.response_progress = 0
+                self.response_speed = None
+                self.progress_updated_at = None
+                self.previous_progress = 0
                 self.response_size = None
                 self.response_transfer_size = None
 
@@ -1093,6 +1126,9 @@ class Browser:
         else:
             self.status = Browser.REQUEST_FAILED
             self.response_progress = 0
+            self.response_speed = None
+            self.progress_updated_at = None
+            self.previous_progress = 0
             self.response_size = None
             self.response_transfer_size = None
 
@@ -1107,6 +1143,9 @@ class Browser:
     def request_timeout(self, request_receipt=None):
         self.status = Browser.REQUEST_TIMEOUT
         self.response_progress = 0
+        self.response_speed = None
+        self.progress_updated_at = None
+        self.previous_progress = 0
         self.response_size = None
         self.response_transfer_size = None
 
@@ -1123,6 +1162,17 @@ class Browser:
         self.response_time          = request_receipt.get_response_time()
         self.response_size          = request_receipt.response_size
         self.response_transfer_size = request_receipt.response_transfer_size
+        
+        now = time.time()
+        if self.progress_updated_at == None: self.progress_updated_at = now
+        if now > self.progress_updated_at+1:
+            td = now - self.progress_updated_at
+            pd = self.response_progress - self.previous_progress
+            bd = pd*self.response_size
+            self.response_speed = (bd/td)*8
+            self.previous_progress = self.response_progress
+            self.progress_updated_at = now
+
         self.update_display()
 
 
@@ -1173,8 +1223,14 @@ class Browser:
 
 
 class ResponseProgressBar(urwid.ProgressBar):
+    def __init__(self, empty, full, current=None, done=None, satt=None, owner=None):
+        super().__init__(empty, full, current=current, done=done, satt=satt)
+        self.owner = owner
+
     def get_text(self):
-        return "Receiving response "+super().get_text()
+        if self.owner.response_speed: speed_str = " "+RNS.prettyspeed(self.owner.response_speed)
+        else: speed_str = ""
+        return "Receiving response "+super().get_text().replace(" %", "%")+speed_str
 
 # A convenience function for printing a human-
 # readable file size
