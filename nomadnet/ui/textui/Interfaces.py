@@ -1,5 +1,6 @@
 import RNS
 import time
+import nomadnet
 from math import log10, pow
 
 from nomadnet.vendor.additional_urwid_widgets.FormWidgets import *
@@ -69,6 +70,9 @@ def format_bytes(bytes_value):
         return f"{int(size)} {units[unit_index]}"
     else:
         return f"{size:.1f} {units[unit_index]}"
+
+def _get_cols_rows():
+    return nomadnet.NomadNetworkApp.get_shared_instance().ui.screen.get_cols_rows()
 
 
 ### PORT FUNCTIONS ###
@@ -2215,6 +2219,7 @@ class ShowInterface(urwid.WidgetWrap):
         self.config_rows = []
 
         self.history_length=60
+        RNS.log(f"Col/rows: {_get_cols_rows()}")
 
         # get interface stats
         interface_stats = self.parent.app.rns.get_interface_stats()
@@ -2339,8 +2344,7 @@ class ShowInterface(urwid.WidgetWrap):
         self.charts_widget = self.vertical_charts
         self.is_horizontal = False
 
-        screen = urwid.raw_display.Screen()
-        screen_cols, _ = screen.get_cols_rows()
+        screen_cols, _ = _get_cols_rows()
         # RNS.log(screen_cols)
         if screen_cols >= 145:
             self.charts_widget = self.horizontal_charts
@@ -2819,7 +2823,7 @@ class InterfaceDisplay:
         self.glyphset = self.app.config["textui"]["glyphs"]
         self.g = self.app.ui.glyphs
 
-        self.terminal_cols, self.terminal_rows = urwid.raw_display.Screen().get_cols_rows()
+        self.terminal_cols, self.terminal_rows = _get_cols_rows()
         self.iface_row_offset = 4
         self.list_rows = self.terminal_rows - self.iface_row_offset
 
@@ -2926,7 +2930,7 @@ class InterfaceDisplay:
         self.switch_to_edit_interface(interface_name)
 
     def check_terminal_size(self, loop, user_data):
-        new_cols, new_rows = loop.screen.get_cols_rows()
+        new_cols, new_rows = _get_cols_rows()
 
         if new_rows != self.terminal_rows or new_cols != self.terminal_cols:
             self.terminal_cols, self.terminal_rows = new_cols, new_rows
