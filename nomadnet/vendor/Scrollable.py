@@ -50,7 +50,7 @@ class Scrollable(urwid.WidgetDecoration):
         self._old_cursor_coords = None
         self._rows_max_cached = 0
         self.force_forward_keypress = force_forward_keypress
-        self.__super.__init__(widget)
+        super().__init__(widget)
 
     def render(self, size, focus=False):
         maxcol, maxrow = size
@@ -340,7 +340,7 @@ class ScrollBar(urwid.WidgetDecoration):
         """
         if BOX not in widget.sizing():
             raise ValueError('Not a box widget: %r' % widget)
-        self.__super.__init__(widget)
+        super().__init__(widget)
         self._thumb_char = thumb_char
         self._trough_char = trough_char
         self.scrollbar_side = side
