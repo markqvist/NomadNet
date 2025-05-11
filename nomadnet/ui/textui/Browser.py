@@ -1164,20 +1164,20 @@ class Browser:
             else:
                 file_name = request_receipt.response[0]
                 file_data = request_receipt.response[1]
-                file_destination_name = file_name.split("/")
-                file_destination_name = file_destination_name[len(file_destination_name)-1]
+                file_destination_name = os.path.basename(file_name)
                 file_destination = self.app.downloads_path+"/"+file_destination_name
 
                 counter = 0
                 while os.path.isfile(file_destination):
                     counter += 1
-                    file_destination = self.app.downloads_path+"/"+file_name+"."+str(counter)
+                    file_destination = self.app.downloads_path+"/"+file_destination_name+"."+str(counter)
 
                 fh = open(file_destination, "wb")
                 fh.write(file_data)
                 fh.close()
 
                 self.saved_file_name = file_destination.replace(self.app.downloads_path+"/", "", 1)
+                    
             self.status = Browser.DONE
             self.response_progress = 0
             self.response_speed = None
