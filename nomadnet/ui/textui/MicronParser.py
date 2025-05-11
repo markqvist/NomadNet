@@ -73,8 +73,9 @@ def markup_to_attrmaps(markup, url_delegate = None):
 
     return attrmaps
 
-
+import RNS
 def parse_line(line, state, url_delegate):
+    pre_escape = False
     if len(line) > 0:
         first_char = line[0]
 
@@ -88,6 +89,7 @@ def parse_line(line, state, url_delegate):
             # Check if the command is an escape
             if first_char == "\\":
                 line = line[1:]
+                pre_escape = True
 
             # Check for comments
             elif first_char == "#":
@@ -142,7 +144,7 @@ def parse_line(line, state, url_delegate):
                 else:
                     return [urwid.Padding(urwid.Divider(divider_char), left=left_indent(state), right=right_indent(state))]
 
-        output = make_output(state, line, url_delegate)
+        output = make_output(state, line, url_delegate, pre_escape)
 
         if output != None:
             text_only = True
@@ -425,7 +427,7 @@ def make_style(state):
 
     return name
 
-def make_output(state, line, url_delegate):
+def make_output(state, line, url_delegate, pre_escape=False):
     output = []
     if state["literal"]:
         if line == "\\`=":
@@ -434,8 +436,10 @@ def make_output(state, line, url_delegate):
     else:
         part = ""
         mode = "text"
-        escape = False
+        escape = pre_escape
         skip = 0
+
+        RNS.log(f"Line [ESC {escape}] [MODE {mode}: {line}")
         for i in range(0, len(line)):
             c = line[i]
             if skip > 0:
@@ -666,6 +670,7 @@ def make_output(state, line, url_delegate):
                                 part = ""
                     else:
                         part += c
+                        escape = False
 
             if i == len(line)-1:
                 if len(part) > 0:
