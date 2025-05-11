@@ -1303,8 +1303,8 @@ class InterfaceBandwidthChart:
 
         self.rx_rates.pop(0)
         self.tx_rates.pop(0)
-        self.rx_rates.append(rx_delta)
-        self.tx_rates.append(tx_delta)
+        self.rx_rates.append(rx_delta*8)
+        self.tx_rates.append(tx_delta*8)
 
         if self.update_count >= self.stabilization_updates:
             self.initialization_complete = True
@@ -1328,14 +1328,14 @@ class InterfaceBandwidthChart:
         peak_rx = self.peak_rx_for_display if self.initialization_complete else 0
         peak_tx = self.peak_tx_for_display if self.initialization_complete else 0
 
-        peak_rx_str = format_bytes(peak_rx)
-        peak_tx_str = format_bytes(peak_tx)
+        peak_rx_str = RNS.prettyspeed(peak_rx*8)
+        peak_tx_str = RNS.prettyspeed(peak_tx*8)
 
         rx_chart = chart.plot(
             [rx_data],
             {
                 'height': height,
-                'format': '{:8.1f}',
+                'format': RNS.prettyspeed,
                 'min': 0,
                 'max': self.max_rx_rate * 1.1,
             }
@@ -1345,7 +1345,7 @@ class InterfaceBandwidthChart:
             [tx_data],
             {
                 'height': height,
-                'format': '{:8.1f}',
+                'format': RNS.prettyspeed,
                 'min': 0,
                 'max': self.max_tx_rate * 1.1,
             }

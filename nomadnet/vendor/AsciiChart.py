@@ -46,7 +46,11 @@ class AsciiChart:
         result = [[' '] * width for i in range(rows + 1)]
 
         for y in range(min2, max2 + 1):
-            label = placeholder.format(maximum - ((y - min2) * interval / (rows if rows else 1)))
+            if callable(placeholder):
+                label = placeholder(maximum - ((y - min2) * interval / (rows if rows else 1))).rjust(12)
+            else:
+                label = placeholder.format(maximum - ((y - min2) * interval / (rows if rows else 1)))
+
             result[y - min2][max(offset - len(label), 0)] = label
             result[y - min2][offset - 1] = symbols[0] if y == 0 else symbols[1]
 
