@@ -61,16 +61,14 @@ class Node:
             self.destination.register_request_handler(
                 "/page/index.mu",
                 response_generator = self.serve_default_index,
-                allow = RNS.Destination.ALLOW_ALL
-            )
+                allow = RNS.Destination.ALLOW_ALL)
 
         for page in self.servedpages:
             request_path = "/page"+page.replace(self.app.pagespath, "")
             self.destination.register_request_handler(
                 request_path,
                 response_generator = self.serve_page,
-                allow = RNS.Destination.ALLOW_ALL
-            )
+                allow = RNS.Destination.ALLOW_ALL)
 
     def register_files(self):
         # TODO: Deregister previously registered files
@@ -83,8 +81,8 @@ class Node:
             self.destination.register_request_handler(
                 request_path,
                 response_generator = self.serve_file,
-                allow = RNS.Destination.ALLOW_ALL
-            )
+                allow = RNS.Destination.ALLOW_ALL,
+                auto_compress = 32_000_000)
 
     def scan_pages(self, base_path):
         files = [file for file in os.listdir(base_path) if os.path.isfile(os.path.join(base_path, file)) and file[:1] != "."]
@@ -205,10 +203,7 @@ class Node:
         file_name = path.replace("/file/", "", 1)
         try:
             RNS.log("Serving file: "+file_path, RNS.LOG_VERBOSE)
-            fh = open(file_path, "rb")
-            file_data = fh.read()
-            fh.close()
-            return [file_name, file_data]
+            return [open(file_path, "rb"), {"name": file_name.encode("utf-8")}]
 
         except Exception as e:
             RNS.log("Error occurred while handling request "+RNS.prettyhexrep(request_id)+" for: "+str(path), RNS.LOG_ERROR)

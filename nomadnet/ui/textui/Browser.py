@@ -1,8 +1,10 @@
 import RNS
 import LXMF
+import io
 import os
 import time
 import urwid
+import shutil
 import nomadnet
 import subprocess
 import threading
@@ -1036,23 +1038,36 @@ class Browser:
 
     def file_received(self, request_receipt):
         try:
-            file_name = request_receipt.response[0]
-            file_data = request_receipt.response[1]
-            file_destination_name = file_name.split("/")
-            file_destination_name = file_destination_name[len(file_destination_name)-1]
-            file_destination = self.app.downloads_path+"/"+file_destination_name
+            if type(request_receipt.response) == io.BufferedReader:
+                if request_receipt.metadata != None:
+                    file_name   = os.path.basename(request_receipt.metadata["name"].decode("utf-8"))
+                    file_handle = request_receipt.response
+                    file_destination = self.app.downloads_path+"/"+file_name
 
-            
-            counter = 0
-            while os.path.isfile(file_destination):
-                counter += 1
-                file_destination = self.app.downloads_path+"/"+file_name+"."+str(counter)
+                    counter = 0
+                    while os.path.isfile(file_destination):
+                        counter += 1
+                        file_destination = self.app.downloads_path+"/"+file_name+"."+str(counter)
 
-            fh = open(file_destination, "wb")
-            fh.write(file_data)
-            fh.close()
+                    shutil.move(file_handle.name, file_destination)
 
-            self.saved_file_name = file_destination.replace(self.app.downloads_path+"/", "", 1)
+            else:
+                file_name = request_receipt.response[0]
+                file_data = request_receipt.response[1]
+                file_destination_name = file_name.split("/")
+                file_destination_name = file_destination_name[len(file_destination_name)-1]
+                file_destination = self.app.downloads_path+"/"+file_destination_name
+
+                counter = 0
+                while os.path.isfile(file_destination):
+                    counter += 1
+                    file_destination = self.app.downloads_path+"/"+file_name+"."+str(counter)
+
+                fh = open(file_destination, "wb")
+                fh.write(file_data)
+                fh.close()
+
+                self.saved_file_name = file_destination.replace(self.app.downloads_path+"/", "", 1)
             self.status = Browser.DONE
             self.response_progress = 0
 
