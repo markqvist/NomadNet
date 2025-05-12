@@ -2223,7 +2223,7 @@ class ShowInterface(urwid.WidgetWrap):
         if screen_cols >= 145:
             self.history_length = screen_cols//2-margin
         else:
-            self.history_length = screen_cols-margin
+            self.history_length = screen_cols-(margin+2)
 
         # get interface stats
         interface_stats = self.parent.app.rns.get_interface_stats()
@@ -2402,6 +2402,8 @@ class ShowInterface(urwid.WidgetWrap):
             elif key == "bandwidth":
                 int_value = int(value)
                 value_str = f"{int_value / 1000:.1f} kHz"
+            elif key == "passphrase":
+                value_str = len(value)*"*"
             else:
                 value_str = str(value)
             # format display keys: "listen_port" => Listen Port
