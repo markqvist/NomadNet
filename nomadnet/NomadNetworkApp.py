@@ -1268,7 +1268,7 @@ print_command = lp
 
 # This one is more suitable for full-sheet
 # printers.
-# print_command = lp -d PRINTER_NAME -o page-left=36 -o page-top=36 -o page-right=36 -o page-bottom=36
+# print_command = lp -d PRINTER_NAME-o job-priority=100 -o media=Custom.75x75mm -o orientation-requested=3
 
 '''.splitlines()
 
