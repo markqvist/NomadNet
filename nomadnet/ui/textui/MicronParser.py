@@ -148,6 +148,9 @@ def parse_line(line, state, url_delegate):
             elif first_char == "-":
                 if len(line) == 2:
                     divider_char = line[1]
+                    # Control characters don't make sense here and otherwise crash nomadnet
+                    if ord(divider_char) < 32:
+                        divider_char = "\u2500"
                 else:
                     divider_char = "\u2500"
                 if state["depth"] == 0:
