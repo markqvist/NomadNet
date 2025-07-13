@@ -1259,16 +1259,38 @@ print_messages = No
 print_command = lp
 
 # You can specify what printer to use
-# print_command = lp -d PRINTER_NAME
+# print_command = lp -d [PRINTER_NAME]
 
 # Or specify more advanced options. This
 # example works well for small thermal-
-# roll printers.
-# print_command = lp -d PRINTER_NAME -o cpi=16 -o lpi=8
+# roll printers:
+# print_command = lp -d [PRINTER_NAME] -o cpi=16 -o lpi=8
 
 # This one is more suitable for full-sheet
-# printers.
-# print_command = lp -d PRINTER_NAME -o page-left=36 -o page-top=36 -o page-right=36 -o page-bottom=36
+# printers. It will print a QR code at the center of any media
+# your printer will accept, print in portrait mode, and move the message to
+# the top of the print queue:
+# print_command = lp -d [PRINTER_NAME] -o job-priority=100 -o media=Custom.75x75mm -o orientation-requested=3
+
+# But you can modify the size to fit your needs.
+# The custom media option accepts millimeters, centimeters, and
+# inches in a width by length format like so:
+# -o media=Custom.[WIDTH]x[LENGTH][mm,cm,in]
+#
+# The job priority option accepts 1-100, though you can remove it
+# entirely if you aren't concerned with a print queue:
+# -o job-priority=[1-100]
+#
+# Finally, the orientation option allows for 90 degree rotations beginning with 3, so:
+# -o orientation-requested=4 (landscape, 90 degrees)
+# -o orientation-requested=5 (reverse portrait, 180 degrees)
+#
+# Here is the full command with the recommended customizable variables:
+# print_command = lp -d [PRINTER_NAME] -o job-priority=[N] -o media=[MEDIA_SIZE] -o orientation-requested=[N] -o sides=one-sided
+
+# For example, here's a configuration for USB thermal printer that uses the POS-58 PPD driver
+# with rolls 47.98x209.9mm in size:
+# print_command = lp -d [PRINTER_NAME] -o job-priority=100 -o media=custom_47.98x209.9mm_47.98x209.9mm -o sides=one-sided
 
 '''.splitlines()
 
