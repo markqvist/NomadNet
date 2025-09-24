@@ -467,16 +467,24 @@ def make_output(state, line, url_delegate, pre_escape=False):
                         state["formatting"]["italic"] ^= True
                     elif c == "F":
                         if len(line) >= i+4:
-                            color = line[i+1:i+4]
+                            if line[i+1] == "T": # truecolor support (`FT040506)
+                                color = line[i+2:i+8]
+                                skip = 7
+                            else:
+                                color = line[i+1:i+4]
+                                skip = 3
                             state["fg_color"] = color
-                            skip = 3
                     elif c == "f":
                         state["fg_color"] = state["default_fg"]
                     elif c == "B":
                         if len(line) >= i+4:
-                            color = line[i+1:i+4]
-                            state["bg_color"] = color
-                            skip = 3
+                            if line[i+1] == "T": # truecolor support (`BT040506)
+                                color = line[i+2:i+8]
+                                skip = 7
+                            else:
+                                color = line[i+1:i+4]
+                                skip = 3
+                            state["bg_color"] = color                   
                     elif c == "b":
                         state["bg_color"] = state["default_bg"]
                     elif c == "`":
