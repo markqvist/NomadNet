@@ -1843,15 +1843,18 @@ class LXMFPeerEntry(urwid.WidgetWrap):
                 style = "list_unresponsive"
                 focus_style = "list_focus_unresponsive"
 
-        if peer.propagation_transfer_limit:
-            txfer_limit = RNS.prettysize(peer.propagation_transfer_limit*1000)
-        else:
-            txfer_limit = "No"
+        if peer.propagation_transfer_limit: txfer_limit = RNS.prettysize(peer.propagation_transfer_limit*1000)
+        else: txfer_limit = "No"
+        
+        if peer.propagation_sync_limit: sync_limit = RNS.prettysize(peer.propagation_sync_limit*1000)
+        else: sync_limit = "Unknown"
+        
         ar = round(peer.acceptance_rate*100, 2)
         peer_info_str  = sym+" "+display_str+"\n  "+alive_string+", last heard "+pretty_date(int(peer.last_heard))
-        peer_info_str += "\n  "+str(peer.unhandled_message_count)+f" unhandled LXMs, {txfer_limit} sync limit\n"
+        peer_info_str += f"\n  {sync_limit} sync limit, {txfer_limit} msg limit\n"
         peer_info_str += f"  {RNS.prettyspeed(peer.sync_transfer_rate)} STR, "
-        peer_info_str += f"{RNS.prettyspeed(peer.link_establishment_rate)} LER, {ar}% AR\n"
+        peer_info_str += f"{RNS.prettyspeed(peer.link_establishment_rate)} LER"
+        peer_info_str += "\n  "+str(peer.unhandled_message_count)+f" unhandled LXMs, {ar}% AR"
         widget = ListEntry(peer_info_str)
         self.display_widget = urwid.AttrMap(widget, style, focus_style)
         self.display_widget.destination_hash = destination_hash

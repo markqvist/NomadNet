@@ -128,6 +128,7 @@ class NomadNetworkApp:
         self.notify_on_new_message   = True
 
         self.lxmf_max_propagation_size = None
+        self.lxmf_max_sync_size        = None
         self.lxmf_max_incoming_size    = None
 
         self.periodic_lxmf_sync = True
@@ -302,7 +303,7 @@ class NomadNetworkApp:
 
         self.message_router = LXMF.LXMRouter(
             identity = self.identity, storagepath = self.storagepath, autopeer = True,
-            propagation_limit = self.lxmf_max_propagation_size, delivery_limit = self.lxmf_max_incoming_size,
+            propagation_limit = self.lxmf_max_propagation_size, sync_limit = self.lxmf_max_sync_size, delivery_limit = self.lxmf_max_incoming_size,
             max_peers = self.max_peers, static_peers = static_peers,
         )
 
@@ -888,6 +889,14 @@ class NomadNetworkApp:
                     value = 1
                 self.lxmf_max_propagation_size = value
 
+            if not "max_sync_size" in self.config["node"]:
+                self.lxmf_max_sync_size = 256*40
+            else:
+                value = self.config["node"].as_float("max_sync_size")
+                if value < self.lxmf_max_propagation_size:
+                    value = self.lxmf_max_propagation_size
+                self.lxmf_max_sync_size = value
+
             if not "announce_at_start" in self.config["node"]:
                 self.node_announce_at_start = False
             else:
@@ -1182,16 +1191,20 @@ disable_propagation = Yes
 # message_storage_limit = 2000
 
 # The maximum accepted transfer size per in-
-# coming propagation transfer, in kilobytes.
-# This also sets the upper limit for the size
-# of single messages accepted onto this node.
+# coming propagation message, in kilobytes.
+# This sets the upper limit for the size of
+# single messages accepted onto this node.
+max_transfer_size = 256
+
+# The maximum accepted transfer size per in-
+# coming propagation node sync.
 #
 # If a node wants to propagate a larger number
 # of messages to this node, than what can fit
 # within this limit, it will prioritise sending
-# the smallest, newest messages first, and try
+# the smallest messages first, and try again
 # with any remaining messages at a later point.
-max_transfer_size = 256
+max_sync_size = 10240
 
 # You can tell the LXMF message router to
 # prioritise storage for one or more

@@ -193,7 +193,8 @@ class Directory:
                     found_node = True
                     break
 
-            if not found_node:
+            # TODO: Remove debug and rethink this (needs way to set PN when node is saved)
+            if True or not found_node:
                 if self.app.compact_stream:
                     try:
                         remove_announces = []
