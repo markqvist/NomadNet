@@ -6,6 +6,8 @@ import nomadnet
 import threading
 import RNS.vendor.umsgpack as msgpack
 
+from LXMF import pn_announce_data_is_valid
+
 class PNAnnounceHandler:
     def __init__(self, owner):
         self.aspect_filter = "lxmf.propagation"
@@ -13,10 +15,10 @@ class PNAnnounceHandler:
 
     def received_announce(self, destination_hash, announced_identity, app_data):
         try:
-            if type(app_data) == bytes:
+            if pn_announce_data_is_valid(app_data):
                 data = msgpack.unpackb(app_data)
 
-                if data[0] == True:
+                if data[2] == True:
                     RNS.log("Received active propagation node announce from "+RNS.prettyhexrep(destination_hash))
 
                     associated_peer = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", announced_identity)
