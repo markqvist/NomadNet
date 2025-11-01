@@ -1859,7 +1859,7 @@ class LXMFPeerEntry(urwid.WidgetWrap):
         peer_info_str  = sym+" "+display_str+"\n  "+alive_string+", last heard "+pretty_date(int(peer.last_heard))
         peer_info_str += f"\n  {sync_limit} sync limit, {txfer_limit} msg limit"
         peer_info_str += f"\n  {RNS.prettyspeed(peer.sync_transfer_rate)} STR, {RNS.prettyspeed(peer.link_establishment_rate)} LER"
-        peer_info_str += f"\n  {sct} propagation cost{scf}"
+        peer_info_str += f"\n  Propagation cost {sct}{scf}"
         peer_info_str += "\n  "+str(peer.unhandled_message_count)+f" unhandled LXMs, {ar}% AR"
         widget = ListEntry(peer_info_str)
         self.display_widget = urwid.AttrMap(widget, style, focus_style)

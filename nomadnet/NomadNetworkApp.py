@@ -124,7 +124,7 @@ class NomadNetworkApp:
 
         self.peer_announce_at_start  = True
         self.try_propagation_on_fail = True
-        self.disable_propagation     = False
+        self.disable_propagation     = True
         self.notify_on_new_message   = True
 
         self.lxmf_max_propagation_size = None
@@ -877,7 +877,7 @@ class NomadNetworkApp:
                     self.node_name = self.config["node"]["node_name"]
 
             if not "disable_propagation" in self.config["node"]:
-                self.disable_propagation = False
+                self.disable_propagation = True
             else:
                 self.disable_propagation = self.config["node"].as_bool("disable_propagation")
 
@@ -1171,10 +1171,19 @@ announce_at_start = Yes
 
 # When Nomad Network is hosting a page-serving
 # node, it can also act as an LXMF propagation
-# node. If there is already a large amount of
+# node. This is a convenient feature that lets
+# you easily set up and run a propagation node
+# on the network, but it is not as fully
+# featured as using the lxmd program to host a
+# propagation node. For complete control and
+# flexibility, use lxmd to run a PN. For a
+# small local system or network, the built-in
+# PN functionality will suffice for most cases.
+#
+# If there is already a large amount of
 # propagation nodes on the network, or you
 # simply want to run a pageserving-only node,
-# you can disable running a propagation node.
+# you should disable running a propagation node.
 # Due to lots of propagation nodes being
 # available, this is currently the default.
 disable_propagation = Yes
@@ -1217,8 +1226,8 @@ max_sync_size = 10240
 
 # You can configure the maximum number of other
 # propagation nodes that this node will peer
-# with automatically. The default is 50.
-# max_peers = 25
+# with automatically. The default is 20.
+# max_peers = 20
 
 # You can configure a list of static propagation
 # node peers, that this node will always be
