@@ -122,6 +122,7 @@ class NomadNetworkApp:
         self.page_refresh_interval  = 0
         self.file_refresh_interval  = 0
 
+        self.static_peers            = []
         self.peer_announce_at_start  = True
         self.try_propagation_on_fail = True
         self.disable_propagation     = True
