@@ -697,7 +697,7 @@ class Browser:
 
         def confirmed(sender):
             try:
-                self.retrieve_url(e_url.get_edit_text())
+                self.retrieve_url(e_url.get_edit_text().strip())
             except Exception as e:
                 self.browser_footer = urwid.Text("Could not open link: "+str(e))
                 self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
