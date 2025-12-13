@@ -250,7 +250,7 @@ class AnnounceInfo(urwid.WidgetWrap):
 
 
 class AnnounceStreamEntry(urwid.WidgetWrap):
-    def __init__(self, app, announce, delegate):
+    def __init__(self, app, announce, delegate, show_destination=False):
         full_time_format = "%Y-%m-%d %H:%M:%S"
         date_time_format = "%Y-%m-%d"
         time_time_format = "%H:%M:%S"
@@ -274,7 +274,16 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
             ts_string = dt.strftime(date_only_format)
 
         trust_level  = self.app.directory.trust_level(source_hash)
-        display_str = self.app.directory.simplest_display_str(source_hash)
+        
+        if show_destination:
+            display_str = RNS.hexrep(source_hash, delimit=False)
+        else:
+            try:
+                display_str = announce[2].decode("utf-8")
+                if len(display_str) > 32:
+                    display_str = display_str[:32] + "..."
+            except:
+                display_str = self.app.directory.simplest_display_str(source_hash)
 
         if trust_level == DirectoryEntry.UNTRUSTED:
             symbol        = g["cross"]
@@ -381,22 +390,33 @@ class AnnounceStream(urwid.WidgetWrap):
         self.ilb = None
         self.no_content = True
         self.current_tab = "nodes"
+        self.show_destination = False
+        self.search_text = ""
 
         self.added_entries = []
         self.widget_list = []
-        self.update_widget_list()
 
-        # Create tab buttons
-        self.tab_nodes = TabButton("Nodes", on_press=self.show_nodes_tab)
-        self.tab_peers = TabButton("Peers", on_press=self.show_peers_tab)
-        self.tab_pn = TabButton("Propagation Nodes", on_press=self.show_pn_tab)
+        self.tab_nodes = TabButton("Nodes (0)", on_press=self.show_nodes_tab)
+        self.tab_peers = TabButton("Peers (0)", on_press=self.show_peers_tab)
+        self.tab_pn = TabButton("Propagation Nodes (0)", on_press=self.show_pn_tab)
 
-        # Create tab bar with proportional widths
         self.tab_bar = urwid.Columns([
             ('weight', 1, self.tab_nodes),
             ('weight', 1, self.tab_peers),
             ('weight', 3, self.tab_pn),
-        ], dividechars=1)  # Add 1 character spacing between tabs
+        ], dividechars=1)
+
+        self.search_edit = urwid.Edit(caption="Search: ")
+        urwid.connect_signal(self.search_edit, 'change', self.on_search_change)
+
+        self.display_toggle = TabButton("Show: Name", on_press=self.toggle_display_mode)
+
+        self.filter_bar = urwid.Columns([
+            ('weight', 2, self.search_edit),
+            ('weight', 1, self.display_toggle),
+        ], dividechars=1)
+
+        self.update_widget_list()
 
         self.ilb = ExceptionHandlingListBox(
             self.widget_list,
@@ -406,9 +426,9 @@ class AnnounceStream(urwid.WidgetWrap):
             #highlight_offFocus="list_off_focus"
         )
 
-        # Combine tab bar and list box
         self.pile = urwid.Pile([
             ('pack', self.tab_bar),
+            ('pack', self.filter_bar),
             ('weight', 1, self.ilb),
         ])
 
@@ -422,6 +442,18 @@ class AnnounceStream(urwid.WidgetWrap):
             self.delete_selected_entry()
 
         return super(AnnounceStream, self).keypress(size, key)
+
+    def on_search_change(self, widget, text):
+        self.search_text = text.lower()
+        self.update_widget_list()
+
+    def toggle_display_mode(self, button):
+        self.show_destination = not self.show_destination
+        if self.show_destination:
+            self.display_toggle.set_label("Show: Dest")
+        else:
+            self.display_toggle.set_label("Show: Name")
+        self.update_widget_list()
 
     def delete_selected_entry(self):
         if self.ilb.get_selected_item() != None:
@@ -438,19 +470,36 @@ class AnnounceStream(urwid.WidgetWrap):
         self.widget_list = []
         new_entries = []
 
+        node_count = 0
+        peer_count = 0
+        pn_count = 0
+
         for e in self.app.directory.announce_stream:
             announce_type = e[3]
 
-            # Filter based on current tab
-            if self.current_tab == "nodes" and (announce_type == "node" or announce_type == True):
-                new_entries.append(e)
-            elif self.current_tab == "peers" and (announce_type == "peer" or announce_type == False):
-                new_entries.append(e)
-            elif self.current_tab == "pn" and announce_type == "pn":
-                new_entries.append(e)
+            if self.search_text:
+                try:
+                    announce_data = e[2].decode("utf-8").lower()
+                except:
+                    announce_data = ""
+                if self.search_text not in announce_data:
+                    continue
+
+            if announce_type == "node" or announce_type == True:
+                node_count += 1
+                if self.current_tab == "nodes":
+                    new_entries.append(e)
+            elif announce_type == "peer" or announce_type == False:
+                peer_count += 1
+                if self.current_tab == "peers":
+                    new_entries.append(e)
+            elif announce_type == "pn":
+                pn_count += 1
+                if self.current_tab == "pn":
+                    new_entries.append(e)
 
         for e in new_entries:
-            nw = AnnounceStreamEntry(self.app, e, self)
+            nw = AnnounceStreamEntry(self.app, e, self, show_destination=self.show_destination)
             nw.timestamp = e[0]
             self.widget_list.append(nw)
 
@@ -459,6 +508,10 @@ class AnnounceStream(urwid.WidgetWrap):
         else:
             self.no_content = True
             self.widget_list = [urwid.Text(f"No {self.current_tab} announces", align='center')]
+
+        self.tab_nodes.set_label(f"Nodes ({node_count})")
+        self.tab_peers.set_label(f"Peers ({peer_count})")
+        self.tab_pn.set_label(f"Propagation Nodes ({pn_count})")
 
         if self.ilb:
             self.ilb.set_body(self.widget_list)
@@ -1648,7 +1701,6 @@ class NetworkDisplay():
     def reinit_known_nodes(self):
         self.known_nodes_display = KnownNodes(self.app)
         self.known_nodes_display.delegate = self
-        self.close_list_dialogs()
         self.announce_stream_display.rebuild_widget_list()
 
     def reinit_lxmf_peers(self):
