@@ -245,8 +245,10 @@ class NomadNetworkApp:
                     self.peer_settings["served_file_requests"] = 0
 
             except Exception as e:
-                RNS.log("Could not load local peer settings from "+self.peersettingspath, RNS.LOG_ERROR)
-                RNS.log("The contained exception was: %s" % (str(e)), RNS.LOG_ERROR)
+                RNS.log(f"Could not load local peer settings from {self.peersettingspath}", RNS.LOG_ERROR)
+                RNS.log(f"The contained exception was: {e}", RNS.LOG_ERROR)
+                RNS.log(f"This likely means that the peer settings file has become corrupt.", RNS.LOG_ERROR)
+                RNS.log(f"You can try deleting the file at {self.peersettingspath} and restarting nomadnet.", RNS.LOG_ERROR)
                 nomadnet.panic()
         else:
             try:
