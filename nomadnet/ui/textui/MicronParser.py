@@ -649,7 +649,7 @@ def make_output(state, line, url_delegate, pre_escape=False):
                                     orig_spec = speclist[4]
 
                                 if url_delegate != None:
-                                    linkspec = LinkSpec(link_url, orig_spec)
+                                    linkspec = LinkSpec(link_url, orig_spec, cm=cm)
                                     if link_fields != "":
                                         lf = link_fields.split("|")
                                         if len(lf) > 0:
@@ -696,11 +696,11 @@ def make_output(state, line, url_delegate, pre_escape=False):
 
 
 class LinkSpec(urwid.AttrSpec):
-    def __init__(self, link_target, orig_spec):
+    def __init__(self, link_target, orig_spec, cm=256):
         self.link_target = link_target
         self.link_fields = None
 
-        super().__init__(orig_spec.foreground, orig_spec.background)
+        super().__init__(orig_spec.foreground, orig_spec.background, colors=cm)
 
 
 class LinkableText(urwid.Text):

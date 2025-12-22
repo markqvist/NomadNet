@@ -799,7 +799,7 @@ class Browser:
             
             self.page_background_color = None
             bgpos = self.markup.find("#!bg=")
-            if bgpos:
+            if bgpos >= 0:
                 endpos = self.markup.find("\n", bgpos)
                 if endpos-(bgpos+5) == 3:
                     bg = self.markup[bgpos+5:endpos]
@@ -807,7 +807,7 @@ class Browser:
 
             self.page_foreground_color = None
             fgpos = self.markup.find("#!fg=")
-            if fgpos:
+            if fgpos >= 0:
                 endpos = self.markup.find("\n", fgpos)
                 if endpos-(fgpos+5) == 3:
                     fg = self.markup[fgpos+5:endpos]
@@ -866,7 +866,7 @@ class Browser:
                 
                 self.page_background_color = None
                 bgpos = self.markup.find("#!bg=")
-                if bgpos:
+                if bgpos >= 0:
                     endpos = self.markup.find("\n", bgpos)
                     if endpos-(bgpos+5) == 3:
                         bg = self.markup[bgpos+5:endpos]
@@ -874,7 +874,7 @@ class Browser:
 
                 self.page_foreground_color = None
                 fgpos = self.markup.find("#!fg=")
-                if fgpos:
+                if fgpos >= 0:
                     endpos = self.markup.find("\n", fgpos)
                     if endpos-(fgpos+5) == 3:
                         fg = self.markup[fgpos+5:endpos]
@@ -1018,7 +1018,7 @@ class Browser:
 
             self.page_background_color = None
             bgpos = self.markup.find("#!bg=")
-            if bgpos:
+            if bgpos >= 0:
                 endpos = self.markup.find("\n", bgpos)
                 if endpos-(bgpos+5) == 3:
                     bg = self.markup[bgpos+5:endpos]
@@ -1026,7 +1026,7 @@ class Browser:
 
             self.page_foreground_color = None
             fgpos = self.markup.find("#!fg=")
-            if fgpos:
+            if fgpos >= 0:
                 endpos = self.markup.find("\n", fgpos)
                 if endpos-(fgpos+5) == 3:
                     fg = self.markup[fgpos+5:endpos]
