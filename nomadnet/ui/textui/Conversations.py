@@ -331,7 +331,7 @@ class ConversationsDisplay():
                 existing_conversations = nomadnet.Conversation.conversation_list(self.app)
                 
                 display_name = e_name.get_edit_text()
-                source_hash_text = e_id.get_edit_text()
+                source_hash_text = e_id.get_edit_text().strip()
                 source_hash = bytes.fromhex(source_hash_text)
                 trust_level = DirectoryEntry.UNTRUSTED
                 if r_unknown.state == True:
@@ -412,7 +412,7 @@ class ConversationsDisplay():
             try:
                 local_delivery_signal = "local_delivery_occurred"
                 duplicate_signal = "duplicate_lxm"
-                lxm_uri = e_uri.get_edit_text()
+                lxm_uri = e_uri.get_edit_text().strip()
 
                 ingest_result = self.app.message_router.ingest_lxm_uri(
                     lxm_uri,
