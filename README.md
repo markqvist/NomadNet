@@ -148,13 +148,16 @@ You can help support the continued development of open, free and private communi
   ```
 - Bitcoin
   ```
-  bc1p4a6axuvl7n9hpapfj8sv5reqj8kz6uxa67d5en70vzrttj0fmcusgxsfk5
+  bc1pgqgu8h8xvj4jtafslq396v7ju7hkgymyrzyqft4llfslz5vp99psqfk3a6
   ```
 - Ethereum
   ```
-  0xae89F3B94fC4AD6563F0864a55F9a697a90261ff
+  0x91C421DdfB8a30a49A71d63447ddb54cEBe3465E
   ```
+- Liberapay: https://liberapay.com/Reticulum/
+
 - Ko-Fi: https://ko-fi.com/markqvist
+
 
 ## Development Roadmap
 
@@ -171,8 +174,6 @@ You can help support the continued development of open, free and private communi
     - Better navigation handling when requests fail (also because of closed links)
     - Retry failed messages mechanism
     - Re-arrange buttons to be more consistent
-    - Input field for pages
-    - Post mechanism
     - Term compatibility notice in readme
     - Selected icon in conversation list
     - Possibly a Search Local Nodes function
