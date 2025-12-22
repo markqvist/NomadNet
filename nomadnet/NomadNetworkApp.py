@@ -808,7 +808,7 @@ class NomadNetworkApp:
                             if not "intro_time" in self.config["textui"]:
                                 self.config["textui"]["intro_time"] = 1
                             else:
-                                self.config["textui"]["intro_time"] = self.config["textui"].as_int("intro_time")
+                                self.config["textui"]["intro_time"] = self.config["textui"].as_float("intro_time")
 
                             if not "intro_text" in self.config["textui"]:
                                 self.config["textui"]["intro_text"] = "Nomad Network"
