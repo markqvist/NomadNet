@@ -487,20 +487,14 @@ def make_output(state, line, url_delegate, pre_escape=False):
                         state["bg_color"] = state["default_bg"]
                         state["align"] = state["default_align"]
                     elif c == "c":
-                        if state["align"] != "center":
-                            state["align"] = "center"
-                        else:
-                            state["align"] = state["default_align"]
+                        if state["align"] != "center": state["align"] = "center"
+                        # else: state["align"] = state["default_align"]
                     elif c == "l":
-                        if state["align"] != "left":
-                            state["align"] = "left"
-                        else:
-                            state["align"] = state["default_align"]
+                        if state["align"] != "left": state["align"] = "left"
+                        # else: state["align"] = state["default_align"]
                     elif c == "r":
-                        if state["align"] != "right":
-                            state["align"] = "right"
-                        else:
-                            state["align"] = state["default_align"]
+                        if state["align"] != "right": state["align"] = "right"
+                        # else: state["align"] = state["default_align"]
                     elif c == "a":
                         state["align"] = state["default_align"]
 
