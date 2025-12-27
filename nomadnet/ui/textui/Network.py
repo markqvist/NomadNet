@@ -436,7 +436,7 @@ class AnnounceStream(urwid.WidgetWrap):
         super().__init__(urwid.LineBox(self.display_widget, title="Announce Stream"))
 
     def keypress(self, size, key):
-        if key == "up" and (self.no_content or self.ilb.first_item_is_selected()):
+        if key == "up" and self.pile.focus == self.tab_bar:
             nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.focus_position = "header"
         elif key == "ctrl x":
             self.delete_selected_entry()
