@@ -7,6 +7,7 @@ import threading
 import RNS.vendor.umsgpack as msgpack
 
 from LXMF import pn_announce_data_is_valid
+from nomadnet.util import strip_modifiers
 
 class PNAnnounceHandler:
     def __init__(self, owner):
@@ -229,7 +230,7 @@ class Directory:
 
     def display_name(self, source_hash):
         if source_hash in self.directory_entries:
-            return self.directory_entries[source_hash].display_name
+            return strip_modifiers(self.directory_entries[source_hash].display_name)
         else:
             return None
 
@@ -241,7 +242,7 @@ class Directory:
                 if dn == None:
                     return RNS.prettyhexrep(source_hash)
                 else:
-                    return dn+" <"+RNS.hexrep(source_hash, delimit=False)+">"
+                    return strip_modifiers(dn)+" <"+RNS.hexrep(source_hash, delimit=False)+">"
             else:
                 return "<"+RNS.hexrep(source_hash, delimit=False)+">"
         else:
@@ -250,13 +251,13 @@ class Directory:
                 if dn == None:
                     return RNS.prettyhexrep(source_hash)
                 else:
-                    return dn
+                    return strip_modifiers(dn)
             else:
                 return "<"+RNS.hexrep(source_hash, delimit=False)+">"
 
     def alleged_display_str(self, source_hash):
         if source_hash in self.directory_entries:
-            return self.directory_entries[source_hash].display_name
+            return strip_modifiers(self.directory_entries[source_hash].display_name)
         else:
             return None
 

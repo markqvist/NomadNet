@@ -6,6 +6,7 @@ import threading
 from datetime import datetime
 from nomadnet.Directory import DirectoryEntry
 from nomadnet.vendor.additional_urwid_widgets import IndicativeListBox, MODIFIER_KEY
+from nomadnet.util import strip_modifiers
 
 from .Browser import Browser
 
@@ -279,7 +280,7 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
             display_str = RNS.hexrep(source_hash, delimit=False)
         else:
             try:
-                display_str = announce[2].decode("utf-8")
+                display_str = strip_modifiers(announce[2].decode("utf-8"))
                 if len(display_str) > 32:
                     display_str = display_str[:32] + "..."
             except:
@@ -608,7 +609,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
         if node_entry == None:
             display_str = self.app.directory.simplest_display_str(source_hash)
         else:
-            display_str = node_entry.display_name
+            display_str = strip_modifiers(node_entry.display_name)
 
         addr_str     = "<"+RNS.hexrep(source_hash, delimit=False)+">"
 

@@ -11,6 +11,7 @@ import threading
 from .MicronParser import markup_to_attrmaps, make_style, default_state
 from nomadnet.Directory import DirectoryEntry
 from nomadnet.vendor.Scrollable import *
+from nomadnet.util import strip_modifiers
 
 class BrowserFrame(urwid.Frame):
     def keypress(self, size, key):
@@ -813,7 +814,7 @@ class Browser:
                     fg = self.markup[fgpos+5:endpos]
                     self.page_foreground_color = fg
 
-            self.attr_maps = markup_to_attrmaps(self.markup, url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
+            self.attr_maps = markup_to_attrmaps(strip_modifiers(self.markup), url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
             
             self.response_progress = 0
             self.response_speed = None
@@ -880,7 +881,7 @@ class Browser:
                         fg = self.markup[fgpos+5:endpos]
                         self.page_foreground_color = fg
 
-                self.attr_maps = markup_to_attrmaps(self.markup, url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
+                self.attr_maps = markup_to_attrmaps(strip_modifiers(self.markup), url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
                 
                 self.response_progress = 0
                 self.response_speed = None
@@ -1032,7 +1033,7 @@ class Browser:
                     fg = self.markup[fgpos+5:endpos]
                     self.page_foreground_color = fg
 
-            self.attr_maps = markup_to_attrmaps(self.markup, url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
+            self.attr_maps = markup_to_attrmaps(strip_modifiers(self.markup), url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
             self.response_progress = 0
             self.response_speed = None
             self.progress_updated_at = None
