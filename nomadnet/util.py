@@ -1,6 +1,8 @@
 import re
 import unicodedata
 
+invalid_rendering = ["🕵️"]
+
 def strip_modifiers(text):
     def process_characters(text):
         result = []
@@ -19,6 +21,9 @@ def strip_modifiers(text):
                 i += 1
                 
         return ''.join(result)
+
+    for char in invalid_rendering:
+        text = text.replace(char, " ")
     
     stripped = process_characters(text)
     stripped = re.sub(r'[\uFE00-\uFE0F]', '', stripped)
