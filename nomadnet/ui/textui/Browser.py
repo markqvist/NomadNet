@@ -37,19 +37,20 @@ class BrowserFrame(urwid.Frame):
                     if hasattr(self.delegate, "page_pile") and self.delegate.page_pile:
                         def df(loop, user_data):
                             st = None
-                            nf = self.delegate.page_pile.focus
-                            if hasattr(nf, "key_timeout"):
-                                st = nf
-                            elif hasattr(nf, "original_widget"):
-                                no = nf.original_widget
-                                if hasattr(no, "original_widget"):
-                                    st = no.original_widget
-                                else:
-                                    if hasattr(no, "key_timeout"):
-                                        st = no
-                        
-                            if st and hasattr(st, "key_timeout") and hasattr(st, "keypress") and callable(st.keypress):
-                                st.keypress(None, None)
+                            if self.delegate.page_pile:
+                                nf = self.delegate.page_pile.focus
+                                if hasattr(nf, "key_timeout"):
+                                    st = nf
+                                elif hasattr(nf, "original_widget"):
+                                    no = nf.original_widget
+                                    if hasattr(no, "original_widget"):
+                                        st = no.original_widget
+                                    else:
+                                        if hasattr(no, "key_timeout"):
+                                            st = no
+                            
+                                if st and hasattr(st, "key_timeout") and hasattr(st, "keypress") and callable(st.keypress):
+                                    st.keypress(None, None)
 
                         nomadnet.NomadNetworkApp.get_shared_instance().ui.loop.set_alarm_in(0.25, df)
                 
