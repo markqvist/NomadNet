@@ -1,6 +1,5 @@
 import re
 import unicodedata
-import RNS
 
 def strip_modifiers(text):
     def process_characters(text):
@@ -26,5 +25,6 @@ def strip_modifiers(text):
     stripped = re.sub(r'[\U000E0100-\U000E01EF]', '', stripped, flags=re.UNICODE)
     stripped = re.sub(r'[\U0001F3FB-\U0001F3FF]', '', stripped, flags=re.UNICODE)
     stripped = re.sub(r'[\u200D\u200C]', '', stripped)
+    stripped = re.sub(r'\r\n?', '\n', stripped)
     
     return stripped
