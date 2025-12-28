@@ -1,5 +1,7 @@
 # Nomad Network - Communicate Freely
 
+*This repository is [a public mirror](./MIRROR.md). All development is happening elsewhere.*
+
 Off-grid, resilient mesh communication with strong encryption, forward secrecy and extreme privacy.
 
 ![Screenshot](https://github.com/markqvist/NomadNet/raw/master/docs/screenshots/1.png)
