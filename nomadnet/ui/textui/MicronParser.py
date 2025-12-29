@@ -283,14 +283,11 @@ def make_style(state):
 
                 if color[0] == "g":
                     val = int(color[1:2])
-                    if val < 25:
-                        result = "black"
-                    elif val < 50:
-                        result = "dark gray"
-                    elif val < 75:
-                        result = "light gray"
-                    else:
-                        result = "white"
+                    if val < 25:   result = "black"
+                    elif val < 50: result = "dark gray"
+                    elif val < 75: result = "light gray"
+                    else:          result = "white"
+                
                 else:
                     r = int(color[0], 16)
                     g = int(color[1], 16)
@@ -298,65 +295,43 @@ def make_style(state):
 
                     if r == g == b:
                         val = int(color[0], 16)*6
-                        if val < 12:
-                            result = "black"
-                        elif val < 50:
-                            result = "dark gray"
-                        elif val < 80:
-                            result = "light gray"
-                        else:
-                            result = "white"
+                        if val < 12:   result = "black"
+                        elif val < 50: result = "dark gray"
+                        elif val < 80: result = "light gray"
+                        else:          result = "white"
 
                     else:
                         if r == b:
                             if r > g:
-                                if r > t:
-                                    result = "light magenta"
-                                else:
-                                    result = "dark magenta"
+                                if r > t: result = "light magenta"
+                                else:     result = "dark magenta"
                             else:
-                                if g > t:
-                                    result = "light green"
-                                else:
-                                    result = "dark green"
+                                if g > t: result = "light green"
+                                else:     result = "dark green"
                         if b == g:
                             if b > r:
-                                if b > t:
-                                    result = "light cyan"
-                                else:
-                                    result = "dark cyan"
+                                if b > t: result = "light cyan"
+                                else:     result = "dark cyan"
                             else:
-                                if r > t:
-                                    result = "light red"
-                                else:
-                                    result = "dark red"
+                                if r > t: result = "light red"
+                                else:     result = "dark red"
                         if g == r:
                             if g > b:
-                                if g > t:
-                                    result = "yellow"
-                                else:
-                                    result = "brown"
+                                if g > t: result = "yellow"
+                                else:     result = "brown"
                             else:
-                                if b > t:
-                                    result = "light blue"
-                                else:
-                                    result = "dark blue"
+                                if b > t: result = "light blue"
+                                else:     result = "dark blue"
 
                         if r > g and r > b:
-                            if r > t:
-                                result = "light red"
-                            else:
-                                result = "dark red"
+                            if r > t: result = "light red"
+                            else:     result = "dark red"
                         if g > r and g > b:
-                            if g > t:
-                                result = "light green"
-                            else:
-                                result = "dark green"
+                            if g > t: result = "light green"
+                            else:     result = "dark green"
                         if b > g and b > r:
-                            if b > t:
-                                result = "light blue"
-                            else:
-                                result = "dark blue"
+                            if b > t: result = "light blue"
+                            else:     result = "dark blue"
 
         except Exception as e:
             result = "default"
@@ -422,12 +397,9 @@ def make_style(state):
     bg        = state["bg_color"]
 
     format_string = ""
-    if bold:
-        format_string += ",bold"
-    if underline:
-        format_string += ",underline"
-    if italic:
-        format_string += ",italics"
+    if bold:      format_string += ",bold"
+    if underline: format_string += ",underline"
+    if italic:    format_string += ",italics"
 
     name = "micron_"+fg+"_"+bg+"_"+format_string
     if not name in SYNTH_STYLES:
@@ -488,13 +460,10 @@ def make_output(state, line, url_delegate, pre_escape=False):
                         state["align"] = state["default_align"]
                     elif c == "c":
                         if state["align"] != "center": state["align"] = "center"
-                        # else: state["align"] = state["default_align"]
                     elif c == "l":
                         if state["align"] != "left": state["align"] = "left"
-                        # else: state["align"] = state["default_align"]
                     elif c == "r":
                         if state["align"] != "right": state["align"] = "right"
-                        # else: state["align"] = state["default_align"]
                     elif c == "a":
                         state["align"] = state["default_align"]
 
