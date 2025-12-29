@@ -2,6 +2,7 @@ import nomadnet
 import urwid
 import random
 import time
+import RNS
 from urwid.util import is_mouse_press
 from urwid.text_layout import calc_coords
 
@@ -85,6 +86,45 @@ def markup_to_attrmaps(markup, url_delegate = None, fg_color=None, bg_color=None
 
     return attrmaps
 
+def parse_partial(line):
+    try:
+        endpos = line.find("}")
+        if endpos == -1: return None
+        else:
+            partial_data = line[0:endpos]
+
+            partial_components = partial_data.split("`")
+            if len(partial_components) == 1:
+                partial_url = partial_components[0]
+                partial_refresh = None
+                partial_fields = ""
+            elif len(partial_components) == 2:
+                partial_url = partial_components[0]
+                partial_refresh = float(partial_components[1])
+                partial_fields = ""
+            # TODO: Implement fields and parameters for partials
+            # elif len(partial_components) == 3:
+            #     partial_url = partial_components[0]
+            #     partial_refresh = float(partial_components[1])
+            #     partial_fields = partial_components[2]
+            else:
+                partial_url = ""
+                partial_fields = ""
+                partial_refresh = None
+
+            if partial_refresh and partial_refresh < 1: partial_refresh = None
+
+            if len(partial_url):
+                pile = urwid.Pile([urwid.Text(f"⧖")])
+                partial_descriptor = "|".join(partial_components)
+                pile.partial_id = RNS.hexrep(RNS.Identity.full_hash(partial_descriptor.encode("utf-8")), delimit=False)
+                pile.partial_url = partial_url
+                pile.partial_fields = partial_fields
+                pile.partial_refresh = partial_refresh
+                return [pile]
+
+    except Exception as e: return None
+
 def parse_line(line, state, url_delegate):
     pre_escape = False
     if len(line) > 0:
@@ -105,6 +145,10 @@ def parse_line(line, state, url_delegate):
             # Check for comments
             elif first_char == "#":
                 return None
+
+            # Check for partials
+            elif line.startswith("`{"):
+                return parse_partial(line[2:])
 
             # Check for section heading reset
             elif first_char == "<":
@@ -620,9 +664,7 @@ def make_output(state, line, url_delegate, pre_escape=False):
 
                                     output.append((linkspec, link_label))
                                 else:
-                                    output.append(make_part(state, link_label)) 
-
-                                
+                                    output.append(make_part(state, link_label))
 
                     mode = "text"
                     if len(part) > 0:

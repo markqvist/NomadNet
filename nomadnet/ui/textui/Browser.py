@@ -8,6 +8,7 @@ import shutil
 import nomadnet
 import subprocess
 import threading
+from threading import Lock
 from .MicronParser import markup_to_attrmaps, make_style, default_state
 from nomadnet.Directory import DirectoryEntry
 from nomadnet.vendor.Scrollable import *
@@ -113,6 +114,9 @@ class Browser:
         self.frame = None
         self.attr_maps = []
         self.page_pile = None
+        self.page_partials = {}
+        self.updater_running = False
+        self.partial_updater_lock = Lock()
         self.build_display()
 
         self.history = []
@@ -231,12 +235,6 @@ class Browser:
                                 else:
                                     pass  # do nothing if checkbox is not check
 
-
-
-
-                        
-
-                
             recurse_down(self.attr_maps)
             RNS.log("Including request data: "+str(request_data), RNS.LOG_DEBUG)
 
@@ -319,6 +317,7 @@ class Browser:
         self.browser_footer = urwid.Text("")
 
         self.page_pile = None
+        self.page_partials = {}
         self.browser_body = urwid.Filler(
             urwid.Text("Disconnected\n"+self.g["arrow_l"]+"  "+self.g["arrow_r"], align=urwid.CENTER),
             urwid.MIDDLE,
@@ -375,6 +374,7 @@ class Browser:
         if self.status == Browser.DISCONECTED:
             self.display_widget.set_attr_map({None: "inactive_text"})
             self.page_pile = None
+            self.page_partials = {}
             self.browser_body = urwid.Filler(
                 urwid.Text("Disconnected\n"+self.g["arrow_l"]+"  "+self.g["arrow_r"], align=urwid.CENTER),
                 urwid.MIDDLE,
@@ -448,7 +448,164 @@ class Browser:
         pile = urwid.Pile(self.attr_maps)
         pile.automove_cursor_on_scroll = True
         self.page_pile = pile
+        self.page_partials = {}
         self.browser_body = urwid.AttrMap(ScrollBar(Scrollable(pile, force_forward_keypress=True), thumb_char="\u2503", trough_char=" "), "scrollbar")
+        self.detect_partials()
+
+    def parse_url(self, url):
+        path = None
+        destination_hash = None
+        components = url.split(":")
+        if len(components) == 1:
+            if len(components[0]) == (RNS.Reticulum.TRUNCATED_HASHLENGTH//8)*2:
+                try: destination_hash = bytes.fromhex(components[0])
+                except Exception as e: raise ValueError("Malformed URL")
+                path = Browser.DEFAULT_PATH
+            else: raise ValueError("Malformed URL")
+        elif len(components) == 2:
+            if len(components[0]) == (RNS.Reticulum.TRUNCATED_HASHLENGTH//8)*2:
+                try: destination_hash = bytes.fromhex(components[0])
+                except Exception as e: raise ValueError("Malformed URL")
+                path = components[1]
+                if len(path) == 0: path = Browser.DEFAULT_PATH
+            else:
+                if len(components[0]) == 0:
+                    if self.destination_hash != None:
+                        destination_hash = self.destination_hash
+                        path = components[1]
+                        if len(path) == 0: path = Browser.DEFAULT_PATH
+                    else: raise ValueError("Malformed URL")
+                else: raise ValueError("Malformed URL")
+        else: raise ValueError("Malformed URL")
+
+        return destination_hash, path
+
+    def detect_partials(self):
+        for w in self.attr_maps:
+            o = w._original_widget
+            if hasattr(o, "partial_id"):
+                RNS.log(f"Found partial: {o.partial_id} / {o.partial_url} / {o.partial_refresh}")
+                partial = {"id": o.partial_id, "url": o.partial_url, "fields": o.partial_fields, "refresh": o.partial_refresh,
+                           "content": None, "updated": None, "update_requested": None, "request_id": None, "destination": None,
+                           "link": None, "pile": o, "attr_maps": None, "failed": False, "pr_throttle": 0}
+
+                self.page_partials[o.partial_id] = partial
+
+        if len(self.page_partials) > 0: self.start_partial_updater()
+
+    def partial_failed(self, request_receipt):
+        RNS.log("Loading page partial failed", RNS.LOG_ERROR)
+        for pid in self.page_partials:
+            partial = self.page_partials[pid]
+            if partial["request_id"] == request_receipt.request_id:
+                try:
+                    partial["updated"] = time.time()
+                    partial["request_id"] = None
+                    partial["content"] = None
+                    partial["attr_maps"] = None
+                    url = partial["url"]
+                    pile = partial["pile"]
+                    pile.contents = [(urwid.Text(f"Could not load partial {url}: The resource transfer failed"), pile.options())]
+                except Exception as e:
+                    RNS.log(f"Error in partial failed callback: {e}", RNS.LOG_ERROR)
+                    RNS.trace_exception(e)
+
+    def partial_progressed(self, request_receipt):
+        pass
+
+    def partial_received(self, request_receipt):
+        for pid in self.page_partials:
+            partial = self.page_partials[pid]
+            if partial["request_id"] == request_receipt.request_id:
+                try:
+                    partial["updated"] = partial["update_requested"]
+                    partial["request_id"] = None
+                    partial["content"] = request_receipt.response.decode("utf-8").rstrip()
+                    partial["attr_maps"] = markup_to_attrmaps(strip_modifiers(partial["content"]), url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
+                    pile = partial["pile"]
+                    pile.contents = [(e, pile.options()) for e in partial["attr_maps"]]
+
+                except Exception as e:
+                    RNS.trace_exception(e)
+
+    def __load_partial(self, partial):
+        if partial["failed"] == True: return
+        try: partial_destination_hash, path = self.parse_url(partial["url"])
+        except Exception as e:
+            RNS.log(f"Could not parse partial URL: {e}", RNS.LOG_ERROR)
+            partial["failed"] = True
+            pile = partial["pile"]
+            url = partial["url"]
+            pile.contents = [(urwid.Text(f"Could not load partial {url}: {e}"), pile.options())]
+            return
+
+        if partial_destination_hash != self.loopback and not RNS.Transport.has_path(partial_destination_hash):
+            if time.time() <= partial["pr_throttle"]: return
+            else:
+                partial["pr_throttle"] = time.time()+15
+                RNS.log(f"Requesting path for partial: {partial_destination_hash} / {path}", RNS.LOG_EXTREME)
+                RNS.Transport.request_path(partial_destination_hash)
+                pr_time = time.time()+RNS.Transport.first_hop_timeout(partial_destination_hash)
+                while not RNS.Transport.has_path(partial_destination_hash):
+                    now = time.time()
+                    if now > pr_time+self.timeout: return
+                    time.sleep(0.25)
+
+        for pid in self.page_partials:
+            other_partial = self.page_partials[pid]
+            if other_partial["link"]:
+                existing_link = other_partial["link"]
+                if existing_link.destination.hash == partial_destination_hash and existing_link.status == RNS.Link.ACTIVE:
+                    RNS.log(f"Re-using existing link: {existing_link}", RNS.LOG_EXTREME)
+                    partial["link"] = existing_link
+                    break
+
+        if not partial["link"]:        
+            RNS.log(f"Establishing link for partial: {partial_destination_hash} / {path}", RNS.LOG_EXTREME)
+            identity = RNS.Identity.recall(partial_destination_hash)
+            destination = RNS.Destination(identity, RNS.Destination.OUT, RNS.Destination.SINGLE, self.app_name, self.aspects)
+            
+            def established(link):
+                RNS.log(f"Link established for partial: {partial_destination_hash} / {path}", RNS.LOG_EXTREME)
+
+            def closed(link):
+                RNS.log(f"Link closed for partial: {partial_destination_hash} / {path}", RNS.LOG_EXTREME)
+                partial["link"] = None
+            
+            partial["link"] = RNS.Link(destination, established_callback = established, closed_callback = closed)
+            timeout = time.time()+self.timeout
+            while partial["link"].status != RNS.Link.ACTIVE and time.time() < timeout: time.sleep(0.1)
+
+        if partial["link"] and partial["link"].status == RNS.Link.ACTIVE and partial["request_id"] == None:
+            RNS.log(f"Sending request for partial: {partial_destination_hash} / {path}", RNS.LOG_EXTREME)
+            receipt = partial["link"].request(path, data = None, response_callback = self.partial_received,
+                                              failed_callback = self.partial_failed, progress_callback = self.partial_progressed)
+
+            if receipt: partial["request_id"] = receipt.request_id
+            else: RNS.log(f"Partial request failed", RNS.LOG_ERROR)
+
+    def start_partial_updater(self):
+        if not self.updater_running: self.update_partials()
+
+    def update_partials(self, loop=None, user_data=None):
+        with self.partial_updater_lock:
+            def job():
+                for pid in self.page_partials:
+                    try:
+                        partial = self.page_partials[pid]
+                        if partial["failed"]: continue
+                        if not partial["updated"] or (partial["refresh"] != None and time.time() > partial["updated"]+partial["refresh"]):
+                            partial["update_requested"] = time.time()
+                            self.__load_partial(partial)
+                    except Exception as e: RNS.log(f"Error updating page partial: {e}", RNS.LOG_ERROR)
+
+            threading.Thread(target=job, daemon=True).start()
+            
+            if len(self.page_partials) > 0:
+                self.updater_running = True
+                self.app.ui.loop.set_alarm_in(1, self.update_partials)
+            else:
+                self.updater_running = False
 
     def identify(self):
         if self.link != None:
