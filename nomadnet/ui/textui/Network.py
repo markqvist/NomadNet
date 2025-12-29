@@ -85,7 +85,7 @@ class AnnounceInfo(urwid.WidgetWrap):
             type_string = "Peer " + g["peer"]
 
         try:
-            data_str = announce[2].decode("utf-8")
+            data_str = strip_modifiers(announce[2].decode("utf-8"))
             data_style = ""
             if trust_level != DirectoryEntry.TRUSTED and len(data_str) > 32:
                 data_str = data_str[:32]+" [...]"
