@@ -185,6 +185,7 @@ class Browser:
             return destination_type
 
     def handle_link(self, link_target, link_data = None):
+        partial_ids = None
         request_data = None
         if link_data != None:
             link_fields = []
@@ -244,6 +245,10 @@ class Browser:
         if len(components) == 2:
             destination_type = self.expand_shorthands(components[0])
             link_target = components[1]
+        elif link_target.startswith("p:"):
+            comps = link_target.split(":")
+            if len(comps) > 1: partial_ids = comps[1:]
+            destination_type = "partial"
         else:
             destination_type = "nomadnetwork.node"
             link_target = components[0]
@@ -263,6 +268,9 @@ class Browser:
         elif destination_type == "lxmf.delivery":
             RNS.log("Passing LXMF link to handler", RNS.LOG_DEBUG)
             self.handle_lxmf_link(link_target)
+
+        elif destination_type == "partial":
+            if partial_ids != None and len(partial_ids) > 0: self.handle_partial_updates(partial_ids)
 
         else:
             RNS.log("No known handler for destination type "+str(destination_type), RNS.LOG_DEBUG)
@@ -483,13 +491,13 @@ class Browser:
     def detect_partials(self):
         for w in self.attr_maps:
             o = w._original_widget
-            if hasattr(o, "partial_id"):
-                RNS.log(f"Found partial: {o.partial_id} / {o.partial_url} / {o.partial_refresh}")
-                partial = {"id": o.partial_id, "url": o.partial_url, "fields": o.partial_fields, "refresh": o.partial_refresh,
-                           "content": None, "updated": None, "update_requested": None, "request_id": None, "destination": None,
-                           "link": None, "pile": o, "attr_maps": None, "failed": False, "pr_throttle": 0}
+            if hasattr(o, "partial_hash"):
+                RNS.log(f"Found partial: {o.partial_hash} / {o.partial_url} / {o.partial_refresh}")
+                partial = {"hash": o.partial_hash, "id": o.partial_id, "url": o.partial_url, "fields": o.partial_fields,
+                           "refresh": o.partial_refresh, "content": None, "updated": None, "update_requested": None, "request_id": None,
+                            "destination": None, "link": None, "pile": o, "attr_maps": None, "failed": False, "pr_throttle": 0}
 
-                self.page_partials[o.partial_id] = partial
+                self.page_partials[o.partial_hash] = partial
 
         if len(self.page_partials) > 0: self.start_partial_updater()
 
@@ -560,7 +568,7 @@ class Browser:
                     partial["link"] = existing_link
                     break
 
-        if not partial["link"]:        
+        if not partial["link"] or partial["link"].status == RNS.Link.CLOSED:
             RNS.log(f"Establishing link for partial: {partial_destination_hash} / {path}", RNS.LOG_EXTREME)
             identity = RNS.Identity.recall(partial_destination_hash)
             destination = RNS.Destination(identity, RNS.Destination.OUT, RNS.Destination.SINGLE, self.app_name, self.aspects)
@@ -644,6 +652,19 @@ class Browser:
     def start_partial_updater(self):
         if not self.updater_running: self.update_partials()
 
+    def handle_partial_updates(self, partial_ids):
+        RNS.log(f"Update partials: {partial_ids}")
+        def job():
+            for pid in self.page_partials:
+                try:
+                    partial = self.page_partials[pid]
+                    if partial["id"] in partial_ids:
+                        partial["update_requested"] = time.time()
+                        self.__load_partial(partial)
+                except Exception as e: RNS.log(f"Error updating page partial: {e}", RNS.LOG_ERROR)
+
+        threading.Thread(target=job, daemon=True).start()
+
     def update_partials(self, loop=None, user_data=None):
         with self.partial_updater_lock:
             def job():
@@ -702,35 +723,25 @@ class Browser:
         components = url.split(":")
         if len(components) == 1:
             if len(components[0]) == (RNS.Reticulum.TRUNCATED_HASHLENGTH//8)*2:
-                try:
-                    destination_hash = bytes.fromhex(components[0])
-                except Exception as e:
-                    raise ValueError("Malformed URL")
+                try: destination_hash = bytes.fromhex(components[0])
+                except Exception as e: raise ValueError("Malformed URL")
                 path = Browser.DEFAULT_PATH
-            else:
-                raise ValueError("Malformed URL")
+            else: raise ValueError("Malformed URL")
         elif len(components) == 2:
             if len(components[0]) == (RNS.Reticulum.TRUNCATED_HASHLENGTH//8)*2:
-                try:
-                    destination_hash = bytes.fromhex(components[0])
-                except Exception as e:
-                    raise ValueError("Malformed URL")
+                try: destination_hash = bytes.fromhex(components[0])
+                except Exception as e: raise ValueError("Malformed URL")
                 path = components[1]
-                if len(path) == 0:
-                    path = Browser.DEFAULT_PATH
+                if len(path) == 0: path = Browser.DEFAULT_PATH
             else:
                 if len(components[0]) == 0:
                     if self.destination_hash != None:
                         destination_hash = self.destination_hash
                         path = components[1]
-                        if len(path) == 0:
-                            path = Browser.DEFAULT_PATH
-                    else:
-                        raise ValueError("Malformed URL")
-                else:
-                        raise ValueError("Malformed URL")
-        else:
-            raise ValueError("Malformed URL")
+                        if len(path) == 0: path = Browser.DEFAULT_PATH
+                    else: raise ValueError("Malformed URL")
+                else: raise ValueError("Malformed URL")
+        else: raise ValueError("Malformed URL")
 
         if destination_hash != None and path != None:
             if path.startswith("/file/"):

@@ -93,6 +93,7 @@ def parse_partial(line):
         else:
             partial_data = line[0:endpos]
 
+            partial_id = None
             partial_components = partial_data.split("`")
             if len(partial_components) == 1:
                 partial_url = partial_components[0]
@@ -111,15 +112,21 @@ def parse_partial(line):
                 partial_fields = ""
                 partial_refresh = None
 
-            if partial_refresh and partial_refresh < 1: partial_refresh = None
+            if partial_refresh != None and partial_refresh < 1: partial_refresh = None
 
             pf = partial_fields.split("|")
-            if len(pf) > 0: partial_fields = pf
+            if len(pf) > 0:
+                partial_fields = pf
+                for f in pf:
+                    if f.startswith("pid="):
+                        pcs = f.split("=")
+                        partial_id = pcs[1]
 
             if len(partial_url):
                 pile = urwid.Pile([urwid.Text(f"⧖")])
                 partial_descriptor = "|".join(partial_components)
-                pile.partial_id = RNS.hexrep(RNS.Identity.full_hash(partial_descriptor.encode("utf-8")), delimit=False)
+                pile.partial_id = partial_id
+                pile.partial_hash = RNS.hexrep(RNS.Identity.full_hash(partial_descriptor.encode("utf-8")), delimit=False)
                 pile.partial_url = partial_url
                 pile.partial_fields = partial_fields
                 pile.partial_refresh = partial_refresh

@@ -1,7 +1,7 @@
 import re
 import unicodedata
 
-invalid_rendering = ["🕵️"]
+invalid_rendering = ["🕵️", "☝"]
 
 def strip_modifiers(text):
     def process_characters(text):
