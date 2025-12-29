@@ -102,17 +102,19 @@ def parse_partial(line):
                 partial_url = partial_components[0]
                 partial_refresh = float(partial_components[1])
                 partial_fields = ""
-            # TODO: Implement fields and parameters for partials
-            # elif len(partial_components) == 3:
-            #     partial_url = partial_components[0]
-            #     partial_refresh = float(partial_components[1])
-            #     partial_fields = partial_components[2]
+            elif len(partial_components) == 3:
+                partial_url = partial_components[0]
+                partial_refresh = float(partial_components[1])
+                partial_fields = partial_components[2]
             else:
                 partial_url = ""
                 partial_fields = ""
                 partial_refresh = None
 
             if partial_refresh and partial_refresh < 1: partial_refresh = None
+
+            pf = partial_fields.split("|")
+            if len(pf) > 0: partial_fields = pf
 
             if len(partial_url):
                 pile = urwid.Pile([urwid.Text(f"⧖")])

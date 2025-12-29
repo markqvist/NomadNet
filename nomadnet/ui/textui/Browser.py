@@ -578,11 +578,68 @@ class Browser:
 
         if partial["link"] and partial["link"].status == RNS.Link.ACTIVE and partial["request_id"] == None:
             RNS.log(f"Sending request for partial: {partial_destination_hash} / {path}", RNS.LOG_EXTREME)
-            receipt = partial["link"].request(path, data = None, response_callback = self.partial_received,
+            receipt = partial["link"].request(path, data=self.__get_partial_request_data(partial), response_callback = self.partial_received,
                                               failed_callback = self.partial_failed, progress_callback = self.partial_progressed)
 
             if receipt: partial["request_id"] = receipt.request_id
             else: RNS.log(f"Partial request failed", RNS.LOG_ERROR)
+
+    def __get_partial_request_data(self, partial):
+        request_data = None
+        if partial["fields"] != None:
+            link_data = partial["fields"]
+            link_fields = []
+            request_data = {}
+            all_fields = True if "*" in link_data else False
+
+            for e in link_data:
+                if "=" in e:
+                    c = e.split("=")
+                    if len(c) == 2:
+                        request_data["var_"+str(c[0])] = str(c[1])
+                else:
+                    link_fields.append(e)
+
+                def recurse_down(w):
+                    if isinstance(w, list):
+                        for t in w:
+                            recurse_down(t)
+                    elif isinstance(w, tuple):
+                        for t in w:
+                            recurse_down(t)
+                    elif hasattr(w, "contents"):
+                        recurse_down(w.contents)
+                    elif hasattr(w, "original_widget"):
+                        recurse_down(w.original_widget)
+                    elif hasattr(w, "_original_widget"):
+                        recurse_down(w._original_widget)
+                    else:
+                        if hasattr(w, "field_name") and (all_fields or w.field_name in link_fields):
+                            field_key = "field_" + w.field_name
+                            if isinstance(w, urwid.Edit):
+                                request_data[field_key] = w.edit_text
+                            elif isinstance(w, urwid.RadioButton):
+                                if w.state:
+                                    user_data = getattr(w, "field_value", None)  
+                                    if user_data is not None:
+                                        request_data[field_key] = user_data
+                            elif isinstance(w, urwid.CheckBox):
+                                user_data = getattr(w, "field_value", "1")
+                                if w.state:
+                                    existing_value = request_data.get(field_key, '')
+                                    if existing_value:
+                                        # Concatenate the new value with the existing one
+                                        request_data[field_key] = existing_value + ',' + user_data
+                                    else:
+                                        # Initialize the field with the current value
+                                        request_data[field_key] = user_data
+                                else:
+                                    pass  # do nothing if checkbox is not check
+
+            recurse_down(self.attr_maps)
+            RNS.log("Including request data: "+str(request_data), RNS.LOG_DEBUG)
+
+        return request_data
 
     def start_partial_updater(self):
         if not self.updater_running: self.update_partials()
