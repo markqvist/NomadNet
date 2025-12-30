@@ -1040,7 +1040,8 @@ class Browser:
                     fg = self.markup[fgpos+5:endpos]
                     self.page_foreground_color = fg
 
-            self.attr_maps = markup_to_attrmaps(strip_modifiers(self.markup), url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
+            try: self.attr_maps = markup_to_attrmaps(strip_modifiers(self.markup), url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
+            except Exception as e: self.attr_maps = [urwid.AttrMap(urwid.Text(f"Could not render page: {e}"), "inactive_text")]
             
             self.response_progress = 0
             self.response_speed = None
@@ -1107,7 +1108,8 @@ class Browser:
                         fg = self.markup[fgpos+5:endpos]
                         self.page_foreground_color = fg
 
-                self.attr_maps = markup_to_attrmaps(strip_modifiers(self.markup), url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
+                try: self.attr_maps = markup_to_attrmaps(strip_modifiers(self.markup), url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
+                except Exception as e: self.attr_maps = [urwid.AttrMap(urwid.Text(f"Could not render page: {e}"), "inactive_text")]
                 
                 self.response_progress = 0
                 self.response_speed = None
@@ -1259,7 +1261,9 @@ class Browser:
                     fg = self.markup[fgpos+5:endpos]
                     self.page_foreground_color = fg
 
-            self.attr_maps = markup_to_attrmaps(strip_modifiers(self.markup), url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
+            try: self.attr_maps = markup_to_attrmaps(strip_modifiers(self.markup), url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
+            except Exception as e: self.attr_maps = [urwid.AttrMap(urwid.Text(f"Could not render page: {e}"), "inactive_text")]
+
             self.response_progress = 0
             self.response_speed = None
             self.progress_updated_at = None

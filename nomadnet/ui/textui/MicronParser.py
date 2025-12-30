@@ -146,6 +146,12 @@ def parse_line(line, state, url_delegate):
 
         # Only parse content if not in literal state
         if not state["literal"]:
+            # Apply markup sanitization
+            if first_char == ">" and "`<" in line:
+                # Remove heading status from lines containing fields
+                line = line.lstrip(">")
+                first_char = line[0]
+
             # Check if the command is an escape
             if first_char == "\\":
                 line = line[1:]
