@@ -1,6 +1,7 @@
 import RNS
 import time
 import nomadnet
+import threading
 from math import log10, pow
 
 from nomadnet.vendor.additional_urwid_widgets.FormWidgets import *
@@ -2226,7 +2227,7 @@ class ShowInterface(urwid.WidgetWrap):
             self.history_length = screen_cols-(margin+2)
 
         # get interface stats
-        interface_stats = self.parent.app.rns.get_interface_stats()
+        interface_stats = self.parent.app.interface_stats
         stats_lookup = {iface['short_name']: iface for iface in interface_stats['interfaces']}
         self.stats = stats_lookup.get(iface_name, {})
 
@@ -2758,7 +2759,7 @@ class ShowInterface(urwid.WidgetWrap):
             return
 
         try:
-            interface_stats = self.parent.app.rns.get_interface_stats()
+            interface_stats = self.parent.app.interface_stats
             stats_lookup = {iface['short_name']: iface for iface in interface_stats['interfaces']}
             stats = stats_lookup.get(self.iface_name, {})
 
@@ -2825,6 +2826,8 @@ class InterfaceDisplay:
     def __init__(self, app):
         self.app = app
         self.started = False
+        self.poll_scheduler = False
+        self.size_scheduler = False
         self.interface_items = []
         self.glyphset = self.app.config["textui"]["glyphs"]
         self.g = self.app.ui.glyphs
@@ -2857,7 +2860,8 @@ class InterfaceDisplay:
 
             processed_interfaces[interface_name] = interface_data
 
-        interface_stats = app.rns.get_interface_stats()
+        app.interface_stats = app.rns.get_interface_stats()
+        interface_stats = app.interface_stats
         stats_lookup = {interface['short_name']: interface for interface in interface_stats['interfaces']}
         # print(stats_lookup)
         for interface_name, interface_data in processed_interfaces.items():
@@ -2916,8 +2920,8 @@ class InterfaceDisplay:
     def start(self):
         # started from Main.py
         self.started = True
-        self.app.ui.loop.set_alarm_in(1, self.poll_stats)
-        self.app.ui.loop.set_alarm_in(5, self.check_terminal_size)
+        if not self.poll_scheduler: self.app.ui.loop.set_alarm_in(1, self.poll_stats)
+        if not self.size_scheduler: self.app.ui.loop.set_alarm_in(5, self.check_terminal_size)
 
     def switch_to_edit_interface(self, iface_name):
         self.edit_interface_view = EditInterfaceView(self, iface_name)
@@ -2936,6 +2940,7 @@ class InterfaceDisplay:
         self.switch_to_edit_interface(interface_name)
 
     def check_terminal_size(self, loop, user_data):
+        self.size_scheduler = True
         new_cols, new_rows = _get_cols_rows()
 
         if new_rows != self.terminal_rows or new_cols != self.terminal_cols:
@@ -2950,12 +2955,15 @@ class InterfaceDisplay:
             loop.set_alarm_in(5, self.check_terminal_size)
 
     def poll_stats(self, loop, user_data):
+        self.poll_scheduler = True
         try:
             if hasattr(self, 'disconnect_overlay') and self.widget is self.disconnect_overlay:
                 self.widget = self.interfaces_display
                 self.app.ui.main_display.update_active_sub_display()
 
-            interface_stats = self.app.rns.get_interface_stats()
+            def job(): self.app.interface_stats = self.app.rns.get_interface_stats()
+            threading.Thread(target=job, daemon=True).start()
+            interface_stats = self.app.interface_stats
             stats_lookup = {iface['short_name']: iface for iface in interface_stats['interfaces']}
             for item in self.interface_items:
                 # use interface name as the key
