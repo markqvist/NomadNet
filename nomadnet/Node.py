@@ -173,7 +173,7 @@ class Node:
                             if isinstance(e, str) and (e.startswith("field_") or e.startswith("var_")):
                                 env_map[e] = data[e]
 
-                    generated = subprocess.run([file_path], stdout=subprocess.PIPE, env=env_map)
+                    generated = subprocess.run([file_path], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, env=env_map)
                     return generated.stdout
                 else:
                     fh = open(file_path, "rb")

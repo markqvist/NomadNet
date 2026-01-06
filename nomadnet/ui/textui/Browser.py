@@ -1081,7 +1081,7 @@ class Browser:
                         if "PATH" in os.environ:
                             env_map["PATH"] = os.environ["PATH"]
 
-                        generated = subprocess.run([page_path], stdout=subprocess.PIPE, env=env_map)
+                        generated = subprocess.run([page_path], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, env=env_map)
                         page_data = generated.stdout
                     else:
                         file = open(page_path, "rb")
