@@ -1392,6 +1392,8 @@ class Browser:
 
                     shutil.move(file_handle.name, file_destination)
 
+                    self.saved_file_name = file_destination.replace(self.app.downloads_path+"/", "", 1)
+
             else:
                 file_name = request_receipt.response[0]
                 file_data = request_receipt.response[1]
