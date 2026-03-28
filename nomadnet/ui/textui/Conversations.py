@@ -9,6 +9,7 @@ import urwid
 
 from datetime import datetime, timedelta
 from nomadnet.Directory import DirectoryEntry
+from nomadnet.Conversation import ConversationMessage
 
 
 def relative_time(timestamp):
@@ -1247,13 +1248,24 @@ class ConversationWidget(urwid.WidgetWrap):
         self.updating_message_widgets = True
         self.message_widgets = []
         added_hashes = []
+        needs_index = []
         for message in self.conversation.messages:
             message_hash = message.get_hash()
             if not message_hash in added_hashes:
                 added_hashes.append(message_hash)
+                was_loaded = message.loaded
                 message_widget = LXMessageWidget(message)
                 self.message_widgets.append(message_widget)
+                if not was_loaded and message.loaded:
+                    needs_index.append(message)
                 message.unload()
+
+        if needs_index:
+            try:
+                ConversationMessage.write_index(
+                    self.conversation.messages_path, needs_index)
+            except Exception:
+                pass
 
         if self.sort_by_timestamp:
             self.message_widgets.sort(key=lambda m: m.timestamp, reverse=False)
