@@ -146,6 +146,9 @@ GLYPHS = {
     ("qrcode",          "QR",        "\u25a4",      "\uf029"),
     ("selected",        "[*] ",      "\u25CF",      "\u25CF"),
     ("unselected",      "[ ] ",      "\u25CB",      "\u25CB"),
+    ("file",            "[F]",       "\u25a4",      "\uf15b"),
+    ("image",           "[I]",       "\u25a3",      "\uf1c5"),
+    ("audio",           "[~]",       "\u266b",      "\uf1c7"),
 }
 
 class TextUI:

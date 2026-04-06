@@ -107,6 +107,7 @@ class NomadNetworkApp:
         self.directorypath     = self.configdir+"/storage/directory"
         self.peersettingspath  = self.configdir+"/storage/peersettings"
         self.tmpfilespath      = self.configdir+"/storage/tmp"
+        self.attachmentpath    = self.configdir+"/storage/attachments"
 
         self.pagespath         = self.configdir+"/storage/pages"
         self.filespath         = self.configdir+"/storage/files"
@@ -114,6 +115,7 @@ class NomadNetworkApp:
         self.examplespath      = self.configdir+"/examples"
 
         self.downloads_path    = os.path.expanduser("~/Downloads")
+        self.attachment_save_path = None
 
         self.firstrun               = False
         self.should_run_jobs        = True
@@ -165,6 +167,9 @@ class NomadNetworkApp:
 
         if not os.path.isdir(self.tmpfilespath):
             os.makedirs(self.tmpfilespath)
+
+        if not os.path.isdir(self.attachmentpath):
+            os.makedirs(self.attachmentpath)
         else:
             self.clear_tmp_dir()
 
@@ -736,6 +741,10 @@ class NomadNetworkApp:
                     value = self.config["client"]["downloads_path"]
                     self.downloads_path = os.path.expanduser(value)
 
+                if option == "attachment_save_path":
+                    value = self.config["client"]["attachment_save_path"]
+                    self.attachment_save_path = os.path.expanduser(value)
+
                 if option == "announce_at_start":
                     value = self.config["client"].as_bool(option)
                     self.peer_announce_at_start = value
@@ -1059,6 +1068,11 @@ destination = file
 enable_client = yes
 user_interface = text
 downloads_path = ~/Downloads
+
+# Where to save received attachments. If not set,
+# attachments will be saved to the downloads path.
+# attachment_save_path = ~/Downloads
+
 notify_on_new_message = yes
 
 # By default, the peer is announced at startup
