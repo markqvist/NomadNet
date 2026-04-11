@@ -2,7 +2,7 @@ import os
 import RNS
 import LXMF
 import shutil
-import msgpack
+import RNS.vendor.umsgpack as msgpack
 import nomadnet
 from nomadnet.Directory import DirectoryEntry
 
