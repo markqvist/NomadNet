@@ -782,7 +782,7 @@ class LinkableText(urwid.Text):
         if item != None:
             if isinstance(item, LinkSpec):
                 if self.delegate != None:
-                    self.delegate.marked_link(item.link_target)
+                    self.delegate.marked_link(item.link_target, item.link_fields)
             else:
                 if self.delegate != None:
                     self.delegate.marked_link(None)

@@ -152,7 +152,10 @@ class Browser:
             return RNS.hexrep(RNS.Identity.full_hash(url), delimit=False)
 
 
-    def marked_link(self, link_target):
+    def marked_link(self, link_target, link_fields=None):
+        if link_fields:
+            fields_str = "|".join(link_fields)
+            link_target = f"{link_target}`{fields_str}"
         if self.status == Browser.DONE:
             self.link_target = link_target
             self.app.ui.loop.set_alarm_in(0.1, self.marked_link_job)
@@ -170,7 +173,9 @@ class Browser:
                     self.browser_footer.set_attr_map({None: style_name})
         else:
             self.link_status_showing = True
-            self.browser_footer = urwid.AttrMap(urwid.Pile([urwid.Divider(self.g["divider1"]), urwid.Text("Link to: "+str(link_target))]), "browser_controls")
+            lt_str = str(link_target)
+            if len(lt_str) > 80: lt_str = lt_str[:80]+"…"
+            self.browser_footer = urwid.AttrMap(urwid.Pile([urwid.Divider(self.g["divider1"]), urwid.Text("Link to: "+lt_str)]), "browser_controls")
             self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
             if self.page_background_color != None or self.page_foreground_color != None:
                 style_name = make_style(default_state(fg=self.page_foreground_color, bg=self.page_background_color))
@@ -714,6 +719,23 @@ class Browser:
 
 
     def retrieve_url(self, url, request_data = None):
+        components = url.split("`")
+        if len(components) == 2:
+            url = components[0]
+            try:
+                link_fields_str = components[1]
+                if link_fields_str != "":
+                    if not request_data: request_data = {}
+                    for e in link_fields_str.split("|"):
+                        if "=" in e:
+                            c = e.split("=")
+                            if len(c) == 2:
+                                request_data["var_"+str(c[0])] = str(c[1])
+            
+            except Exception as e:
+                RNS.log(f"Malformed URL: {e}", RNS.LOG_WARNING)
+                raise ValueError(f"Malformed URL: {e}")
+
         self.previous_destination_hash = self.destination_hash
         self.previous_path = self.path
 
@@ -879,7 +901,7 @@ class Browser:
                 self.link.teardown()
 
     def write_history(self):
-        entry = [self.destination_hash, self.path]
+        entry = [self.destination_hash, self.path, self.request_data]
         self.history.insert(self.history_ptr, entry)
         self.history_ptr += 1
 
@@ -894,7 +916,7 @@ class Browser:
                 entry = self.history[target_ptr-1]
                 url = RNS.hexrep(entry[0], delimit=False)+":"+entry[1]
                 self.history_ptr = target_ptr
-                self.retrieve_url(url)
+                self.retrieve_url(url, request_data=entry[2])
 
     def forward(self):
         target_ptr = self.history_ptr+1
@@ -904,7 +926,7 @@ class Browser:
                 entry = self.history[target_ptr-1]
                 url = RNS.hexrep(entry[0], delimit=False)+":"+entry[1]
                 self.history_ptr = target_ptr
-                self.retrieve_url(url)
+                self.retrieve_url(url, request_data=entry[2])
 
     def reload(self):
         if not self.reloading and self.status == Browser.DONE:
