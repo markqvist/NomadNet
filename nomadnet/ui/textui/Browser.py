@@ -1053,12 +1053,18 @@ class Browser:
                 if endpos-(bgpos+5) == 3:
                     bg = self.markup[bgpos+5:endpos]
                     self.page_background_color = bg
+                elif endpos-(bgpos+5) == 6:
+                    bg = self.markup[bgpos+5:endpos]
+                    self.page_background_color = bg
 
             self.page_foreground_color = None
             fgpos = self.markup.find("#!fg=")
             if fgpos >= 0:
                 endpos = self.markup.find("\n", fgpos)
                 if endpos-(fgpos+5) == 3:
+                    fg = self.markup[fgpos+5:endpos]
+                    self.page_foreground_color = fg
+                elif endpos-(fgpos+5) == 6:
                     fg = self.markup[fgpos+5:endpos]
                     self.page_foreground_color = fg
 
@@ -1121,12 +1127,18 @@ class Browser:
                     if endpos-(bgpos+5) == 3:
                         bg = self.markup[bgpos+5:endpos]
                         self.page_background_color = bg
+                    elif endpos-(bgpos+5) == 6:
+                        bg = self.markup[bgpos+5:endpos]
+                        self.page_background_color = bg
 
                 self.page_foreground_color = None
                 fgpos = self.markup.find("#!fg=")
                 if fgpos >= 0:
                     endpos = self.markup.find("\n", fgpos)
                     if endpos-(fgpos+5) == 3:
+                        fg = self.markup[fgpos+5:endpos]
+                        self.page_foreground_color = fg
+                    elif endpos-(fgpos+5) == 6:
                         fg = self.markup[fgpos+5:endpos]
                         self.page_foreground_color = fg
 
@@ -1274,12 +1286,18 @@ class Browser:
                 if endpos-(bgpos+5) == 3:
                     bg = self.markup[bgpos+5:endpos]
                     self.page_background_color = bg
+                elif endpos-(bgpos+5) == 6:
+                    bg = self.markup[bgpos+5:endpos]
+                    self.page_background_color = bg
 
             self.page_foreground_color = None
             fgpos = self.markup.find("#!fg=")
             if fgpos >= 0:
                 endpos = self.markup.find("\n", fgpos)
                 if endpos-(fgpos+5) == 3:
+                    fg = self.markup[fgpos+5:endpos]
+                    self.page_foreground_color = fg
+                elif endpos-(fgpos+5) == 6:
                     fg = self.markup[fgpos+5:endpos]
                     self.page_foreground_color = fg
 
