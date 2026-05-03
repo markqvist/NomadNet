@@ -5,6 +5,7 @@ import time
 import RNS
 from urwid.util import is_mouse_press
 from urwid.text_layout import calc_coords
+from RNS.Utilities.rngit.util import MarkdownToMicron
 
 DEFAULT_FG_DARK  = "ddd"
 DEFAULT_FG_LIGHT = "222"
@@ -31,12 +32,17 @@ SYNTH_SPECS  = {}
 
 SECTION_INDENT = 2
 INDENT_RIGHT   = 1
+MAX_TABLE_WIDTH = 100
 
 def default_state(fg=None, bg=None):
     if fg == None: fg = SELECTED_STYLES["plain"]["fg"]
     if bg == None: bg = DEFAULT_BG
     state = {
         "literal": False,
+        "table_mode": False,
+        "table_buffer": [],
+        "table_align": None,
+        "table_maxwidth": MAX_TABLE_WIDTH,
         "depth": 0,
         "fg_color": fg,
         "bg_color": bg,
@@ -134,6 +140,29 @@ def parse_partial(line):
 
     except Exception as e: return None
 
+def render_table(lines, state, url_delegate):
+    if len(lines) < 2: return None
+    if state["table_maxwidth"]: max_width = state["table_maxwidth"]
+    else:                       max_width = MAX_TABLE_WIDTH
+    if state["table_align"]:    align     = state["table_align"]
+    else:                       align     = None
+
+    converter = MarkdownToMicron(max_width=max_width)
+    micron_lines = converter.format_table_raw(lines, align=align)
+
+    widgets = []
+    for line in micron_lines:
+        # Disable table mode to avoid recursion
+        was_table_mode = state["table_mode"]
+        state["table_mode"] = False
+        
+        line_widgets = parse_line(line, state, url_delegate)
+        state["table_mode"] = was_table_mode
+        
+        if line_widgets: widgets.extend(line_widgets)
+    
+    return widgets if widgets else None
+
 def parse_line(line, state, url_delegate):
     pre_escape = False
     if len(line) > 0:
@@ -159,6 +188,36 @@ def parse_line(line, state, url_delegate):
 
             # Check for comments
             elif first_char == "#":
+                return None
+
+            # Check for tables
+            if line.startswith("`t"):
+                line = line[2:]
+                align = line[0] if len(line) and line[0] in ["l", "c", "r"] else None
+                max_width = None
+                if align: line = line[1:]
+                if len(line):
+                    try: max_width = int(line)
+                    except: pass
+
+                if state["table_mode"]:
+                    widgets = render_table(state["table_buffer"], state, url_delegate)
+                    state["table_mode"] = False
+                    state["table_buffer"] = []
+                    state["table_align"] = None
+                    state["table_maxwidth"] = MAX_TABLE_WIDTH
+                    return widgets
+
+                else:
+                    state["table_mode"] = True
+                    state["table_buffer"] = []
+                    state["table_align"] = align
+                    state["table_maxwidth"] = max_width
+                    return None
+
+            # Buffer the line if in table mode
+            if state["table_mode"]:
+                state["table_buffer"].append(line)
                 return None
 
             # Check for partials

@@ -1302,6 +1302,30 @@ Here is `F00f`_`[a more visible link`72914442a3689add83a09a767963f57c:/page/inde
 
 When links like these are displayed in the built-in browser, clicking on them or activating them using the keyboard will cause the browser to load the specified URL.
 
+>Tables
+
+You can include rendered tables by enclosing them in \\`t tags. Optionally, you can also specify alignment and max rendering width by adding these properties to the opening \\`t tag, like \\`tc30. Here's an example:
+
+`Faaa
+`=
+`t
+| Name | Price | Qty |
+| ---- | :---: | --: |
+| `F3a3Apple`f | Free | `!5`! |
+| Orange | Ask, nicely | 3 |
+`t
+`=
+``
+
+The above markup produces the following table:
+
+`t
+| Name | Price | Qty |
+| ---- | :---: | --: |
+| `F3a3Apple`f | Free | `!5`! |
+| Orange | Ask, nicely | 3 |
+`t
+
 >Fields & Requests
 
 Nomad Network let's you use simple input fields for submitting data to node-side applications. Submitted data, along with other session variables will be available to the node-side script / program as environment variables.
