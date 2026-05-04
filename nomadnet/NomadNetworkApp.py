@@ -1153,8 +1153,8 @@ theme = dark
 # colormode = monochrome
 # colormode = 16
 # colormode = 88
-colormode = 256
-# colormode = 24bit
+# colormode = 256
+colormode = 24bit
 
 # By default, unicode glyphs are used. If
 # you have a Nerd Font installed, you can
@@ -1163,8 +1163,8 @@ colormode = 256
 # your terminal doesn't support unicode.
 
 # glyphs = plain
-glyphs = unicode
-# glyphs = nerdfont
+# glyphs = unicode
+glyphs = nerdfont
 
 # You can specify whether mouse events
 # should be considered as input to the
