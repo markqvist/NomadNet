@@ -1524,7 +1524,7 @@ class Browser:
         if now > self.progress_updated_at+1:
             td = now - self.progress_updated_at
             pd = self.response_progress - self.previous_progress
-            bd = pd*self.response_size
+            bd = pd*self.response_transfer_size
             self.response_speed = (bd/td)*8
             self.previous_progress = self.response_progress
             self.progress_updated_at = now
