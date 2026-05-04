@@ -769,7 +769,7 @@ class Browser:
             if path.startswith("/file/"):
                 if destination_hash != self.loopback:
                     if destination_hash == self.destination_hash:
-                        self.download_file(destination_hash, path)
+                        self.download_file(destination_hash, path, data=request_data)
                     else:
                         RNS.log("Cannot request file download from a node that is not currently connected.", RNS.LOG_ERROR)
                         RNS.log("The requested URL was: "+str(url), RNS.LOG_ERROR)
@@ -831,7 +831,7 @@ class Browser:
         except Exception as e:
             RNS.log("An error occurred while handling file response. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
-    def download_file(self, destination_hash, path):
+    def download_file(self, destination_hash, path, data=None):
         if self.link == None or self.link.destination.hash != self.destination_hash:
             if not RNS.Transport.has_path(self.destination_hash):
                 self.status = Browser.NO_PATH
@@ -886,7 +886,7 @@ class Browser:
             self.update_display()
             receipt = self.link.request(
                 path,
-                data = None,
+                data = data,
                 response_callback = self.file_received,
                 failed_callback = self.request_failed,
                 progress_callback = self.response_progressed
