@@ -105,6 +105,8 @@ class Browser:
         self.page_background_color = None
         self.page_foreground_color = None
         self.saved_file_name = None
+        self.file_saved_at = 0
+        self.file_save_notice_timeout = 3
         self.page_data = None
         self.displayed_page_data = None
         self.auth_identity = auth_identity
@@ -162,6 +164,7 @@ class Browser:
 
     def marked_link_job(self, sender, event):
         link_target = self.link_target
+        can_display = time.time() > self.file_saved_at + self.file_save_notice_timeout
 
         if link_target == None:
             if self.link_status_showing:
@@ -172,14 +175,15 @@ class Browser:
                     style_name = make_style(default_state(fg=self.page_foreground_color, bg=self.page_background_color))
                     self.browser_footer.set_attr_map({None: style_name})
         else:
-            self.link_status_showing = True
-            lt_str = str(link_target)
-            if len(lt_str) > 80: lt_str = lt_str[:80]+"…"
-            self.browser_footer = urwid.AttrMap(urwid.Pile([urwid.Divider(self.g["divider1"]), urwid.Text("Link to: "+lt_str)]), "browser_controls")
-            self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
-            if self.page_background_color != None or self.page_foreground_color != None:
-                style_name = make_style(default_state(fg=self.page_foreground_color, bg=self.page_background_color))
-                self.browser_footer.set_attr_map({None: style_name})
+            if can_display:
+                self.link_status_showing = True
+                lt_str = str(link_target)
+                if len(lt_str) > 80: lt_str = lt_str[:80]+"…"
+                self.browser_footer = urwid.AttrMap(urwid.Pile([urwid.Divider(self.g["divider1"]), urwid.Text("Link to: "+lt_str)]), "browser_controls")
+                self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
+                if self.page_background_color != None or self.page_foreground_color != None:
+                    style_name = make_style(default_state(fg=self.page_foreground_color, bg=self.page_background_color))
+                    self.browser_footer.set_attr_map({None: style_name})
 
     def expand_shorthands(self, destination_type):
         if destination_type == "nnn":
@@ -1433,6 +1437,7 @@ class Browser:
                     shutil.move(file_handle.name, file_destination)
 
                     self.saved_file_name = file_destination.replace(self.app.downloads_path+"/", "", 1)
+                    self.file_saved_at = time.time()
 
             else:
                 file_name = request_receipt.response[0]
@@ -1458,6 +1463,7 @@ class Browser:
             self.previous_progress = 0
 
             self.update_display()
+
         except Exception as e:
             RNS.log("An error occurred while handling file response. The contained exception was: "+str(e), RNS.LOG_ERROR)
 
@@ -1521,7 +1527,7 @@ class Browser:
         
         now = time.time()
         if self.progress_updated_at == None: self.progress_updated_at = now
-        if now > self.progress_updated_at+1:
+        if now > self.progress_updated_at+0.5:
             td = now - self.progress_updated_at
             pd = self.response_progress - self.previous_progress
             bd = pd*self.response_transfer_size
