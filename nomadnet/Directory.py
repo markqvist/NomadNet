@@ -55,9 +55,27 @@ class Directory:
             RNS.log("The contained exception was: "+str(e), RNS.LOG_DEBUG)
 
 
+    @property
+    def announce_stream(self):
+        return self._node_announces+self._peer_announces+self._pn_announces
+
+    def _clean_node_announces(self):
+        while len(self._node_announces) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
+            self._node_announces.pop()
+
+    def _clean_peer_announces(self):
+        while len(self._peer_announces) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
+            self._peer_announces.pop()
+
+    def _clean_pn_announces(self):
+        while len(self._pn_announces) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
+            self._pn_announces.pop()
+
     def __init__(self, app):
         self.directory_entries = {}
-        self.announce_stream = []
+        self._node_announces = []
+        self._peer_announces = []
+        self._pn_announces   = []
         self.app = app
         self.announce_lock = threading.Lock()
         self.load_from_disk()
@@ -123,7 +141,10 @@ class Directory:
 
                 self.directory_entries = entries
 
-                self.announce_stream = unpacked_directory["announce_stream"]
+                astream = unpacked_directory["announce_stream"]
+                self._node_announces = [e for e in astream if e[3] == "node"]
+                self._peer_announces = [e for e in astream if e[3] == "peer"]
+                self._pn_announces = [e for e in astream if e[3] == "pn"]
 
             except Exception as e:
                 RNS.log("Could not load directory from disk. The contained exception was: "+str(e), RNS.LOG_ERROR)
@@ -134,20 +155,19 @@ class Directory:
                 if self.app.compact_stream:
                     try:
                         remove_announces = []
-                        for announce in self.announce_stream:
+                        for announce in self._peer_announces:
                             if announce[1] == source_hash:
                                 remove_announces.append(announce)
 
                         for a in remove_announces:
-                            self.announce_stream.remove(a)
+                            self._peer_announces.remove(a)
                     
                     except Exception as e:
                         RNS.log("An error occurred while compacting the announce stream. The contained exception was:"+str(e), RNS.LOG_ERROR)
 
                 timestamp = time.time()
-                self.announce_stream.insert(0, (timestamp, source_hash, app_data, "peer"))
-                while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
-                    self.announce_stream.pop()
+                self._peer_announces.insert(0, (timestamp, source_hash, app_data, "peer"))
+                self._clean_peer_announces()
 
                 if hasattr(self.app, "ui") and self.app.ui != None:
                     if hasattr(self.app.ui, "main_display"):
@@ -159,20 +179,19 @@ class Directory:
                 if self.app.compact_stream:
                     try:
                         remove_announces = []
-                        for announce in self.announce_stream:
+                        for announce in self._node_announces:
                             if announce[1] == source_hash:
                                 remove_announces.append(announce)
 
                         for a in remove_announces:
-                            self.announce_stream.remove(a)
+                            self._node_announces.remove(a)
                     
                     except Exception as e:
                         RNS.log("An error occurred while compacting the announce stream. The contained exception was:"+str(e), RNS.LOG_ERROR)
 
                 timestamp = time.time()
-                self.announce_stream.insert(0, (timestamp, source_hash, app_data, "node"))
-                while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
-                    self.announce_stream.pop()
+                self._node_announces.insert(0, (timestamp, source_hash, app_data, "node"))
+                self._clean_node_announces()
 
                 if self.trust_level(associated_peer) == DirectoryEntry.TRUSTED:
                     existing_entry = self.find(source_hash)
@@ -191,7 +210,7 @@ class Directory:
                     found_node = True
                     break
 
-            for e in self.announce_stream:
+            for e in self._pn_announces:
                 if e[1] == associated_node:
                     found_node = True
                     break
@@ -201,32 +220,51 @@ class Directory:
                 if self.app.compact_stream:
                     try:
                         remove_announces = []
-                        for announce in self.announce_stream:
+                        for announce in self._pn_announces:
                             if announce[1] == source_hash:
                                 remove_announces.append(announce)
 
                         for a in remove_announces:
-                            self.announce_stream.remove(a)
+                            self._pn_announces.remove(a)
                     
                     except Exception as e:
                         RNS.log("An error occurred while compacting the announce stream. The contained exception was:"+str(e), RNS.LOG_ERROR)
 
                 timestamp = time.time()
-                self.announce_stream.insert(0, (timestamp, source_hash, app_data, "pn"))
-                while len(self.announce_stream) > Directory.ANNOUNCE_STREAM_MAXLENGTH:
-                    self.announce_stream.pop()
+                self._pn_announces.insert(0, (timestamp, source_hash, app_data, "pn"))
+                self._clean_pn_announces()
                 
                 if hasattr(self.app, "ui") and hasattr(self.app.ui, "main_display"):
                     self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
 
     def remove_announce_with_timestamp(self, timestamp):
         selected_announce = None
-        for announce in self.announce_stream:
+        for announce in self._node_announces:
             if announce[0] == timestamp:
                 selected_announce = announce
+                break
 
         if selected_announce != None:
-            self.announce_stream.remove(selected_announce)
+            self._node_announces.remove(selected_announce)
+            return
+
+        for announce in self._peer_announces:
+            if announce[0] == timestamp:
+                selected_announce = announce
+                break
+
+        if selected_announce != None:
+            self._peer_announces.remove(selected_announce)
+            return
+
+        for announce in self._pn_announces:
+            if announce[0] == timestamp:
+                selected_announce = announce
+                break
+
+        if selected_announce != None:
+            self._pn_announces.remove(selected_announce)
+            return
 
     def display_name(self, source_hash):
         if source_hash in self.directory_entries:
