@@ -802,7 +802,7 @@ class LinkableText(urwid.Text):
         super().__init__(text, align=align)
         self.delegate = delegate
         self._cursor_position = 0
-        self.key_timeout = 3
+        self.key_timeout = 2
         self.in_columns = False
         if self.delegate != None:
             self.delegate.last_keypress = 0

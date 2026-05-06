@@ -52,6 +52,8 @@ class Scrollable(urwid.WidgetDecoration):
         self._old_cursor_coords = None
         self._rows_max_cached = 0
         self.force_forward_keypress = force_forward_keypress
+        self.force_cursor_update = False
+        self.cursor_update_forced_at = 0
         super().__init__(widget)
 
     def render(self, size, focus=False):
@@ -106,7 +108,9 @@ class Scrollable(urwid.WidgetDecoration):
             # Trimmed canvas contains the cursor, e.g. in an Edit widget
             self._forward_keypress = True
         else:
-            if canv_full.cursor is not None:
+            force_check = self.force_cursor_update and (time.time()-self.cursor_update_forced_at < 0.25)
+            if canv_full.cursor is not None or force_check:
+                self.force_cursor_update = False
                 # Full canvas contains the cursor, but scrolled out of view
                 self._forward_keypress = False
                 
@@ -511,6 +515,8 @@ class ScrollBar(urwid.WidgetDecoration):
             handled = ow.mouse_event(ow_size, event, button, col, row, focus)
 
         if not handled and hasattr(ow, 'set_scrollpos'):
+            ow.force_cursor_update = True
+            ow.cursor_update_forced_at = time.time()
             self._sevt_interval = time.time()-self._sevt_start
             if self._sevt_interval > 0.3: self._sevt_start = 0; self._accel = 1; self._sfreq_deque.clear()
             if self._sevt_start == 0: self._sevt_start = time.time()
