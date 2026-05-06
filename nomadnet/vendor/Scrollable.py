@@ -9,8 +9,10 @@
 # GNU General Public License for more details
 # http://www.gnu.org/licenses/gpl-3.0.txt
 
+import time
 import urwid
 from urwid.widget import BOX, FIXED, FLOW
+from collections import deque
 
 # Scroll actions
 SCROLL_LINE_UP        = 'line up'
@@ -354,6 +356,10 @@ class ScrollBar(urwid.WidgetDecoration):
         self._sb_maxrow = 0
         self._sb_dragging = False
         self._sb_drag_offset = 0
+        self._accel = 1
+        self._sevt_interval = 0
+        self._sevt_start = 0
+        self._sfreq_deque = deque(maxlen=5)
 
     def render(self, size, focus=False):
         maxcol, maxrow = size
@@ -505,12 +511,25 @@ class ScrollBar(urwid.WidgetDecoration):
             handled = ow.mouse_event(ow_size, event, button, col, row, focus)
 
         if not handled and hasattr(ow, 'set_scrollpos'):
-            step = 3
+            self._sevt_interval = time.time()-self._sevt_start
+            if self._sevt_interval > 0.3: self._sevt_start = 0; self._accel = 1; self._sfreq_deque.clear()
+            if self._sevt_start == 0: self._sevt_start = time.time()
+            if self._sevt_interval > 0:
+                sevt_freq = 1/self._sevt_interval
+                self._sfreq_deque.append(sevt_freq)
+                freq_smth = sum(self._sfreq_deque)/len(self._sfreq_deque)
+                if len(self._sfreq_deque) >= self._sfreq_deque.maxlen:
+                    if freq_smth > 25.0:  self._accel = max(self._accel, 3)
+                    elif freq_smth > 12.0: self._accel = max(self._accel, 2)
+                    else:                 self._accel = max(self._accel, 1)
+                
+                # import RNS; RNS.log(f"a={self._accel}  s={RNS.prettyfrequency(freq_smth)}  f={RNS.prettyfrequency(sevt_freq)}", RNS.LOG_CRITICAL)
+            
+            step = self._accel
             if button == 4:    # scroll wheel up
                 pos = ow.get_scrollpos(ow_size)
                 newpos = pos - step
-                if newpos < 0:
-                    newpos = 0
+                if newpos < 0: newpos = 0
                 ow.set_scrollpos(newpos)
                 return True
             elif button == 5:  # scroll wheel down
