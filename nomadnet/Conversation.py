@@ -5,6 +5,7 @@ import shutil
 import RNS.vendor.umsgpack as msgpack
 import nomadnet
 from nomadnet.Directory import DirectoryEntry
+from LXMF import display_name_from_app_data
 
 class Conversation:
     cached_conversations = {}
@@ -15,6 +16,9 @@ class Conversation:
     @staticmethod
     def received_announce(destination_hash, announced_identity, app_data):
         app = nomadnet.NomadNetworkApp.get_shared_instance()
+
+        if not display_name_from_app_data(app_data):
+            RNS.log("Ignored invalid lxmf.delivery announce from "+RNS.prettyhexrep(destination_hash), RNS.LOG_DEBUG)
 
         if not destination_hash in app.ignored_list:
             destination_hash_text = RNS.hexrep(destination_hash, delimit=False)
@@ -32,8 +36,7 @@ class Conversation:
             # for nomadnets storage and other handling functions.
             dn = LXMF.display_name_from_app_data(app_data)
             app_data = b""
-            if dn != None:
-                app_data = dn.encode("utf-8")
+            if dn != None: app_data = dn.encode("utf-8")
             
             # Add the announce to the directory announce
             # stream logger
@@ -670,9 +673,16 @@ class ConversationMessage:
         if os.path.isfile(manifest_path):
             try:
                 with open(manifest_path, "rb") as f:
-                    return msgpack.unpackb(f.read(), raw=False)
-            except Exception:
-                pass
+                    manifest = msgpack.unpackb(f.read(), raw=False)
+                    for f in manifest["files"]:
+                        f["name"] = os.path.basename(f["name"]).encode("utf-8").decode("utf-8")
+
+                    return manifest
+            
+            except Exception as e:
+                RNS.log(f"Error loading attachment manifest: {e}")
+                return None
+
         return None
 
     @staticmethod
@@ -702,13 +712,17 @@ class ConversationMessage:
         file_attachments = fields.get(LXMF.FIELD_FILE_ATTACHMENTS, [])
         if file_attachments:
             for idx, att in enumerate(file_attachments):
-                if isinstance(att, list) and len(att) >= 2:
-                    filename = str(att[0])
-                    data = att[1] if isinstance(att[1], bytes) else b""
-                    stored_name = "file_"+str(idx)
-                    with open(os.path.join(att_dir, stored_name), "wb") as f:
-                        f.write(data)
-                    manifest["files"].append({"name": filename, "stored_name": stored_name, "size": len(data)})
+                try:
+                    if isinstance(att, list) and len(att) >= 2:
+                        filename = os.path.basename(str(att[0])).encode("utf-8").decode("utf-8")
+                        data = att[1] if isinstance(att[1], bytes) else b""
+                        stored_name = "file_"+str(idx)
+                        with open(os.path.join(att_dir, stored_name), "wb") as f: f.write(data)
+                        manifest["files"].append({"name": filename, "stored_name": stored_name, "size": len(data)})
+                
+                except Exception as e:
+                    RNS.log(f"Error decoding file attachment: {e}", RNS.LOG_ERROR)
+                    continue
 
         if LXMF.FIELD_IMAGE in fields:
             fmt, data = ConversationMessage._unpack_media_field(fields[LXMF.FIELD_IMAGE])

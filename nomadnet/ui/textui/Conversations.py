@@ -11,6 +11,9 @@ from datetime import datetime, timedelta
 from nomadnet.Directory import DirectoryEntry
 from nomadnet.Conversation import ConversationMessage
 
+from nomadnet.util import strip_modifiers
+from nomadnet.util import sanitize_name
+
 
 def relative_time(timestamp):
     now = time.time()
@@ -1083,6 +1086,10 @@ class ConversationWidget(urwid.WidgetWrap):
                 super().__init__(self.display_widget)
 
     def _update_peer_info(self):
+        def san(name):
+            if self.app.config["textui"]["sanitize_names"]: return sanitize_name(name)
+            else:                                           return strip_modifiers(name)
+
         g = self.app.ui.glyphs
         source_hash_bytes = bytes.fromhex(self.source_hash)
 
@@ -1093,7 +1100,7 @@ class ConversationWidget(urwid.WidgetWrap):
 
         if display_name is None:
             if app_data:
-                display_name = LXMF.display_name_from_app_data(app_data)
+                display_name = san(LXMF.display_name_from_app_data(app_data))
         if display_name is None:
             display_name = RNS.prettyhexrep(source_hash_bytes)
 

@@ -8,6 +8,7 @@ import RNS.vendor.umsgpack as msgpack
 
 from LXMF import pn_announce_data_is_valid
 from nomadnet.util import strip_modifiers
+from nomadnet.util import sanitize_name
 
 class PNAnnounceHandler:
     def __init__(self, owner):
@@ -156,11 +157,9 @@ class Directory:
                     try:
                         remove_announces = []
                         for announce in self._peer_announces:
-                            if announce[1] == source_hash:
-                                remove_announces.append(announce)
+                            if announce[1] == source_hash: remove_announces.append(announce)
 
-                        for a in remove_announces:
-                            self._peer_announces.remove(a)
+                        for a in remove_announces: self._peer_announces.remove(a)
                     
                     except Exception as e:
                         RNS.log("An error occurred while compacting the announce stream. The contained exception was:"+str(e), RNS.LOG_ERROR)
@@ -272,26 +271,27 @@ class Directory:
         else:
             return None
 
-    def simplest_display_str(self, source_hash):
+    def simplest_display_str(self, source_hash, san=True):
+        def s(name):
+            if self.app.config["textui"]["sanitize_names"] and san: return sanitize_name(name)
+            else:                                                   return strip_modifiers(name)
+
         trust_level = self.trust_level(source_hash)
         if trust_level == DirectoryEntry.WARNING or trust_level == DirectoryEntry.UNTRUSTED:
             if source_hash in self.directory_entries:
-                dn = self.directory_entries[source_hash].display_name
-                if dn == None:
-                    return RNS.prettyhexrep(source_hash)
-                else:
-                    return strip_modifiers(dn)+" <"+RNS.hexrep(source_hash, delimit=False)+">"
-            else:
-                return "<"+RNS.hexrep(source_hash, delimit=False)+">"
+                dn = s(self.directory_entries[source_hash].display_name)
+                if not dn: return RNS.prettyhexrep(source_hash)
+                else:      return dn+" <"+RNS.hexrep(source_hash, delimit=False)+">"
+            
+            else: return "<"+RNS.hexrep(source_hash, delimit=False)+">"
+        
         else:
             if source_hash in self.directory_entries:
-                dn = self.directory_entries[source_hash].display_name
-                if dn == None:
-                    return RNS.prettyhexrep(source_hash)
-                else:
-                    return strip_modifiers(dn)
-            else:
-                return "<"+RNS.hexrep(source_hash, delimit=False)+">"
+                dn = s(self.directory_entries[source_hash].display_name)
+                if not dn: return RNS.prettyhexrep(source_hash)
+                else:      return dn
+            
+            else: return "<"+RNS.hexrep(source_hash, delimit=False)+">"
 
     def alleged_display_str(self, source_hash):
         if source_hash in self.directory_entries:

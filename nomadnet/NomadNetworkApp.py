@@ -838,6 +838,11 @@ class NomadNetworkApp:
                             else:
                                 self.config["textui"]["hide_guide"] = self.config["textui"].as_bool("hide_guide")
 
+                            if not "sanitize_names" in self.config["textui"]:
+                                self.config["textui"]["sanitize_names"] = True
+                            else:
+                                self.config["textui"]["sanitize_names"] = self.config["textui"].as_bool("sanitize_names")
+
                             if not "animation_interval" in self.config["textui"]:
                                 self.config["textui"]["animation_interval"] = 1
                             else:
@@ -1177,6 +1182,11 @@ editor = nano
 # If you don't want the Guide section to
 # show up in the menu, you can disable it.
 hide_guide = no
+
+# You can select whether or not to perform
+# text sanitization on names received in
+# announces.
+sanitize_names = yes
 
 [node]
 

@@ -7,6 +7,7 @@ from datetime import datetime
 from nomadnet.Directory import DirectoryEntry
 from nomadnet.vendor.additional_urwid_widgets import IndicativeListBox, MODIFIER_KEY
 from nomadnet.util import strip_modifiers
+from nomadnet.util import sanitize_name
 
 from .Browser import Browser
 
@@ -275,16 +276,19 @@ class AnnounceStreamEntry(urwid.WidgetWrap):
             ts_string = dt.strftime(date_only_format)
 
         trust_level  = self.app.directory.trust_level(source_hash)
+
+        def san(name):
+            if self.app.config["textui"]["sanitize_names"]: return sanitize_name(name)
+            else:                                           return strip_modifiers(name)
         
         if show_destination:
             display_str = RNS.hexrep(source_hash, delimit=False)
         else:
-            try:
-                display_str = strip_modifiers(announce[2].decode("utf-8"))
-                if len(display_str) > 32:
-                    display_str = display_str[:32] + "..."
-            except:
-                display_str = self.app.directory.simplest_display_str(source_hash)
+            try:    display_str = san(announce[2].decode("utf-8"))
+            except: display_str = self.app.directory.simplest_display_str(source_hash)
+
+        if not display_str: display_str = RNS.prettyhexrep(source_hash)
+        if len(display_str) > 34: display_str = display_str[:34] + "…"
 
         if trust_level == DirectoryEntry.UNTRUSTED:
             symbol        = g["cross"]
@@ -488,16 +492,15 @@ class AnnounceStream(urwid.WidgetWrap):
 
             if announce_type == "node" or announce_type == True:
                 node_count += 1
-                if self.current_tab == "nodes":
-                    new_entries.append(e)
+                if self.current_tab == "nodes": new_entries.append(e)
+            
             elif announce_type == "peer" or announce_type == False:
                 peer_count += 1
-                if self.current_tab == "peers":
-                    new_entries.append(e)
+                if self.current_tab == "peers": new_entries.append(e)
+
             elif announce_type == "pn":
                 pn_count += 1
-                if self.current_tab == "pn":
-                    new_entries.append(e)
+                if self.current_tab == "pn": new_entries.append(e)
 
         for e in new_entries:
             nw = AnnounceStreamEntry(self.app, e, self, show_destination=self.show_destination)
@@ -980,7 +983,7 @@ class NodeEntry(urwid.WidgetWrap):
         g = self.app.ui.glyphs
 
         trust_level  = self.app.directory.trust_level(source_hash)
-        display_str = self.app.directory.simplest_display_str(source_hash)
+        display_str =  self.app.directory.simplest_display_str(source_hash, san=False)
 
         if trust_level == DirectoryEntry.UNTRUSTED:
             symbol        = g["cross"]

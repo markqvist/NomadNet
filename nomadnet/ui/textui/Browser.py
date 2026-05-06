@@ -13,6 +13,7 @@ from .MicronParser import markup_to_attrmaps, make_style, default_state
 from nomadnet.Directory import DirectoryEntry
 from nomadnet.vendor.Scrollable import *
 from nomadnet.util import strip_modifiers
+from nomadnet.util import sanitize_name
 
 class BrowserFrame(urwid.Frame):
     def keypress(self, size, key):
@@ -288,6 +289,10 @@ class Browser:
 
     def handle_lxmf_link(self, link_target):
         try:
+            def san(name):
+                if self.app.config["textui"]["sanitize_names"]: return sanitize_name(name)
+                else:                                           return strip_modifiers(name)
+
             if not type(link_target) is str:
                 raise ValueError("Invalid data type for LXMF link")
 
@@ -307,7 +312,7 @@ class Browser:
 
             display_name = None
             if display_name_data != None:
-                display_name = LXMF.display_name_from_app_data(display_name_data)
+                display_name = san(LXMF.display_name_from_app_data(display_name_data))
 
             if not source_hash_text in [c[0] for c in existing_conversations]:
                 entry = DirectoryEntry(bytes.fromhex(source_hash_text), display_name=display_name)
@@ -343,7 +348,7 @@ class Browser:
         self.frame = BrowserFrame(self.browser_body, header=self.browser_header, footer=self.browser_footer)
         self.frame.delegate = self
         self.linebox = urwid.LineBox(self.frame, title="Remote Node")
-        self.display_widget = urwid.AttrMap(self.linebox, "inactive_text")
+        self.display_widget = urwid.AttrMap(self.linebox, "browser_inactive")
 
     def make_status_widget(self):
         if self.response_progress > 0:
@@ -389,7 +394,7 @@ class Browser:
     
     def update_display(self):
         if self.status == Browser.DISCONECTED:
-            self.display_widget.set_attr_map({None: "inactive_text"})
+            self.display_widget.set_attr_map({None: "browser_inactive"})
             self.page_pile = None
             self.page_partials = {}
             self.browser_body = urwid.Filler(
@@ -1073,7 +1078,7 @@ class Browser:
                     self.page_foreground_color = fg
 
             try: self.attr_maps = markup_to_attrmaps(strip_modifiers(self.markup), url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
-            except Exception as e: self.attr_maps = [urwid.AttrMap(urwid.Text(f"Could not render page: {e}"), "inactive_text")]
+            except Exception as e: self.attr_maps = [urwid.AttrMap(urwid.Text(f"Could not render page: {e}"), "browser_inactive")]
             
             self.response_progress = 0
             self.response_speed = None
@@ -1147,7 +1152,7 @@ class Browser:
                         self.page_foreground_color = fg
 
                 try: self.attr_maps = markup_to_attrmaps(strip_modifiers(self.markup), url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
-                except Exception as e: self.attr_maps = [urwid.AttrMap(urwid.Text(f"Could not render page: {e}"), "inactive_text")]
+                except Exception as e: self.attr_maps = [urwid.AttrMap(urwid.Text(f"Could not render page: {e}"), "browser_inactive")]
                 
                 self.response_progress = 0
                 self.response_speed = None
@@ -1306,7 +1311,7 @@ class Browser:
                     self.page_foreground_color = fg
 
             try: self.attr_maps = markup_to_attrmaps(strip_modifiers(self.markup), url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
-            except Exception as e: self.attr_maps = [urwid.AttrMap(urwid.Text(f"Could not render page: {e}"), "inactive_text")]
+            except Exception as e: self.attr_maps = [urwid.AttrMap(urwid.Text(f"Could not render page: {e}"), "browser_inactive")]
 
             self.response_progress = 0
             self.response_speed = None

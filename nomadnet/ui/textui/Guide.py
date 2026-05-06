@@ -804,6 +804,12 @@ Determines whether the program should react to mouse/touch input. Must be a bool
 <
 
 >>>
+`!sanitize_names = yes`!
+>>>>
+This option allows sanitizing announced names before they are displayed in the user interface.
+<
+
+>>>
 `!hide_guide = no`!
 >>>>
 This option allows hiding the `![ Guide ]`! section of the program.
