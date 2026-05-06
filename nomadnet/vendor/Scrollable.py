@@ -346,6 +346,14 @@ class ScrollBar(urwid.WidgetDecoration):
         self.scrollbar_side = side
         self.scrollbar_width = max(1, width)
         self._original_widget_size = (0, 0)
+        self._sb_visible = False
+        self._sb_col_start = 0
+        self._sb_col_end = 0
+        self._sb_thumb_height = 1
+        self._sb_ow_rows_max = 0
+        self._sb_maxrow = 0
+        self._sb_dragging = False
+        self._sb_drag_offset = 0
 
     def render(self, size, focus=False):
         maxcol, maxrow = size
@@ -360,6 +368,7 @@ class ScrollBar(urwid.WidgetDecoration):
         if ow_rows_max <= maxrow:
             # Canvas fits without scrolling - no scrollbar needed
             self._original_widget_size = size
+            self._sb_visible = False
             return ow.render(size, focus)
         ow_rows_max = ow_base.rows_max(ow_size, focus)
 
@@ -400,9 +409,22 @@ class ScrollBar(urwid.WidgetDecoration):
 
         combinelist = [(ow_canv, None, True, ow_size[0]),
                        (sb_canv, None, False, sb_width)]
+
+
+
+
+                       
+        self._sb_visible = True
+        self._sb_thumb_height = thumb_height
+        self._sb_ow_rows_max = ow_rows_max
+        self._sb_maxrow = maxrow
         if self._scrollbar_side != SCROLLBAR_LEFT:
+            self._sb_col_start = ow_size[0]
+            self._sb_col_end = ow_size[0] + sb_width
             return urwid.CanvasJoin(combinelist)
         else:
+            self._sb_col_start = 0
+            self._sb_col_end = sb_width
             return urwid.CanvasJoin(reversed(combinelist))
 
     @property
@@ -450,21 +472,63 @@ class ScrollBar(urwid.WidgetDecoration):
     def mouse_event(self, size, event, button, col, row, focus):
         ow = self._original_widget
         ow_size = self._original_widget_size
+        ow_base = self.scrolling_base_widget if hasattr(self, 'scrolling_base_widget') else ow
+        on_sb = (self._sb_visible
+                 and self._sb_col_start <= col < self._sb_col_end)
+
+        if self._sb_dragging:
+            if 'drag' in event:
+                self._set_scrollpos_from_row(row)
+                return True
+            if 'release' in event or 'press' in event:
+                self._sb_dragging = False
+                if 'release' in event:
+                    return True
+
+        # Begin a click/drag
+        if on_sb and 'press' in event and button == 1 and hasattr(ow_base, 'set_scrollpos'):
+            pos = ow_base.get_scrollpos(ow_size)
+            posmax = max(1, self._sb_ow_rows_max - self._sb_maxrow)
+            track_len = max(1, self._sb_maxrow - self._sb_thumb_height)
+            top_height = int(round(track_len * pos / posmax))
+            if top_height <= row < top_height + self._sb_thumb_height:
+                self._sb_drag_offset = row - top_height
+            else:
+                # jump
+                self._sb_drag_offset = self._sb_thumb_height // 2
+                self._set_scrollpos_from_row(row)
+            self._sb_dragging = True
+            return True
+
         handled = False
         if hasattr(ow, 'mouse_event'):
             handled = ow.mouse_event(ow_size, event, button, col, row, focus)
 
         if not handled and hasattr(ow, 'set_scrollpos'):
+            step = 3
             if button == 4:    # scroll wheel up
                 pos = ow.get_scrollpos(ow_size)
-                newpos = pos - 1
+                newpos = pos - step
                 if newpos < 0:
                     newpos = 0
                 ow.set_scrollpos(newpos)
                 return True
             elif button == 5:  # scroll wheel down
                 pos = ow.get_scrollpos(ow_size)
-                ow.set_scrollpos(pos + 1)
+                ow.set_scrollpos(pos + step)
                 return True
 
         return False
+
+    def _set_scrollpos_from_row(self, row):
+        ow_base = self.scrolling_base_widget
+        if not hasattr(ow_base, 'set_scrollpos'):
+            return
+        posmax = self._sb_ow_rows_max - self._sb_maxrow
+        if posmax <= 0:
+            return
+        track_len = max(1, self._sb_maxrow - self._sb_thumb_height)
+        top = max(0, min(track_len, row - self._sb_drag_offset))
+        new_pos = int(round(top * posmax / track_len))
+        new_pos = max(0, min(posmax, new_pos))
+        ow_base.set_scrollpos(new_pos)
