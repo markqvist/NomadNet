@@ -20,7 +20,7 @@ class PNAnnounceHandler:
                 data = msgpack.unpackb(app_data)
 
                 if data[2] == True:
-                    RNS.log("Received active propagation node announce from "+RNS.prettyhexrep(destination_hash))
+                    RNS.log("Received active propagation node announce from "+RNS.prettyhexrep(destination_hash), RNS.LOG_DEBUG)
 
                     associated_peer = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", announced_identity)
                     associated_node = RNS.Destination.hash_from_name_and_identity("nomadnetwork.node", announced_identity)
