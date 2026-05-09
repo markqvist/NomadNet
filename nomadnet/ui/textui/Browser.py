@@ -106,6 +106,7 @@ class Browser:
         self.page_background_color = None
         self.page_foreground_color = None
         self.saved_file_name = None
+        self.saved_file_size = 0
         self.file_saved_at = 0
         self.file_save_notice_timeout = 3
         self.page_data = None
@@ -826,6 +827,8 @@ class Browser:
                 fs.close()
 
                 self.saved_file_name = file_destination.replace(self.app.downloads_path+"/", "", 1)
+                try: self.saved_file_size = os.path.getsize(file_destination)
+                except: self.saved_file_size = 0
                 
                 self.update_display()
             else:
@@ -891,6 +894,7 @@ class Browser:
             self.response_size = None
             self.response_transfer_size = None
             self.saved_file_name = None
+            self.saved_file_size = 0
 
             self.update_display()
             receipt = self.link.request(
@@ -1087,6 +1091,7 @@ class Browser:
             self.response_size = None
             self.response_transfer_size = None
             self.saved_file_name = None
+            self.saved_file_size = 0
             self.loaded_from_cache = True
 
             self.update_display()
@@ -1161,6 +1166,7 @@ class Browser:
                 self.response_size = None
                 self.response_transfer_size = None
                 self.saved_file_name = None
+                self.saved_file_size = 0
                 self.loaded_from_cache = False
 
                 self.update_display()
@@ -1230,6 +1236,7 @@ class Browser:
         self.response_size = None
         self.response_transfer_size = None
         self.saved_file_name = None
+        self.saved_file_size = 0
 
 
         self.update_display()
@@ -1442,6 +1449,8 @@ class Browser:
                     shutil.move(file_handle.name, file_destination)
 
                     self.saved_file_name = file_destination.replace(self.app.downloads_path+"/", "", 1)
+                    try: self.saved_file_size = os.path.getsize(file_destination)
+                    except: self.saved_file_size = 0
                     self.file_saved_at = time.time()
 
             else:
@@ -1460,6 +1469,8 @@ class Browser:
                 fh.close()
 
                 self.saved_file_name = file_destination.replace(self.app.downloads_path+"/", "", 1)
+                try: self.saved_file_size = os.path.getsize(file_destination)
+                except: self.saved_file_size = 0
                     
             self.status = Browser.DONE
             self.response_progress = 0
@@ -1545,12 +1556,13 @@ class Browser:
 
     def status_text(self):
         if self.status == Browser.DONE and self.response_transfer_size != None:
-            if self.response_time != None:
-                response_time_str = "{:.2f}".format(self.response_time)
-            else:
-                response_time_str = "None"
+            if self.response_time != None: response_time_str = "{:.2f}".format(self.response_time)
+            else:                          response_time_str = "None"
 
-            stats_string = "  "+self.g["page"]+size_str(self.response_size)
+            if self.saved_file_name == None: resp_size = self.response_size
+            else:                            resp_size = self.saved_file_size
+
+            stats_string = "  "+self.g["page"]+size_str(resp_size)
             stats_string += "   "+self.g["arrow_d"]+size_str(self.response_transfer_size)+" in "+response_time_str
             stats_string += "s   "+self.g["speed"]+size_str(self.response_transfer_size/self.response_time, suffix="b")+"/s"
         elif self.loaded_from_cache:
@@ -1579,10 +1591,8 @@ class Browser:
         elif self.status == Browser.RECEIVING_RESPONSE:
             return "Receiving response..."
         elif self.status == Browser.DONE:
-            if self.saved_file_name == None:
-                return "Done"+stats_string
-            else:
-                return "Saved "+str(self.saved_file_name)+stats_string
+            if self.saved_file_name == None: return "Done"+stats_string
+            else:                            return "Saved "+str(self.saved_file_name)+stats_string
         elif self.status == Browser.DISCONECTED:
             return "Disconnected"
         else:
