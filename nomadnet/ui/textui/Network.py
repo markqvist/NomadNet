@@ -461,9 +461,11 @@ class AnnounceStream(urwid.WidgetWrap):
         self.update_widget_list()
 
     def delete_selected_entry(self):
-        if self.ilb.get_selected_item() != None:
-            self.app.directory.remove_announce_with_timestamp(self.ilb.get_selected_item().original_widget.timestamp)
-            self.rebuild_widget_list()
+        sel = self.ilb.get_selected_item()
+        if sel != None and hasattr(sel, "original_widget") and sel.original_widget:
+            if hasattr(sel.original_widget, "timestamp"):
+                self.app.directory.remove_announce_with_timestamp(sel.original_widget.timestamp)
+                self.rebuild_widget_list()
 
     def rebuild_widget_list(self):
         self.no_content = True
