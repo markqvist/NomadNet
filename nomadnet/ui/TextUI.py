@@ -273,7 +273,7 @@ class TextUI:
 
     def unhandled_input(self, key):
         if key == "ctrl q":
-            raise urwid.ExitMainLoop
+            self.main_display.show_quit_dialog()
         elif key == "ctrl e":
             pass
 

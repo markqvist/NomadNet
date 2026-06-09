@@ -87,6 +87,18 @@ class MainFrame(urwid.Frame):
 
         return super(MainFrame, self).keypress(size, key)
 
+class QuitDialogLineBox(urwid.LineBox):
+    def __init__(self, *args, on_cancel=None, **kwargs):
+        self.on_cancel = on_cancel
+        super().__init__(*args, **kwargs)
+
+    def keypress(self, size, key):
+        if key == "esc":
+            if self.on_cancel is not None:
+                self.on_cancel()
+            return None
+        return super().keypress(size, key)
+
 class MainDisplay():
     def __init__(self, ui, app):
         self.ui = ui
@@ -166,6 +178,54 @@ class MainDisplay():
         self.menu_display.start()
 
     def quit(self, sender=None):
+        self.show_quit_dialog()
+
+    def show_quit_dialog(self, sender=None):
+        if getattr(self, "_quit_dialog_open", False):
+            return
+
+        def confirm(button=None):
+            self.do_quit()
+
+        def cancel(button=None):
+            self._quit_dialog_open = False
+            self.app.ui.loop.widget = self.frame
+
+        buttons = urwid.Columns([
+            (urwid.WEIGHT, 0.45, urwid.Button("Yes", on_press=confirm)),
+            (urwid.WEIGHT, 0.1, urwid.Text("")),
+            (urwid.WEIGHT, 0.45, urwid.Button("No", on_press=cancel)),
+        ])
+        try:
+
+
+            buttons.focus_position = 2  # default to "No"
+
+
+        except Exception:
+            pass
+
+        pile = urwid.Pile([
+            urwid.Text("Are you sure you want to quit?", align="center"),
+            urwid.Divider(),
+            buttons,
+        ])
+
+        dialog = QuitDialogLineBox(
+            urwid.Filler(pile, urwid.TOP),
+            title="Quit NomadNet",
+            on_cancel=cancel,
+        )
+
+        self._quit_dialog_open = True
+        
+        self.app.ui.loop.widget = urwid.Overlay(
+            dialog, self.frame,
+            align="center", width=44,
+            valign="middle", height=8, min_width=20,
+        )
+
+    def do_quit(self, sender=None):
         logterm_pid = None
         if True or RNS.vendor.platformutils.is_android():
             if self.sub_displays.log_display != None and self.sub_displays.log_display.log_term != None:
