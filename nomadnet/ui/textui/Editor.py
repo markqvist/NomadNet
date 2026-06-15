@@ -400,7 +400,11 @@ class EditorColumns(urwid.Columns):
         if key == "esc":
             nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.focus_position = "header"
             return None
-        return super().keypress(size, key)
+        result = super().keypress(size, key)
+        if key == "up" and result == "up":
+            nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.focus_position = "header"
+            return None
+        return result
 
 
 class PageEditorShortcuts():

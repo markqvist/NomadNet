@@ -1488,6 +1488,9 @@ class InterfaceFiller(urwid.WidgetWrap):
         if key == "ctrl o":
             self.app.ui.main_display.sub_displays.interface_display.toggle_focused_interface()
             return None
+        if key == "ctrl b":
+            self.app.ui.main_display.sub_displays.interface_display.show_bulk_actions()
+            return None
         if key == "ctrl a":
             # add interface
             self.app.ui.main_display.sub_displays.interface_display.add_interface()
@@ -3401,11 +3404,12 @@ class InterfaceDisplay:
 
     def _make_filter_bar(self):
         cols = [('weight', 1, urwid.Text(""))]
-        for key, label in (("all", "All"), ("enabled", "Enabled"), ("disabled", "Disabled")):
+        cols.append(('pack', urwid.Text(("interface_title", "Filter by:   "))))
+        for key, label in (("all", "All"), ("enabled", "Enabled"), ("disabled", "Disabled"), ("connected", "Connected"), ("disconnected", "Disconnected")):
             sel = self.iface_filter == key
             mark = self.g['selected'] if sel else self.g['unselected']
             style = "interface_tile_focus" if sel else "interface_title"
-            cols.append(('pack', ClickableIcon((style, "%s %s   " % (mark, label)), on_click=lambda k=key: self._set_filter(k))))
+            cols.append(('pack', ClickableIcon((style, "%s %s  " % (mark, label)), on_click=lambda k=key: self._set_filter(k))))
         cols.append(('weight', 1, urwid.Text("")))
         return urwid.Columns(cols, dividechars=0)
 
@@ -3418,7 +3422,7 @@ class InterfaceDisplay:
         self.app.ui.main_display.update_active_sub_display()
 
     def cycle_filter(self):
-        order = ["all", "enabled", "disabled"]
+        order = ["all", "enabled", "disabled", "connected", "disconnected"]
         i = order.index(self.iface_filter) if self.iface_filter in order else 0
         self._set_filter(order[(i + 1) % len(order)])
 
@@ -3870,6 +3874,11 @@ class InterfaceDisplay:
                 is_connected = False
                 announce_rate = "-"
 
+            if self.iface_filter == "connected" and not is_connected:
+                continue
+            if self.iface_filter == "disconnected" and is_connected:
+                continue
+
             profiles_label = profiles.label_for(interface_name) if profiles is not None else None
 
             item = SelectableInterfaceItem(
@@ -3959,6 +3968,118 @@ class InterfaceDisplay:
         self._focus_interface(name)
         self.app.ui.main_display.update_active_sub_display()
 
+    def _iface_is_enabled(self, iface):
+        return str(iface.get("enabled")).lower() not in ('false', 'off', 'no', '0') and \
+               str(iface.get("interface_enabled")).lower() not in ('false', 'off', 'no', '0')
+
+    def _set_iface_enabled(self, iface, enabled):
+        value = "true" if enabled else "false"
+        iface["interface_enabled"] = value
+        if "enabled" in iface:
+            iface["enabled"] = value
+
+    def show_bulk_actions(self):
+        interfaces = self.app.rns.config['interfaces']
+        if not interfaces:
+            self._bulk_notice("No interfaces configured.")
+            return
+
+        dialog_widgets = [
+            urwid.Text(("interface_title", "Apply an action to all interfaces"), align="left"),
+            urwid.Divider(),
+            InterfaceOptionItem(self, "Enable all interfaces", None, on_select=lambda: self._bulk_apply("enable")),
+            InterfaceOptionItem(self, "Disable all interfaces", None, on_select=lambda: self._bulk_apply("disable")),
+            InterfaceOptionItem(self, "Invert (toggle each interface)", None, on_select=lambda: self._bulk_apply("invert")),
+            InterfaceOptionItem(self, "Solo selected (disable all others)", None, on_select=lambda: self._bulk_apply("solo")),
+        ]
+
+        listbox = urwid.ListBox(urwid.SimpleFocusListWalker(dialog_widgets))
+        dialog = DialogLineBox(listbox, parent=self, title="Bulk Actions")
+
+        overlay = urwid.Overlay(
+            dialog,
+            self.interfaces_display,
+            align='center',
+            width=('relative', 50),
+            valign='middle',
+            height=('relative', 50),
+            min_width=20,
+            min_height=10,
+            left=2,
+            right=2
+        )
+        self.widget = overlay
+        self.app.ui.main_display.update_active_sub_display()
+
+    def _bulk_apply(self, action):
+        interfaces = self.app.rns.config['interfaces']
+        focused = self._focused_interface_name()
+
+        if action == "solo" and focused is None:
+            self._bulk_notice("Select an interface first to solo it.")
+            return
+
+        changed = 0
+        for name, iface in interfaces.items():
+            current = self._iface_is_enabled(iface)
+            if action == "enable":
+                target = True
+            elif action == "disable":
+                target = False
+            elif action == "invert":
+                target = not current
+            elif action == "solo":
+                target = (name == focused)
+            else:
+                target = current
+
+            if target != current:
+                self._set_iface_enabled(iface, target)
+                changed += 1
+
+        try:
+            self.app.rns.config.write()
+        except Exception as e:
+            self._bulk_notice(f"Error applying bulk action: {str(e)}", title="Error")
+            return
+
+        self.mark_restart_pending()
+        self._build_interface_items()
+        self._rebuild_list()
+
+        verb = {"enable": "Enabled all", "disable": "Disabled all", "invert": "Inverted all", "solo": "Soloed selected"}[action]
+        if changed == 0:
+            self._bulk_notice("No interfaces needed changing.")
+        else:
+            self._bulk_notice(f"{verb} interfaces ({changed} changed).\nRestart required for changes to take effect.")
+
+    def _bulk_notice(self, message, title="Notice"):
+        def dismiss_dialog(button):
+            self.dismiss_dialog()
+
+        dialog = DialogLineBox(
+            urwid.Pile([
+                urwid.Text(message, align="center"),
+                urwid.Divider(),
+                urwid.Button("OK", on_press=dismiss_dialog)
+            ]),
+            parent=self,
+            title=title
+        )
+
+        overlay = urwid.Overlay(
+            dialog,
+            self.interfaces_display,
+            align='center',
+            width=60,
+            valign='middle',
+            height=8,
+            min_width=20,
+            min_height=1
+        )
+        self.widget = overlay
+        self.app.ui.main_display.update_active_sub_display()
+
     def save_current_profile(self):
         profiles = getattr(self.app, "interface_profiles", None)
         if profiles is None:
@@ -4024,7 +4145,7 @@ class InterfaceDisplay:
 class InterfaceDisplayShortcuts:
     def __init__(self, app):
         self.app = app
-        self.default_shortcuts = "[C-a] Add [C-e] Edit [C-x] Remove [C-o] On/Off [Enter] Show [C-f] Filter [C-s] Save Profile [C-t] Grid/Rows [Tab] Profiles"
+        self.default_shortcuts = "[C-a] Add [C-e] Edit [C-x] Remove [C-o] On/Off [C-b] Bulk [Enter] Show [C-f] Filter [C-s] Save Profile [C-t] Grid/Rows [Tab] Profiles"
         self.current_shortcuts = self.default_shortcuts
         self.widget = urwid.AttrMap(
             urwid.Text(self.current_shortcuts),

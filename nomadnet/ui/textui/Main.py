@@ -6,6 +6,8 @@ from .Channels import *
 from .Directory import *
 from .Config import *
 from .Interfaces import *
+from .Transport import *
+from .Utilities import *
 from .Map import *
 from .Log import *
 from .Guide import *
@@ -21,6 +23,7 @@ class SubDisplays():
         self.directory_display = DirectoryDisplay(self.app)
         self.config_display = ConfigDisplay(self.app)
         self.interface_display = InterfaceDisplay(self.app)
+        self.utilities_display = UtilitiesDisplay(self.app) if self._utilities_enabled(app) else None
         self.map_display = MapDisplay(self.app)
         self.log_display = LogDisplay(self.app)
         self.guide_display = GuideDisplay(self.app)
@@ -30,6 +33,12 @@ class SubDisplays():
             self.active_display = self.guide_display
         else:
             self.active_display = self.conversations_display
+
+    def _utilities_enabled(self, app):
+        try:
+            return app.config["utilities"].as_bool("enable_utilities")
+        except Exception:
+            return False
 
     def active(self):
         return self.active_display
@@ -141,6 +150,13 @@ class MainDisplay():
         self.update_active_sub_display()
         self.sub_displays.interface_display.start()
 
+    def show_utilities(self, user_data):
+        if self.sub_displays.utilities_display is None:
+            return
+        self.sub_displays.active_display = self.sub_displays.utilities_display
+        self.update_active_sub_display()
+        self.sub_displays.utilities_display.start()
+
     def show_log(self, user_data):
         self.sub_displays.active_display = self.sub_displays.log_display
         self.sub_displays.log_display.show()
@@ -184,6 +200,11 @@ class MainDisplay():
         if getattr(self, "_quit_dialog_open", False):
             return
 
+        active = self.sub_displays.active_display
+        if active in (self.sub_displays.log_display, self.sub_displays.config_display):
+            self.do_quit()
+            return
+
         def confirm(button=None):
             self.do_quit()
 
@@ -218,7 +239,7 @@ class MainDisplay():
         )
 
         self._quit_dialog_open = True
-        
+
         self.app.ui.loop.widget = urwid.Overlay(
             dialog, self.frame,
             align="center", width=44,
@@ -264,6 +285,7 @@ class MenuDisplay():
         button_log            = (7,  MenuButton("Log", on_press=handler.show_log))
         button_config         = (10, MenuButton("Config", on_press=handler.show_config))
         button_interfaces     = (14, MenuButton("Interfaces", on_press=handler.show_interfaces))
+        button_utilities      = (13, MenuButton("Utilities", on_press=handler.show_utilities))
         button_guide          = (9,  MenuButton("Guide", on_press=handler.show_guide))
         button_mynode         = (11, MenuButton("My Node", on_press=handler.show_page_editor))
         button_quit           = (8,  MenuButton("Quit", on_press=handler.quit))
@@ -272,7 +294,15 @@ class MenuDisplay():
         buttons = [menu_text, button_conversations, button_network]
         if self.app.enable_node:
             buttons.append(button_mynode)
-        buttons += [button_channels, button_log, button_interfaces, button_config]
+        buttons += [button_channels, button_log, button_interfaces]
+        enable_utilities = False
+        try:
+            enable_utilities = self.app.config["utilities"].as_bool("enable_utilities")
+        except Exception:
+            enable_utilities = False
+        if enable_utilities:
+            buttons.append(button_utilities)
+        buttons.append(button_config)
         if not self.app.config["textui"]["hide_guide"]:
             buttons.append(button_guide)
         buttons.append(button_quit)

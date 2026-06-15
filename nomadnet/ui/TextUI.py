@@ -128,6 +128,23 @@ THEMES = {
     }
 }
 
+CONFIG_SECTION_COLORS = {
+    "logging":   ("yellow",        "#fd3", "brown",        "#a80"),
+    "client":    ("light cyan",    "#3cd", "dark cyan",    "#077"),
+    "textui":    ("light green",   "#6c5", "dark green",   "#2a0"),
+    "utilities": ("light gray",    "#bbb", "dark gray",    "#555"),
+    "rrc":       ("light magenta", "#d7f", "dark magenta", "#a2a"),
+    "node":      ("light blue",    "#5af", "dark blue",    "#06c"),
+    "printing":  ("brown",         "#b86", "brown",        "#852"),
+    "reticulum": ("light magenta", "#a6f", "dark magenta", "#63c"),
+}
+
+for _section, (_d16, _dhi, _l16, _lhi) in CONFIG_SECTION_COLORS.items():
+    THEMES[THEME_DARK]["urwid_theme"].append(("config_title_"+_section, _d16, "default", "default", _dhi, "default"))
+    THEMES[THEME_DARK]["urwid_theme"].append(("config_title_"+_section+"_selected", _d16+",bold", "default", "bold", _dhi+",bold", "default"))
+    THEMES[THEME_LIGHT]["urwid_theme"].append(("config_title_"+_section, _l16, "default", "default", _lhi, "default"))
+    THEMES[THEME_LIGHT]["urwid_theme"].append(("config_title_"+_section+"_selected", _l16+",bold", "default", "bold", _lhi+",bold", "default"))
+
 GLYPHSETS = {
     "plain": 1,
     "unicode": 2,
@@ -181,6 +198,7 @@ GLYPHS = {
     ("folder_open",     "[-]",       "\u25be",      "\uf07c"),
     ("fold_open",       "-",         "▾",      "▾"),
     ("fold_closed",     "+",         "▸",      "▸"),
+    ("dropdown",        " [v]",      " ▾",          " "),
 }
 
 class TextUI:

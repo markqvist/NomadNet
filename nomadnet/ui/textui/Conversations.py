@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from nomadnet.Directory import DirectoryEntry
 from LXMF import pn_announce_data_is_valid, PN_META_NAME
 from nomadnet.Conversation import ConversationMessage
+from .FileBrowser import FileBrowser
 
 from nomadnet.util import strip_modifiers
 from nomadnet.util import sanitize_name
@@ -2422,7 +2423,29 @@ class ConversationWidget(urwid.WidgetWrap):
 
     def attach_file(self):
         self.dialog_active = True
-        browser = FileBrowserDialog(self)
+
+        def on_change(selected):
+            self.pending_attachments[:] = selected
+            self.frame.contents["footer"] = (self._build_footer(), None)
+
+        def on_done(selected):
+            self.pending_attachments[:] = selected
+            self.frame.contents["footer"] = (self._build_footer(), None)
+            self.file_browser_closed()
+
+        def on_cancel():
+            self.pending_attachments.clear()
+            self.frame.contents["footer"] = (self._build_footer(), None)
+            self.file_browser_closed()
+
+        browser = FileBrowser(
+            on_done=on_done,
+            on_cancel=on_cancel,
+            on_change=on_change,
+            title="Attach File",
+            multi_select=True,
+            selected=self.pending_attachments,
+        )
         bottom = self.messagelist
         overlay = urwid.Overlay(browser, bottom, align=urwid.CENTER, width=("relative", 90), valign=urwid.MIDDLE, height=("relative", 80), left=2, right=2)
         self.frame.contents["body"] = (overlay, self.frame.options())
@@ -2884,188 +2907,6 @@ def _save_attachment_to_disk(filename, data):
     with open(save_path, "wb") as f:
         f.write(data)
     return save_path
-
-
-class FileBrowserEntry(urwid.WidgetWrap):
-    signals = ["click"]
-
-    def __init__(self, name, full_path, is_dir=False, is_parent=False, selected=False):
-        self.full_path = full_path
-        self.name = name
-        self.is_dir = is_dir
-        self.is_parent = is_parent
-        self.selected = selected
-        g = nomadnet.NomadNetworkApp.get_shared_instance().ui.glyphs
-        if is_parent:
-            display = g["arrow_l"]+" .."
-        elif is_dir:
-            display = g["arrow_r"]+" "+name+"/"
-        elif selected:
-            display = g["check"]+" "+name
-        else:
-            display = "  "+name
-        self.text_widget = urwid.SelectableIcon(display, 0)
-        if is_dir or is_parent:
-            style = "list_trusted"
-            focus_style = "list_focus"
-        elif selected:
-            style = "list_trusted"
-            focus_style = "list_focus_trusted"
-        else:
-            style = "list_unknown"
-            focus_style = "list_focus"
-        display_widget = urwid.AttrMap(self.text_widget, style, focus_style)
-        super().__init__(display_widget)
-
-    def keypress(self, size, key):
-        if key == "enter":
-            self._emit("click")
-        else:
-            return key
-
-    def mouse_event(self, size, event, button, x, y, focus):
-        if button == 1 and urwid.util.is_mouse_press(event):
-            self._emit("click")
-            return True
-        return False
-
-
-class FileBrowserDialog(urwid.WidgetWrap):
-    def __init__(self, delegate):
-        self.delegate = delegate
-        app = nomadnet.NomadNetworkApp.get_shared_instance()
-        self.g = app.ui.glyphs
-        self.current_path = os.path.expanduser("~")
-
-        self.path_label = urwid.Text("")
-        self.status_label = urwid.Text("")
-        self.file_walker = urwid.SimpleFocusListWalker([])
-        self.file_listbox = urwid.ListBox(self.file_walker)
-
-        self.button_columns = urwid.Columns([
-            (urwid.WEIGHT, 0.45, urwid.Button("Done", on_press=self._dismiss)),
-            (urwid.WEIGHT, 0.1, urwid.Text("")),
-            (urwid.WEIGHT, 0.45, urwid.Button("Cancel", on_press=self._cancel)),
-        ])
-
-        header_pile = urwid.Pile([
-            self.path_label,
-            self.status_label,
-            urwid.Divider(self.g["divider1"]),
-        ])
-
-        footer_pile = urwid.Pile([
-            urwid.Divider(self.g["divider1"]),
-            self.button_columns,
-        ])
-
-        self._populate()
-
-        self.browser_frame = urwid.Frame(
-            self.file_listbox,
-            header=header_pile,
-            footer=footer_pile,
-        )
-
-        linebox = urwid.LineBox(self.browser_frame, title="Attach File")
-        super().__init__(linebox)
-
-    def _update_status(self):
-        pending = self.delegate.pending_attachments
-        if pending:
-            names = [os.path.basename(p) for p in pending]
-            self.status_label.set_text("  "+self.g["file"]+" "+str(len(pending))+" selected: "+", ".join(names))
-        else:
-            self.status_label.set_text("  No files selected")
-
-    def _populate(self):
-        self.path_label.set_text("  "+self.current_path)
-        self._update_status()
-
-        focus_pos = None
-        try:
-            focus_pos = self.file_listbox.focus_position
-        except Exception:
-            pass
-
-        entries = []
-        parent = os.path.dirname(self.current_path)
-        if parent != self.current_path:
-            entry = FileBrowserEntry("..", parent, is_parent=True)
-            urwid.connect_signal(entry, "click", self._entry_clicked, entry)
-            entries.append(entry)
-
-        try:
-            items = sorted(os.listdir(self.current_path))
-        except PermissionError:
-            entries.append(urwid.Text(("error_text", "  Permission denied")))
-            self.file_walker[:] = entries
-            return
-
-        dirs = []
-        files = []
-        for item in items:
-            if item.startswith("."):
-                continue
-            full = os.path.join(self.current_path, item)
-            if os.path.isdir(full):
-                dirs.append((item, full))
-            elif os.path.isfile(full):
-                files.append((item, full))
-
-        for name, full in dirs:
-            entry = FileBrowserEntry(name, full, is_dir=True)
-            urwid.connect_signal(entry, "click", self._entry_clicked, entry)
-            entries.append(entry)
-
-        for name, full in files:
-            is_selected = full in self.delegate.pending_attachments
-            entry = FileBrowserEntry(name, full, selected=is_selected)
-            urwid.connect_signal(entry, "click", self._entry_clicked, entry)
-            entries.append(entry)
-
-        if not dirs and not files:
-            entries.append(urwid.Text(("inactive_text", "  (empty)")))
-
-        self.file_walker[:] = entries
-        if focus_pos is not None and focus_pos < len(entries):
-            self.file_listbox.set_focus(focus_pos)
-        elif entries:
-            self.file_listbox.set_focus(0)
-
-    def _entry_clicked(self, entry_widget, user_data=None):
-        entry = user_data if user_data else entry_widget
-        if entry.is_dir or entry.is_parent:
-            self.current_path = entry.full_path
-            self._populate()
-        else:
-            if entry.full_path in self.delegate.pending_attachments:
-                self.delegate.pending_attachments.remove(entry.full_path)
-            else:
-                self.delegate.pending_attachments.append(entry.full_path)
-            self.delegate.frame.contents["footer"] = (self.delegate._build_footer(), None)
-            self._populate()
-
-    def _dismiss(self, sender):
-        self.delegate.file_browser_closed()
-
-    def _cancel(self, sender):
-        self.delegate.pending_attachments.clear()
-        self.delegate.frame.contents["footer"] = (self.delegate._build_footer(), None)
-        self.delegate.file_browser_closed()
-
-    def keypress(self, size, key):
-        if key == "esc":
-            self.delegate.file_browser_closed()
-            return
-        result = super().keypress(size, key)
-        if result == "down" and self.browser_frame.focus_position == "body":
-            self.browser_frame.focus_position = "footer"
-            return
-        elif result == "up" and self.browser_frame.focus_position == "footer":
-            self.browser_frame.focus_position = "body"
-            return
-        return result
 
 
 class SyncProgressBar(urwid.ProgressBar):
