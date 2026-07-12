@@ -164,7 +164,7 @@ class AnnounceInfo(urwid.WidgetWrap):
                     display_name = op_str
 
                     if not source_hash_text in [c[0] for c in existing_conversations]:
-                        entry = DirectoryEntry(source_hash, display_name, trust_level)
+                        entry = DirectoryEntry(op_hash, display_name, trust_level)
                         self.app.directory.remember(entry)
 
                         new_conversation = nomadnet.Conversation(source_hash_text, nomadnet.NomadNetworkApp.get_shared_instance(), initiator=True)
@@ -716,7 +716,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
                     display_name = op_str
 
                     if not source_hash_text in [c[0] for c in existing_conversations]:
-                        entry = DirectoryEntry(source_hash, display_name, trust_level)
+                        entry = DirectoryEntry(op_hash, display_name, trust_level)
                         self.app.directory.remember(entry)
 
                         new_conversation = nomadnet.Conversation(source_hash_text, nomadnet.NomadNetworkApp.get_shared_instance(), initiator=True)
@@ -1532,13 +1532,19 @@ class NodeInfo(urwid.WidgetWrap):
                     self.t_total_pages,
                     self.t_total_files,
                     urwid.Divider(g["divider1"]),
-                    urwid.Pile([
-                        urwid.Button("Peer Info", on_press=show_peer_info),
-                        connect_button,
-                        edit_button,
-                        reset_button,
-                        announce_button,
-                        qr_button,
+                    urwid.Columns([
+                        (urwid.WEIGHT, 5, urwid.Button("Back", on_press=show_peer_info)),
+                        (urwid.WEIGHT, 0.5, urwid.Text("")),
+                        (urwid.WEIGHT, 6, connect_button),
+                        (urwid.WEIGHT, 0.5, urwid.Text("")),
+                        (urwid.WEIGHT, 8, reset_button),
+                        (urwid.WEIGHT, 0.5, urwid.Text("")),
+                        (urwid.WEIGHT, 7, announce_button),
+                    ]),
+                    urwid.Columns([
+                        (urwid.WEIGHT, 4, edit_button),
+                        (urwid.WEIGHT, 0.5, urwid.Text("")),
+                        (urwid.WEIGHT, 9, qr_button),
                     ])
                 ])
             else:
@@ -1553,13 +1559,19 @@ class NodeInfo(urwid.WidgetWrap):
                 self.t_total_pages,
                 self.t_total_files,
                 urwid.Divider(g["divider1"]),
-                urwid.Pile([
-                    urwid.Button("Peer Info", on_press=show_peer_info),
-                    connect_button,
-                    edit_button,
-                    reset_button,
-                    announce_button,
-                    qr_button,
+                urwid.Columns([
+                    (urwid.WEIGHT, 5, urwid.Button("Back", on_press=show_peer_info)),
+                    (urwid.WEIGHT, 0.5, urwid.Text("")),
+                    (urwid.WEIGHT, 6, connect_button),
+                    (urwid.WEIGHT, 0.5, urwid.Text("")),
+                    (urwid.WEIGHT, 8, reset_button),
+                    (urwid.WEIGHT, 0.5, urwid.Text("")),
+                    (urwid.WEIGHT, 7, announce_button),
+                ]),
+                urwid.Columns([
+                    (urwid.WEIGHT, 4, edit_button),
+                    (urwid.WEIGHT, 0.5, urwid.Text("")),
+                    (urwid.WEIGHT, 9, qr_button),
                 ])
             ])
         else:

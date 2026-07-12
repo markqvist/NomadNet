@@ -46,11 +46,12 @@ class FileBrowserEntry(urwid.WidgetWrap):
         return False
 
 class FileBrowser(urwid.WidgetWrap):
-    def __init__(self, on_done=None, on_cancel=None, on_change=None, title="Select File", multi_select=True, start_path=None, selected=None):
+    def __init__(self, on_done=None, on_cancel=None, on_change=None, title="Select File", multi_select=True, start_path=None, selected=None, max_file_size=None):
         self.on_done_cb = on_done
         self.on_cancel_cb = on_cancel
         self.on_change_cb = on_change
         self.multi_select = multi_select
+        self.max_file_size = max_file_size
         self.selected = list(selected) if selected else []
 
         app = nomadnet.NomadNetworkApp.get_shared_instance()
@@ -81,7 +82,26 @@ class FileBrowser(urwid.WidgetWrap):
         self._populate()
 
         self.browser_frame = urwid.Frame(self.file_listbox, header=header_pile, footer=footer_pile)
-        super().__init__(urwid.LineBox(self.browser_frame, title=title))
+        self._main_widget = urwid.LineBox(self.browser_frame, title=title)
+        self._notice_open = False
+        super().__init__(self._main_widget)
+
+    def _show_notice(self, message, title="Notice"):
+        def dismiss(_b=None):
+            self._notice_open = False
+            self._w = self._main_widget
+
+        box = urwid.LineBox(urwid.Pile([
+            urwid.Text(message, align=urwid.CENTER),
+            urwid.Divider(),
+            urwid.Padding(urwid.Button("OK", on_press=dismiss), align=urwid.CENTER, width=8),
+        ]), title=title)
+        self._notice_open = True
+        self._w = urwid.Overlay(box, self._main_widget, align=urwid.CENTER, width=("relative", 75), valign=urwid.MIDDLE, height=urwid.PACK)
+
+    def _dismiss_notice(self):
+        self._notice_open = False
+        self._w = self._main_widget
 
     def _update_status(self):
         if self.selected:
@@ -157,6 +177,20 @@ class FileBrowser(urwid.WidgetWrap):
             self._populate()
             return
 
+        if self.max_file_size is not None and entry.full_path not in self.selected:
+            try:
+                file_size = os.path.getsize(entry.full_path)
+            except Exception:
+                file_size = 0
+            if file_size > self.max_file_size:
+                limit_mb = self.max_file_size / (1024 * 1024)
+                size_mb = file_size / (1024 * 1024)
+                self._show_notice(
+                    "%s is %.1f MB.\nAttachments are limited to %.0f MB." % (entry.name, size_mb, limit_mb),
+                    title="File too large",
+                )
+                return
+
         if self.multi_select:
             if entry.full_path in self.selected:
                 self.selected.remove(entry.full_path)
@@ -182,6 +216,11 @@ class FileBrowser(urwid.WidgetWrap):
             self.on_cancel_cb()
 
     def keypress(self, size, key):
+        if self._notice_open:
+            if key in ("esc", "enter"):
+                self._dismiss_notice()
+                return None
+            return super().keypress(size, key)
         if key == "esc":
             self._cancel(None)
             return None

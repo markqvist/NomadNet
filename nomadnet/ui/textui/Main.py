@@ -201,7 +201,10 @@ class MainDisplay():
             return
 
         active = self.sub_displays.active_display
-        if active in (self.sub_displays.log_display, self.sub_displays.config_display):
+        if active is self.sub_displays.log_display:
+            self.do_quit()
+            return
+        if active is self.sub_displays.config_display and self.sub_displays.config_display.editor_term is not None:
             self.do_quit()
             return
 

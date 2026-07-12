@@ -70,6 +70,24 @@ class Conversation:
 
         ingested_path = lxmessage.write_to_directory(conversation_path)
 
+        if not originator and ingested_path is not None:
+            try:
+                rssi = getattr(lxmessage, "rssi", None)
+                snr = getattr(lxmessage, "snr", None)
+                q = getattr(lxmessage, "q", None)
+                if rssi is not None or snr is not None or q is not None:
+                    index = ConversationMessage.read_index(conversation_path)
+                    filename = os.path.basename(ingested_path)
+                    entry = index.get(filename) or {}
+                    if rssi is not None: entry["rssi"] = rssi
+                    if snr is not None: entry["snr"] = snr
+                    if q is not None: entry["q"] = q
+                    index[filename] = entry
+                    with open(os.path.join(conversation_path, ".index"), "wb") as index_file:
+                        index_file.write(msgpack.packb(index))
+            except Exception as e:
+                RNS.log("Error while storing reception stats for message: "+str(e), RNS.LOG_ERROR)
+
         try:
             ConversationMessage.extract_attachments_from_lxm(lxmessage, app)
         except Exception as e:
@@ -293,14 +311,26 @@ class Conversation:
     def register_changed_callback(self, callback):
         self.__changed_callback = callback
 
+    def ensure_send_destination(self):
+        if self.send_destination is None:
+            self.source_identity = RNS.Identity.recall(bytes.fromhex(self.source_hash))
+            if self.source_identity:
+                self.source_known = True
+                self.send_destination = RNS.Destination(self.source_identity, RNS.Destination.OUT, RNS.Destination.SINGLE, "lxmf", "delivery")
+        return self.send_destination
+
     def send(self, content="", title="", fields=None):
+        self.ensure_send_destination()
         if self.send_destination:
             dest = self.send_destination
             source = self.app.lxmf_destination
             desired_method = LXMF.LXMessage.DIRECT
-            if self.app.directory.preferred_delivery(dest.hash) == DirectoryEntry.PROPAGATED:
+            preferred = self.app.directory.preferred_delivery(dest.hash)
+            if preferred == DirectoryEntry.PROPAGATED:
                 if self.app.message_router.get_outbound_propagation_node() != None:
                     desired_method = LXMF.LXMessage.PROPAGATED
+            elif preferred == DirectoryEntry.OPPORTUNISTIC:
+                desired_method = LXMF.LXMessage.OPPORTUNISTIC
             else:
                 if not self.app.message_router.delivery_link_available(dest.hash) and RNS.Identity.current_ratchet_id(dest.hash) != None:
                     RNS.log(f"Have ratchet for {RNS.prettyhexrep(dest.hash)}, requesting opportunistic delivery of message", RNS.LOG_DEBUG)
@@ -328,6 +358,7 @@ class Conversation:
             return False
 
     def paper_output(self, content="", title="", mode="print_qr"):
+        self.ensure_send_destination()
         if self.send_destination:
             try:
                 dest = self.send_destination
@@ -433,6 +464,9 @@ class ConversationMessage:
         self._cached_method = None
         self._cached_has_attachments = None
         self._cached_attachment_names = None
+        self._cached_rssi = None
+        self._cached_snr = None
+        self._cached_q = None
 
         self.sort_timestamp = os.path.getmtime(file_path) if os.path.isfile(file_path) else 0
 
@@ -476,6 +510,12 @@ class ConversationMessage:
             if self._cached_signature_validated is None:
                 self._cached_signature_validated = self.lxm.signature_validated
             self._cached_method = self.lxm.method
+            if self._cached_rssi is None:
+                self._cached_rssi = getattr(self.lxm, "rssi", None)
+            if self._cached_snr is None:
+                self._cached_snr = getattr(self.lxm, "snr", None)
+            if self._cached_q is None:
+                self._cached_q = getattr(self.lxm, "q", None)
             if hasattr(self.lxm, "get_fields"):
                 _fields = self.lxm.get_fields()
                 if _fields and isinstance(_fields, dict) and LXMF.FIELD_RENDERER in _fields:
@@ -595,6 +635,22 @@ class ConversationMessage:
         if not self.loaded:
             self.load()
         return self._cached_state
+
+    def get_method(self):
+        if self._cached_method is not None:
+            return self._cached_method
+        if not self.loaded:
+            self.load()
+        return self._cached_method
+
+    def get_rssi(self):
+        return self._cached_rssi
+
+    def get_snr(self):
+        return self._cached_snr
+
+    def get_q(self):
+        return self._cached_q
 
     def get_transport_encryption(self):
         if self._cached_transport_encryption is not None:
@@ -957,6 +1013,9 @@ class ConversationMessage:
             "renderer": None if self._cached_renderer is ConversationMessage._RENDERER_UNSET else self._cached_renderer,
             "has_attachments": self._cached_has_attachments,
             "attachment_names": self._cached_attachment_names,
+            "rssi": self._cached_rssi,
+            "snr": self._cached_snr,
+            "q": self._cached_q,
         }
 
     def restore_from_index(self, entry):
@@ -974,6 +1033,9 @@ class ConversationMessage:
         self._cached_renderer = entry.get("renderer", ConversationMessage._RENDERER_UNSET)
         self._cached_has_attachments = entry.get("has_attachments")
         self._cached_attachment_names = entry.get("attachment_names")
+        self._cached_rssi = entry.get("rssi")
+        self._cached_snr = entry.get("snr")
+        self._cached_q = entry.get("q")
 
     @staticmethod
     def read_index(conversation_path):

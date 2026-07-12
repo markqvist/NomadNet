@@ -1,10 +1,6 @@
 import RNS
 import time
-import nomadnet
 import urwid
-
-def _get_cols_rows():
-    return nomadnet.NomadNetworkApp.get_shared_instance().ui.screen.get_cols_rows()
 
 def _fmt_secs(secs):
     secs = int(secs)
@@ -142,7 +138,7 @@ class LazyTableWalker(urwid.ListWalker):
 class TransportFiller(urwid.WidgetWrap):
     def __init__(self, widget, display):
         self.display = display
-        super().__init__(urwid.Filler(widget, urwid.TOP))
+        super().__init__(widget)
 
     def keypress(self, size, key):
         if key == "tab":
@@ -173,7 +169,7 @@ class TransportDisplay:
 
     HASH_W = 34
     HOPS_W = 6
-    VIA_W = 20
+    VIA_W = 34
     EXP_W = 12
     LAST_W = 16
     VIOL_W = 11
@@ -215,16 +211,13 @@ class TransportDisplay:
             urwid.AttrMap(self.filter_edit, "list_normal", focus_map="list_focus"),
         ], dividechars=1)
 
-        _cols, rows = _get_cols_rows()
-        self.box_adapter = urwid.BoxAdapter(self.list_box, max(3, rows - 10))
-
         self.pile = urwid.Pile([
             ('pack', self.summary_text),
             ('pack', self._tab_bar()),
             ('pack', self.filter_row),
             ('pack', self._header_row()),
             ('pack', urwid.Divider("─")),
-            self.box_adapter,
+            ('weight', 1, self.list_box),
         ])
 
         self.transport_view = TransportFiller(self.pile, self)
@@ -429,12 +422,6 @@ class TransportDisplay:
         empty = urwid.Text(("inactive_text", empty_msg), align=urwid.CENTER)
         self.list_walker.configure(data, factory, empty)
 
-        try:
-            _cols, rows = _get_cols_rows()
-            self.box_adapter.height = max(3, rows - 10)
-        except Exception:
-            pass
-
     def cycle_tab(self):
         order = ["paths", "rates", "interfaces"]
         i = order.index(self.active_tab) if self.active_tab in order else 0
@@ -492,12 +479,13 @@ class TransportDisplay:
             self.app.ui.loop.set_alarm_in(self.POLL_INTERVAL, self._poll)
 
     def _poll(self, loop, user_data):
-        if self._is_visible():
-            self._refresh_data()
-            self._rebuild()
-            try:
-                loop.draw_screen()
-            except Exception:
-                pass
-        if self.started:
-            loop.set_alarm_in(self.POLL_INTERVAL, self._poll)
+        if not self.started or not self._is_visible():
+            self.poll_scheduler = False
+            return
+        self._refresh_data()
+        self._rebuild()
+        try:
+            loop.draw_screen()
+        except Exception:
+            pass
+        loop.set_alarm_in(self.POLL_INTERVAL, self._poll)

@@ -165,6 +165,7 @@ CONFIG_SECTIONS = [
                 "type": "edit",
                 "default": "None",
                 "placeholder": "None",
+                "validation": ["stamp_cost"],
                 "help": "Required inbound stamp cost 1-255, or None to disable",
             },
             {
@@ -571,8 +572,9 @@ CONFIG_SECTIONS = [
             {
                 "config_key": "print_from",
                 "label": "Print from: ",
-                "type": "edit",
-                "placeholder": "everywhere, trusted, or hashes",
+                "type": "list",
+                "default": [],
+                "placeholder": "everywhere, trusted, or hash",
                 "help": "Which senders may trigger automatic printing",
             },
             {
@@ -704,8 +706,7 @@ class ConfigDisplayShortcuts():
 class ConfigFiller(urwid.WidgetWrap):
     def __init__(self, widget, app):
         self.app = app
-        self.filler = urwid.Filler(widget, urwid.TOP)
-        super().__init__(self.filler)
+        super().__init__(widget)
 
     def keypress(self, size, key):
         if key == "ctrl w":
@@ -963,7 +964,10 @@ class ConfigSectionView(urwid.WidgetWrap):
             if value:
                 widget.set_value(value if isinstance(value, list) else [value])
         else:
-            widget.edit_text = str(value)
+            if isinstance(value, (list, tuple)):
+                widget.edit_text = ", ".join(str(item) for item in value)
+            else:
+                widget.edit_text = str(value)
 
     def validate_all(self):
         all_valid = True
@@ -974,7 +978,13 @@ class ConfigSectionView(urwid.WidgetWrap):
 
     def on_save(self, button):
         if not self.validate_all():
+            self.show_message("Some fields have invalid values.\nCorrect the marked fields and try again.", title="Not saved", back_to_list=False)
             return
+
+        try:
+            self.file_config.reload()
+        except Exception:
+            pass
 
         if self.section_key not in self.file_config:
             self.file_config[self.section_key] = {}
@@ -1004,10 +1014,15 @@ class ConfigSectionView(urwid.WidgetWrap):
 
         try:
             self.file_config.write()
+            if self.section.get("configfile") == "reticulum":
+                try:
+                    self.parent.app.rns.config.reload()
+                except Exception:
+                    pass
             self.parent.mark_restart_pending()
             self.show_message(f"{self.section['name']} configuration saved.\nRestart Nomad Network for changes to take effect.")
         except Exception as e:
-            self.show_message(f"Error saving configuration: {str(e)}", title="Error")
+            self.show_message(f"Error saving configuration: {str(e)}", title="Error", back_to_list=False)
 
     def on_reset(self, button=None):
         self._confirm(
@@ -1081,9 +1096,12 @@ class ConfigSectionView(urwid.WidgetWrap):
         self.parent.widget = self
         self.parent.app.ui.main_display.update_active_sub_display()
 
-    def show_message(self, message, title="Notice"):
-        def dismiss_dialog(button):
-            self.parent.switch_to_list()
+    def show_message(self, message, title="Notice", back_to_list=True):
+        def dismiss_dialog(button=None):
+            if back_to_list:
+                self.parent.switch_to_list()
+            else:
+                self._dismiss_overlay()
 
         dialog = DialogLineBox(
             urwid.Pile([
@@ -1091,22 +1109,11 @@ class ConfigSectionView(urwid.WidgetWrap):
                 urwid.Divider(),
                 urwid.Button("OK", on_press=dismiss_dialog)
             ]),
+            parent=self,
             title=title
         )
 
-        overlay = urwid.Overlay(
-            dialog,
-            self.parent.list_view,
-            align=urwid.CENTER,
-            width=60,
-            valign=urwid.MIDDLE,
-            height=10,
-            min_width=1,
-            min_height=1
-        )
-
-        self.parent.widget = overlay
-        self.parent.app.ui.main_display.update_active_sub_display()
+        self._show_overlay(dialog, height=10, width=60)
 
     def keypress(self, size, key):
         if key == "ctrl s":
@@ -1153,8 +1160,6 @@ class ConfigDisplay():
         self.widget = self.list_view
 
     def _build_list_view(self):
-        self.terminal_cols, self.terminal_rows = _get_cols_rows()
-
         self.section_items = []
         for section in CONFIG_SECTIONS:
             icon = _get_section_icon(self.glyphset, section["glyph"])
@@ -1169,12 +1174,9 @@ class ConfigDisplay():
         self.list_walker = urwid.SimpleFocusListWalker(list_contents)
         self.list_box = urwid.ListBox(self.list_walker)
 
-        self.list_rows = max(5, self.terminal_rows - 7)
-        self.box_adapter = urwid.BoxAdapter(self.list_box, self.list_rows)
-
         self.header_text = urwid.Text("")
         self.list_divider = urwid.Divider("─")
-        self.list_pile = urwid.Pile([self.box_adapter])
+        self.list_pile = urwid.Pile([('weight', 1, self.list_box)])
         self._update_header()
 
         self.list_view = ConfigFiller(self.list_pile, self.app)
@@ -1185,7 +1187,7 @@ class ConfigDisplay():
             self.header_text.set_text(("warning_text", "Changes saved. Restart NomadNet for them to take effect"))
             contents.append((self.header_text, self.list_pile.options('pack')))
             contents.append((self.list_divider, self.list_pile.options('pack')))
-        contents.append((self.box_adapter, self.list_pile.options('weight', 1)))
+        contents.append((self.list_box, self.list_pile.options('weight', 1)))
         self.list_pile.contents = contents
 
     def mark_restart_pending(self):
@@ -1200,6 +1202,7 @@ class ConfigDisplay():
 
     def switch_to_list(self):
         self.shortcuts_display.reset_shortcuts()
+        self.editor_term = None
         self._update_header()
         self.widget = self.list_view
         self.app.ui.main_display.update_active_sub_display()

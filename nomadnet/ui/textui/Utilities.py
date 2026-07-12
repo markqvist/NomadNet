@@ -6,7 +6,7 @@ import threading
 import nomadnet
 import urwid
 
-from .Transport import TransportDisplay, _get_cols_rows
+from .Transport import TransportDisplay
 from .ReadlineEdit import ReadlineEdit
 from .FileBrowser import FileBrowser
 from nomadnet.vendor.additional_urwid_widgets.FormWidgets import Dropdown
@@ -145,15 +145,11 @@ class UtilitiesDisplay:
         ]
         self.landing_listbox = urwid.ListBox(urwid.SimpleFocusListWalker(items))
 
-        _cols, rows = _get_cols_rows()
-        box = urwid.BoxAdapter(self.landing_listbox, max(4, rows - 6))
-
-        pile = urwid.Pile([
+        self.landing_view = urwid.Pile([
             ('pack', urwid.Text(("body_text", "Select a utility to open."), align=urwid.CENTER)),
             ('pack', urwid.Divider("─")),
-            box,
+            ('weight', 1, self.landing_listbox),
         ])
-        self.landing_view = urwid.Filler(pile, urwid.TOP)
 
     def shortcuts(self):
         if self.active == "transport" and self.transport is not None:
@@ -467,16 +463,20 @@ class ProbeView:
             receipt.set_delivery_callback(self._on_delivered)
         except Exception:
             pass
-        self.app.ui.loop.set_alarm_in(self._timeout(), self._on_timeout)
+        self.app.ui.loop.set_alarm_in(self._timeout(), self._on_timeout, user_data=receipt)
 
     def _on_delivered(self, receipt):
         self._schedule(lambda: self._conclude(receipt, True))
 
     def _on_timeout(self, loop, user_data):
-        self._conclude(self._cur_receipt, False)
+        if user_data is not self._cur_receipt:
+            return
+        self._conclude(user_data, False)
 
     def _conclude(self, receipt, delivered):
         if self._concluded:
+            return
+        if receipt is not self._cur_receipt:
             return
         self._concluded = True
 
@@ -851,7 +851,7 @@ class IdentityView:
             loop.set_alarm_in(0.25, self._await_identity)
 
     def _show_identity(self, identity):
-        self._log("kno wn %s resolves to identity %s" % (
+        self._log("%s resolves to identity %s" % (
             RNS.prettyhexrep(self._dest_hash), RNS.prettyhexrep(identity.hash)), "connected_status")
 
 RNCP_APP_NAME = "rncp"
@@ -1103,7 +1103,7 @@ class SendFileView:
             self.progress_text.set_text(("connected_status", "Transferring… 100%"))
             self._log("Transfer complete", "connected_status")
         else:
-            self._log("Transfer failed or the file was not accepted ,", "warning_text")
+            self._log("Transfer failed or the file was not accepted", "warning_text")
         try:
             if self._link is not None:
                 self._link.teardown()
@@ -1127,6 +1127,7 @@ class SendFileView:
 
 SPEEDTEST_APP_NAME = "nomadnetwork"
 SPEEDTEST_ASPECTS = ("utilities", "speedtest")
+SPEEDTEST_FULL_NAME = ".".join((SPEEDTEST_APP_NAME,) + SPEEDTEST_ASPECTS)
 SPEEDTEST_INMEM_MAX = 8 * 1024 * 1024
 
 SPEEDTEST_SIZES = [
@@ -1192,6 +1193,7 @@ class SpeedTestView:
         self._client_resource = None
         self._send_started = None
         self._send_bytes = 0
+        self._send_seq = 0
         self._tmppath = None
 
         self.hash_edit = ReadlineEdit("", "")
@@ -1257,9 +1259,9 @@ class SpeedTestView:
             self.listen_status.set_text(("connected_status", "%s  %s Receiving test…" % (dot, self.g.get("arrow_d", "v"))))
         elif self._listening and self.server_destination is not None:
             if self._peer_hash_entered():
-                self.listen_status.set_text(("connected_status", "%s  Listening and ready to receive or send to from entered peer" % dot))
+                self.listen_status.set_text(("connected_status", "%s  Listening, ready to receive from or send to the entered peer" % dot))
             else:
-                self.listen_status.set_text(("warning_text", "%s  Listening enter the peer's hash to accept their test" % dot))
+                self.listen_status.set_text(("warning_text", "%s  Listening, enter the peer's hash to accept their test" % dot))
         else:
             self.listen_status.set_text(("inactive_text", "Not listening"))
 
@@ -1361,13 +1363,13 @@ class SpeedTestView:
         except Exception:
             return False
 
-    def _peer_identity(self):
+    def _entered_peer_hash(self):
         hexhash = self.hash_edit.edit_text.strip()
         dest_len = (RNS.Reticulum.TRUNCATED_HASHLENGTH // 8) * 2
         if len(hexhash) != dest_len:
             return None
         try:
-            return RNS.Identity.recall(bytes.fromhex(hexhash))
+            return bytes.fromhex(hexhash)
         except Exception:
             return None
 
@@ -1414,8 +1416,12 @@ class SpeedTestView:
         self._schedule(lambda: self._verify_incoming(link, identity))
 
     def _verify_incoming(self, link, identity):
-        peer_identity = self._peer_identity()
-        if peer_identity is None or peer_identity.hash != identity.hash:
+        expected_hash = self._entered_peer_hash()
+        try:
+            identified_hash = RNS.Destination.hash_from_name_and_identity(SPEEDTEST_FULL_NAME, identity)
+        except Exception:
+            identified_hash = None
+        if expected_hash is None or identified_hash is None or identified_hash != expected_hash:
             self._log("Rejected speed test from unauthorized peer", "warning_text")
             try:
                 link.teardown()
@@ -1437,14 +1443,27 @@ class SpeedTestView:
 
     def _recv_started_now(self, resource):
         self._recv_resource = resource
-        self._recv_started = time.time()
-        self._recv_polling = True
+        if self._recv_started is None:
+            self._recv_started = time.time()
         self.rate_text.set_text(("body_text", "Receiving…"))
         self._update_listen_status()
-        self.app.ui.loop.set_alarm_in(0.3, self._recv_poll)
+        if not self._recv_polling:
+            self._recv_polling = True
+            self.app.ui.loop.set_alarm_in(0.3, self._recv_poll)
 
     def _recv_poll(self, loop, user_data):
         if not self._recv_polling or self._recv_resource is None:
+            return
+        failed = False
+        try:
+            if self._recv_resource.status in (RNS.Resource.FAILED, RNS.Resource.CORRUPT):
+                failed = True
+            elif self._recv_link is not None and self._recv_link.status == RNS.Link.CLOSED:
+                failed = True
+        except Exception:
+            pass
+        if failed:
+            self._recv_failed()
             return
         try:
             pct = int(self._recv_resource.get_progress() * 100)
@@ -1459,16 +1478,28 @@ class SpeedTestView:
     def _on_recv_concluded(self, resource):
         self._schedule(lambda: self._recv_concluded(resource))
 
-    def _recv_concluded(self, resource):
+    def _recv_failed(self):
         self._recv_polling = False
+        self._log("Incoming transfer failed", "warning_text")
+        self.rate_text.set_text("")
+        self._recv_resource = None
+        self._recv_link = None
+        self._update_listen_status()
+
+    def _recv_concluded(self, resource):
         try:
             complete = resource.status == RNS.Resource.COMPLETE
         except Exception:
             complete = False
         if not complete:
-            self._log("Incoming transfer failed", "warning_text")
-            self.rate_text.set_text("")
+            self._recv_failed()
             return
+        try:
+            if resource.segment_index < resource.total_segments:
+                return
+        except Exception:
+            pass
+        self._recv_polling = False
         size = self._resource_size(resource)
         elapsed = max(0.001, time.time() - (self._recv_started or time.time()))
         self._set_progress(100)
@@ -1480,7 +1511,7 @@ class SpeedTestView:
         self._update_listen_status()
 
     def _resource_size(self, resource):
-        for getter in ("get_transfer_size", "get_data_size"):
+        for getter in ("get_data_size", "get_transfer_size"):
             try:
                 fn = getattr(resource, getter, None)
                 if fn:
@@ -1500,7 +1531,6 @@ class SpeedTestView:
             return
         self.update_interface_status()
 
-        peer_identity = self._peer_identity()
         dest_len = (RNS.Reticulum.TRUNCATED_HASHLENGTH // 8) * 2
         hexhash = self.hash_edit.edit_text.strip()
         if len(hexhash) != dest_len:
@@ -1515,6 +1545,7 @@ class SpeedTestView:
         label = self.size_dropdown.get_value()
         self._send_bytes = SPEEDTEST_BYTES_BY_LABEL.get(label, 1024 * 1024)
 
+        self._send_seq += 1
         self._sending = True
         self.start_button.original_widget.set_label("Cancel")
         self._set_progress(0)
@@ -1596,14 +1627,15 @@ class SpeedTestView:
         except Exception:
             pass
         self._log_link_mtu(link)
-        self.app.ui.loop.set_alarm_in(0.6, lambda l, u: self._prepare_and_send(link))
+        seq = self._send_seq
+        self.app.ui.loop.set_alarm_in(0.6, lambda l, u: self._prepare_and_send(link, seq))
 
-    def _prepare_and_send(self, link):
-        if not self._sending or self._client_resource is not None:
+    def _prepare_and_send(self, link, seq):
+        if not self._sending or seq != self._send_seq or self._client_resource is not None:
             return
         nbytes = self._send_bytes
         if nbytes <= SPEEDTEST_INMEM_MAX:
-            self._begin_resource(link, os.urandom(nbytes), None)
+            self._begin_resource(link, os.urandom(nbytes), None, seq)
             return
         self._log("Preparing %s payload …" % _size_str(nbytes))
 
@@ -1613,7 +1645,7 @@ class SpeedTestView:
                 fd, path = tempfile.mkstemp(prefix="nn_speedtest_")
                 written = 0
                 with os.fdopen(fd, "wb") as f:
-                    while written < nbytes and self._sending:
+                    while written < nbytes and self._sending and seq == self._send_seq:
                         chunk = min(1024 * 1024, nbytes - written)
                         f.write(os.urandom(chunk))
                         written += chunk
@@ -1625,19 +1657,19 @@ class SpeedTestView:
                         pass
                 self._schedule(lambda: (self._log("Could not prepare payload: %s" % str(e), "error_text"), self._finish()))
                 return
-            if not self._sending:
+            if not self._sending or seq != self._send_seq:
                 if path:
                     try:
                         os.remove(path)
                     except Exception:
                         pass
                 return
-            self._schedule(lambda: self._begin_resource(link, None, path))
+            self._schedule(lambda: self._begin_resource(link, None, path, seq))
 
         threading.Thread(target=worker, daemon=True).start()
 
-    def _begin_resource(self, link, data_bytes, tmppath):
-        if not self._sending:
+    def _begin_resource(self, link, data_bytes, tmppath, seq):
+        if not self._sending or seq != self._send_seq:
             if tmppath:
                 try:
                     os.remove(tmppath)
@@ -1670,6 +1702,8 @@ class SpeedTestView:
         self._schedule(lambda: self._send_done(resource))
 
     def _send_done(self, resource):
+        if not self._sending:
+            return
         try:
             complete = resource.status == RNS.Resource.COMPLETE
         except Exception:
@@ -1702,6 +1736,7 @@ class SpeedTestView:
     def cancel(self, silent=False):
         if not self._sending:
             return
+        self._send_seq += 1
         self._sending = False
         try:
             if self._client_resource is not None:
@@ -1719,13 +1754,13 @@ class SpeedTestView:
             self._log("Speed test cancelled", "warning_text")
             self.rate_text.set_text("")
             self._set_progress(0)
-        self.start_button.original_widget.set_label("Start test")
+        self.start_button.original_widget.set_label("Send test file")
         self._update_listen_status()
         self._draw()
 
     def _finish(self):
         self._sending = False
         self._client_resource = None
-        self.start_button.original_widget.set_label("Start test")
+        self.start_button.original_widget.set_label("Send test file")
         self._update_listen_status()
         self._draw()

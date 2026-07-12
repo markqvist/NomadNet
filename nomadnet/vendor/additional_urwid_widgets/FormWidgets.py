@@ -139,9 +139,20 @@ class FormEdit(Placeholder, FormField):
                     self.error = "This field is required"
                     break
             elif validation == "number":
-                if value and not value.replace('-', '').replace('.', '').isdigit():
-                    self.error = "This field must be a number"
+                try:
+                    if value:
+                        int(value)
+                except ValueError:
+                    self.error = "This field must be a whole number"
                     break
+            elif validation == "stamp_cost":
+                if value and value.lower() != "none":
+                    try:
+                        if not 1 <= int(value) <= 255:
+                            raise ValueError
+                    except ValueError:
+                        self.error = "This field must be 1-255 or None"
+                        break
             elif validation == "float":
                 try:
                     if value:
@@ -172,7 +183,7 @@ class FormCheckbox(urwid.CheckBox, FormField):
         for validation in self.validation_types:
             if validation == "required":
                 if not value:
-                    self.error = "This field is  required"
+                    self.error = "This field is required"
                     break
 
         self.error_widget.set_text(("error", self.error or ""))

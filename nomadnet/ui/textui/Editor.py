@@ -149,7 +149,10 @@ class MicronEdit(ReadlineEdit):
 class GutterEdit(MicronEdit):
     # MicronEdit with a wrap-aware line-number gutter on the left
     def _gutter_width(self, maxcol):
-        return max(3, len(str(self.edit_text.count("\n") + 1)) + 2)
+        gw = max(3, len(str(self.edit_text.count("\n") + 1)) + 2)
+        if maxcol - gw < 1:
+            return 0
+        return gw
 
     def rows(self, size, focus=False):
         gw = self._gutter_width(size[0])
@@ -164,18 +167,24 @@ class GutterEdit(MicronEdit):
 
     def move_cursor_to_coords(self, size, x, y):
         gw = self._gutter_width(size[0])
-        return super().move_cursor_to_coords((max(1, size[0] - gw),), max(0, x - gw), y)
+        if isinstance(x, int):
+            x = max(0, x - gw)
+        return super().move_cursor_to_coords((max(1, size[0] - gw),), x, y)
 
     def render(self, size, focus=False):
         maxcol = size[0]
         gw = self._gutter_width(maxcol)
+        if gw == 0:
+            return super().render(size, focus)
         tw = max(1, maxcol - gw)
 
-
+        cheap = len(self.edit_text) > MAX_HIGHLIGHT_CHARS
+        wrap = "any" if cheap else "space"
+        if self.wrap != wrap:
+            self.set_wrap_mode(wrap)
 
         edit_canv = super().render((tw,), focus=False)
         h = edit_canv.rows()
-        cheap = len(self.edit_text) > MAX_HIGHLIGHT_CHARS
         rows = []
         for i, line in enumerate(self.edit_text.split("\n"), 1):
             rows.append(str(i).rjust(gw - 1) + " ")
@@ -578,10 +587,18 @@ class PageEditorDisplay():
         d = os.path.dirname(path) or "."
         tmp = os.path.join(d, "." + os.path.basename(path) + ".tmp")
         try:
+            existing_mode = None
+            try:
+                existing_mode = os.stat(path).st_mode
+            except OSError:
+                existing_mode = None
             with open(tmp, "w", encoding="utf-8") as f:
                 f.write(text)
                 f.flush()
                 try: os.fsync(f.fileno())
+                except Exception: pass
+            if existing_mode is not None:
+                try: os.chmod(tmp, existing_mode)
                 except Exception: pass
             os.replace(tmp, path)
         except Exception:
@@ -716,10 +733,13 @@ class PageEditorDisplay():
             if self.current_path and self.editable:
                 self.save_file(self.current_path)
             proceed()
-        name = os.path.basename(self.current_path) if self.current_path else "this file"
+        name = os.path.basename(self.current_path) if self.current_path else "this buffer"
+        if self.current_path and self.editable:
+            buttons = [("Save", save_then), ("Discard", lambda: (self.close_dialog(), proceed())), ("Cancel", self.close_dialog)]
+        else:
+            buttons = [("Discard", lambda: (self.close_dialog(), proceed())), ("Cancel", self.close_dialog)]
         self.show_dialog(ConfirmDialog("Unsaved changes", "Discard unsaved changes to %s?" % name,
-            [("Save", save_then), ("Discard", lambda: (self.close_dialog(), proceed())), ("Cancel", self.close_dialog)],
-            on_cancel=self.close_dialog))
+            buttons, on_cancel=self.close_dialog))
 
     def load_file(self, path):
         try:
@@ -839,10 +859,18 @@ class PageEditorDisplay():
             try:
                 os.makedirs(os.path.dirname(target), exist_ok=True)
                 os.rename(old, target)
+                if os.path.isfile(old + ".allowed"):
+                    try: os.replace(old + ".allowed", target + ".allowed")
+                    except Exception: pass
+                old_prefix = old + os.sep
                 if self.current_path == old:
                     self.current_path = target; self.update_title()
-                if old in self.expanded:
-                    self.expanded.discard(old); self.expanded.add(target)
+                elif self.current_path and self.current_path.startswith(old_prefix):
+                    self.current_path = target + self.current_path[len(old):]; self.update_title()
+                self.expanded = set(
+                    target if p == old else (target + p[len(old):] if p.startswith(old_prefix) else p)
+                    for p in self.expanded
+                )
                 self.refresh_tree(); self.save_state()
                 self.set_status("renamed to " + os.path.basename(target))
             except Exception as e:
@@ -866,11 +894,16 @@ class PageEditorDisplay():
     def _do_delete(self, path):
         self.close_dialog()
         try:
+            prefix = path + os.sep
             if os.path.isdir(path):
-                shutil.rmtree(path); self.expanded.discard(path)
+                shutil.rmtree(path)
+                self.expanded = set(p for p in self.expanded if p != path and not p.startswith(prefix))
             else:
                 os.remove(path)
-            if self.current_path == path:
+                if os.path.isfile(path + ".allowed"):
+                    try: os.remove(path + ".allowed")
+                    except Exception: pass
+            if self.current_path is not None and (self.current_path == path or self.current_path.startswith(prefix)):
                 self.current_path = None; self.editable = False; self.is_exec = False; self.dirty = False
                 self._loading = True; self.editor.set_edit_text(""); self._loading = False
                 self.update_title(); self.set_preview_note("")
@@ -1016,7 +1049,7 @@ class PageEditorDisplay():
         self.body.original_widget = self.columns
 
     def on_edit_change(self, widget, old_text):
-        if self._loading or not self.editable:
+        if self._loading or (self.current_path is not None and not self.editable):
             return
         self.dirty = True
         self.set_modified(True)
