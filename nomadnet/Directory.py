@@ -195,11 +195,11 @@ class Directory:
                 self._node_announces.insert(0, (timestamp, source_hash, app_data, "node"))
                 self._clean_node_announces()
 
-                if self.trust_level(associated_peer) == DirectoryEntry.TRUSTED:
-                    existing_entry = self.find(source_hash)
-                    if not existing_entry:
-                        node_entry = DirectoryEntry(source_hash, display_name=app_data.decode("utf-8"), trust_level=DirectoryEntry.TRUSTED, hosts_node=True)
-                        self.remember(node_entry)
+                # if self.trust_level(associated_peer) == DirectoryEntry.TRUSTED:
+                #     existing_entry = self.find(source_hash)
+                #     if not existing_entry:
+                #         node_entry = DirectoryEntry(source_hash, display_name=app_data.decode("utf-8"), trust_level=DirectoryEntry.TRUSTED, hosts_node=True)
+                #         self.remember(node_entry)
                 
                 if hasattr(self.app.ui, "main_display"):
                     self.app.ui.main_display.sub_displays.network_display.directory_change_callback()
