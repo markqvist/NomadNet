@@ -3,6 +3,7 @@ import threading
 
 import RNS
 import RNS.vendor.umsgpack as msgpack
+from nomadnet.util import write_config_atomic
 
 
 class InterfaceProfiles:
@@ -178,7 +179,7 @@ class InterfaceProfiles:
                 interfaces[name]["interface_enabled"] = value
                 if "enabled" in interfaces[name]:
                     interfaces[name]["enabled"] = value
-            self.app.rns.config.write()
+            write_config_atomic(self.app.rns.config)
             return True
         except Exception as e:
             RNS.log("Could not apply interface profile: "+str(e), RNS.LOG_ERROR)

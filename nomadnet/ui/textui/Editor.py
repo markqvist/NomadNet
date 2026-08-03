@@ -912,36 +912,88 @@ class PageEditorDisplay():
         except Exception as e:
             self.set_status("delete failed: %s" % e)
 
+    def _read_allowed(self, path):
+        ap = path + ".allowed"
+        if not os.path.isfile(ap):
+            return ""
+        try:
+            with open(ap, encoding="utf-8") as f:
+                return "\n".join(ln.strip() for ln in f.read().splitlines() if ln.strip())
+        except Exception:
+            return ""
+
+    def _walk_pages(self, path):
+        for root, dirs, files in os.walk(path):
+            dirs[:] = [d for d in dirs if not d.startswith(".") and d != "__pycache__"]
+            for fn in files:
+                if fn.endswith(".allowed"):
+                    continue
+                yield os.path.join(root, fn)
+
+    def _folder_permissions(self, path):
+        bodies = {}
+        total = 0
+        for page in self._walk_pages(path):
+            total += 1
+            body = self._read_allowed(page)
+            bodies[body] = bodies.get(body, 0) + 1
+        restricted = sum(count for body, count in bodies.items() if body)
+        distinct = [body for body in bodies if body]
+        common = distinct[0] if len(bodies) == 1 and distinct else None
+        return common, restricted, total
+
     def permissions_dialog(self):
         w = self._selected_tree()
         if not w or not getattr(w, "path", None):
             self.set_status("select a file/folder for permissions"); return
         path = w.path
         is_dir = os.path.isdir(path)
-        content = ""
-        if not is_dir and os.path.isfile(path + ".allowed"):
-            try: content = open(path + ".allowed", encoding="utf-8").read()
-            except Exception: content = ""
-        note = ("Allowed identity hashes per line. Empty = public.\n"
-                + ("Applies to every page in this folder." if is_dir else "Applys to this page."))
+
+        if is_dir:
+            common, restricted, total = self._folder_permissions(path)
+            content = common or ""
+            if not total:
+                state = "This folder contains no pages."
+            elif not restricted:
+                state = "All %d pages here are public." % total
+            elif common is not None:
+                state = "All %d pages here share these entries." % total
+            else:
+                state = "Entries differ across pages (%d of %d restricted)." % (restricted, total)
+            note = ("Allowed identity hashes per line.\n"
+                    + state + "\nSaving applies these entries to every page in this folder and its subfolders.")
+        else:
+            content = self._read_allowed(path)
+            note = "Allowed identity hashes per line. Empty = public.\nApplies to this page."
+
         title = "Permissions: " + os.path.basename(path) + ("/" if is_dir else "")
         self.show_dialog(PermissionsDialog(title, note, content,
             lambda txt: self._save_permissions(path, is_dir, txt), self.close_dialog))
 
     def _save_permissions(self, path, is_dir, text):
-        self.close_dialog()
         body = "\n".join(ln.strip() for ln in text.splitlines() if ln.strip())
+
+        if is_dir and not body:
+            restricted = self._folder_permissions(path)[1]
+            if restricted:
+                self.show_dialog(ConfirmDialog("Make public",
+                    "This removes the access restrictions from %d page(s)\nunder %s, making them public.\n\nContinue?"
+                    % (restricted, os.path.basename(path)),
+                    [("Make public", lambda: self._apply_permissions(path, is_dir, body)), ("Cancel", self.close_dialog)],
+                    on_cancel=self.close_dialog))
+                return
+
+        self._apply_permissions(path, is_dir, body)
+
+    def _apply_permissions(self, path, is_dir, body):
+        self.close_dialog()
         try:
             if is_dir:
                 count = 0
-                for root, dirs, files in os.walk(path):
-                    dirs[:] = [d for d in dirs if not d.startswith(".") and d != "__pycache__"]
-                    for fn in files:
-                        if fn.endswith(".allowed"):
-                            continue
-                        self._write_allowed(os.path.join(root, fn), body)
-                        count += 1
-                self.set_status("permissions applied to %d files" % count)
+                for page in self._walk_pages(path):
+                    self._write_allowed(page, body)
+                    count += 1
+                self.set_status(("permissions applied to %d files" if body else "permissions cleared on %d files") % count)
             else:
                 self._write_allowed(path, body)
                 self.set_status("permissions saved" if body else "permissions cleared (public)")

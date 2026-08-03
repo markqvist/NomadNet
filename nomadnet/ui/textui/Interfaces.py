@@ -8,6 +8,7 @@ from nomadnet.vendor.additional_urwid_widgets.FormWidgets import *
 from nomadnet.vendor.AsciiChart import AsciiChart
 from .ReadlineEdit import ReadlineEdit
 from .Helpers import ClickableIcon
+from nomadnet.util import write_config_atomic
 
 ### GYLPHS ###
 INTERFACE_GLYPHS = {
@@ -2066,7 +2067,7 @@ class AddInterfaceView(urwid.WidgetWrap):
         try:
             interfaces = self.parent.app.rns.config['interfaces']
             interfaces[name] = interface_config
-            self.parent.app.rns.config.write()
+            write_config_atomic(self.parent.app.rns.config)
             self._apply_profile_membership(name)
 
             display_type = custom_type if self.iface_type == "CustomInterface" else self.iface_type
@@ -2323,7 +2324,7 @@ class EditInterfaceView(AddInterfaceView):
             else:
                 interfaces[self.iface_name] = updated_config
 
-            self.parent.app.rns.config.write()
+            write_config_atomic(self.parent.app.rns.config)
             self._apply_profile_membership(new_name)
 
             display_type = interface_type
@@ -2798,7 +2799,7 @@ class ShowInterface(urwid.WidgetWrap):
         try:
             interfaces = self.parent.app.rns.config['interfaces']
             interfaces[self.iface_name] = self.interface_config
-            self.parent.app.rns.config.write()
+            write_config_atomic(self.parent.app.rns.config)
 
             self.update_status_display()
 
@@ -3742,7 +3743,7 @@ class InterfaceDisplay:
         try:
             for name, conf in parsed.items():
                 interfaces[name] = conf
-            self.app.rns.config.write()
+            write_config_atomic(self.app.rns.config)
         except Exception as e:
             self.paste_status.set_text(("error", " Failed: " + str(e)))
             return
@@ -3765,7 +3766,7 @@ class InterfaceDisplay:
             try:
                 if interface_name in self.app.rns.config['interfaces']:
                     del self.app.rns.config['interfaces'][interface_name]
-                    self.app.rns.config.write()
+                    write_config_atomic(self.app.rns.config)
                     try: self.app.interface_profiles.remove_interface(interface_name)
                     except Exception: pass
 
@@ -3959,7 +3960,7 @@ class InterfaceDisplay:
         if "enabled" in iface:
             iface["enabled"] = value
         try:
-            self.app.rns.config.write()
+            write_config_atomic(self.app.rns.config)
         except Exception:
             return
         self.mark_restart_pending()
@@ -4038,7 +4039,7 @@ class InterfaceDisplay:
                 changed += 1
 
         try:
-            self.app.rns.config.write()
+            write_config_atomic(self.app.rns.config)
         except Exception as e:
             self._bulk_notice(f"Error applying bulk action: {str(e)}", title="Error")
             return

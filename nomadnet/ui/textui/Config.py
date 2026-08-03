@@ -4,6 +4,7 @@ import urwid
 import platform
 
 from RNS.vendor.configobj import ConfigObj
+from nomadnet.util import write_config_atomic
 from nomadnet.vendor.additional_urwid_widgets.FormWidgets import *
 
 CONFIG_SECTION_GLYPHS = {
@@ -208,12 +209,11 @@ CONFIG_SECTIONS = [
         "fields": [
             {
                 "config_key": "intro_time",
-                "label": "Show intro: ",
-                "type": "checkbox",
-                "default": True,
-                "on_value": "1.0",
-                "off_value": "0",
-                "help": "Show the intro screen at startup",
+                "label": "Intro time: ",
+                "type": "edit",
+                "default": "1",
+                "validation": ["float"],
+                "help": "Seconds to show the intro screen at startup (0 to disable)",
             },
             {
                 "config_key": "intro_text",
@@ -976,6 +976,21 @@ class ConfigSectionView(urwid.WidgetWrap):
                 all_valid = False
         return all_valid
 
+    def _widget_write_value(self, field, widget):
+        if field["type"] == "checkbox":
+            return field.get("on_value", "yes") if widget.get_state() else field.get("off_value", "no")
+        return widget.get_value()
+
+    def _default_write_value(self, field):
+        default = field.get("default")
+        if field["type"] == "checkbox":
+            return field.get("on_value", "yes") if bool(default) else field.get("off_value", "no")
+        if default is None:
+            return ""
+        if isinstance(default, (list, tuple)):
+            return list(default)
+        return str(default)
+
     def on_save(self, button):
         if not self.validate_all():
             self.show_message("Some fields have invalid values.\nCorrect the marked fields and try again.", title="Not saved", back_to_list=False)
@@ -986,7 +1001,8 @@ class ConfigSectionView(urwid.WidgetWrap):
         except Exception:
             pass
 
-        if self.section_key not in self.file_config:
+        section_existed = self.section_key in self.file_config
+        if not section_existed:
             self.file_config[self.section_key] = {}
 
         section_config = self.file_config[self.section_key]
@@ -994,26 +1010,20 @@ class ConfigSectionView(urwid.WidgetWrap):
         for config_key, entry in self.fields.items():
             field = entry["field"]
             widget = entry["widget"]
+            present = config_key in section_config
+            value = self._widget_write_value(field, widget)
 
-            if field["type"] == "checkbox":
-                on_value = field.get("on_value", "yes")
-                off_value = field.get("off_value", "no")
-                section_config[config_key] = on_value if widget.get_state() else off_value
-            elif field["type"] == "list":
-                value = widget.get_value()
-                if value:
-                    section_config[config_key] = value
-                elif config_key in section_config:
+            if not value:
+                if present:
                     del section_config[config_key]
-            else:
-                value = widget.get_value()
-                if value != "":
-                    section_config[config_key] = value
-                elif config_key in section_config:
-                    del section_config[config_key]
+            elif present or value != self._default_write_value(field):
+                section_config[config_key] = value
+
+        if not section_existed and not section_config:
+            del self.file_config[self.section_key]
 
         try:
-            self.file_config.write()
+            write_config_atomic(self.file_config)
             if self.section.get("configfile") == "reticulum":
                 try:
                     self.parent.app.rns.config.reload()

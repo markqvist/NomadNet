@@ -1,5 +1,38 @@
+import os
 import re
 import unicodedata
+
+
+def write_config_atomic(config):
+    path = getattr(config, "filename", None)
+    if not path:
+        config.write()
+        return
+
+    directory = os.path.dirname(path) or "."
+    tmp = os.path.join(directory, "."+os.path.basename(path)+".tmp")
+    try:
+        try:
+            existing_mode = os.stat(path).st_mode
+        except OSError:
+            existing_mode = None
+
+        with open(tmp, "wb") as tmp_file:
+            config.write(tmp_file)
+            tmp_file.flush()
+            try: os.fsync(tmp_file.fileno())
+            except Exception: pass
+
+        if existing_mode is not None:
+            try: os.chmod(tmp, existing_mode)
+            except Exception: pass
+
+        os.replace(tmp, path)
+    except Exception:
+        try: os.remove(tmp)
+        except Exception: pass
+        raise
+
 
 invalid_rendering = ["🕵️", "☝"]
 
