@@ -11,6 +11,7 @@ from nomadnet.util import sanitize_name
 
 from .Browser import Browser
 from .ReadlineEdit import ReadlineEdit
+from .Helpers import qr_ascii
 
 class NetworkDisplayShortcuts():
     def __init__(self, app):
@@ -26,7 +27,17 @@ class NetworkDisplayShortcuts():
 class DialogLineBox(urwid.LineBox):
     def keypress(self, size, key):
         if key == "esc":
-            self.delegate.update_conversation_list()
+            delegate = getattr(self, "delegate", None)
+            if delegate is not None and hasattr(delegate, "update_conversation_list"):
+                delegate.update_conversation_list()
+            elif delegate is not None and getattr(delegate, "parent", None) is not None:
+                try:
+                    delegate.dialog_open = False
+                    options = delegate.parent.left_pile.options(height_type=urwid.PACK, height_amount=None)
+                    delegate.parent.left_pile.contents[1] = (type(delegate)(delegate.app, delegate.parent), options)
+                except Exception:
+                    pass
+            return None
         else:
             return super(DialogLineBox, self).keypress(size, key)
 
@@ -82,7 +93,7 @@ class AnnounceInfo(urwid.WidgetWrap):
         is_node = False
         is_pn   = False
         if info_type == "node" or info_type == True:
-            type_string = "Nomad Network Node " + g["node"]
+            type_string = "NomadNet Node " + g["node"]
             is_node = True
         elif info_type == "pn":
             type_string = "LXMF Propagation Node " + g["sent"]
@@ -153,7 +164,7 @@ class AnnounceInfo(urwid.WidgetWrap):
                     display_name = op_str
 
                     if not source_hash_text in [c[0] for c in existing_conversations]:
-                        entry = DirectoryEntry(source_hash, display_name, trust_level)
+                        entry = DirectoryEntry(op_hash, display_name, trust_level)
                         self.app.directory.remember(entry)
 
                         new_conversation = nomadnet.Conversation(source_hash_text, nomadnet.NomadNetworkApp.get_shared_instance(), initiator=True)
@@ -634,7 +645,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
             lxmf_addr_str = "No associated Propagation Node known"
 
 
-        type_string = "Nomad Network Node " + g["node"]
+        type_string = "NomadNet Node " + g["node"]
 
         if trust_level == DirectoryEntry.UNTRUSTED:
             trust_str     = "Untrusted"
@@ -705,7 +716,7 @@ class KnownNodeInfo(urwid.WidgetWrap):
                     display_name = op_str
 
                     if not source_hash_text in [c[0] for c in existing_conversations]:
-                        entry = DirectoryEntry(source_hash, display_name, trust_level)
+                        entry = DirectoryEntry(op_hash, display_name, trust_level)
                         self.app.directory.remember(entry)
 
                         new_conversation = nomadnet.Conversation(source_hash_text, nomadnet.NomadNetworkApp.get_shared_instance(), initiator=True)
@@ -1331,22 +1342,27 @@ class LocalPeer(urwid.WidgetWrap):
 
         announce_button = urwid.Button("Announce Now", on_press=announce_query)
 
-        self.display_widget = urwid.Pile(
-            [
-                t_id,
-                i_id,
-                e_name,
-                urwid.Divider(g["divider1"]),
-                self.t_last_announce,
-                announce_button,
-                urwid.Divider(g["divider1"]),
-                urwid.Columns([
-                    (urwid.WEIGHT, 0.45, urwid.Button("Save", on_press=save_query)),
-                    (urwid.WEIGHT, 0.1, urwid.Text("")),
-                    (urwid.WEIGHT, 0.45, urwid.Button("Node Info", on_press=node_info_query)),
-                ]),
-            ]
-        )
+        peer_widgets = [
+            t_id,
+            i_id,
+            e_name,
+            urwid.Divider(g["divider1"]),
+            self.t_last_announce,
+            announce_button,
+            urwid.Divider(g["divider1"]),
+            urwid.Columns([
+                (urwid.WEIGHT, 0.45, urwid.Button("Save", on_press=save_query)),
+                (urwid.WEIGHT, 0.1, urwid.Text("")),
+                (urwid.WEIGHT, 0.45, urwid.Button("Node Info", on_press=node_info_query)),
+            ]),
+        ]
+
+        if self.app.enable_node:
+            peer_widgets.append(
+                urwid.AttrMap(urwid.Text(" "+g["node"]+" Node Online", align=urwid.LEFT), "shortcutbar")
+            )
+
+        self.display_widget = urwid.Pile(peer_widgets)
 
         super().__init__(urwid.LineBox(self.display_widget, title="Local Peer Info"))
 
@@ -1420,6 +1436,37 @@ class NodeInfo(urwid.WidgetWrap):
             def connect_query(sender):
                 self.parent.browser.retrieve_url(RNS.hexrep(self.app.node.destination.hash, delimit=False))
 
+            def edit_query(sender):
+                self.app.ui.main_display.show_page_editor(None)
+
+            def show_qr_query(sender):
+                def dismiss_dialog(sender):
+                    self.dialog_open = False
+                    options = self.parent.left_pile.options(height_type=urwid.PACK, height_amount=None)
+                    self.parent.left_pile.contents[1] = (NodeInfo(self.app, self.parent), options)
+
+                dest_addr = RNS.hexrep(self.app.node.destination.hash, delimit=False)
+                qr_text = qr_ascii(dest_addr)
+
+                rows = [urwid.Text("")]
+                if qr_text is not None:
+                    rows.append(urwid.Text(qr_text, align=urwid.CENTER))
+                else:
+                    rows.append(urwid.Text("Node destination address:", align=urwid.CENTER))
+                rows += [
+                    urwid.Text(""),
+                    urwid.Text("< "+dest_addr+" >", align=urwid.CENTER),
+                    urwid.Text(""),
+                    urwid.Button("Close", on_press=dismiss_dialog),
+                ]
+
+                dialog = DialogLineBox(urwid.Pile(rows), title="Node Destination")
+                dialog.delegate = self
+
+                self.dialog_open = True
+                options = self.parent.left_pile.options(height_type=urwid.PACK, height_amount=None)
+                self.parent.left_pile.contents[1] = (dialog, options)
+
             if NodeInfo.announce_timer == None:
                 self.t_last_announce = NodeAnnounceTime(self.app)
                 NodeInfo.announce_timer = self.t_last_announce
@@ -1467,7 +1514,9 @@ class NodeInfo(urwid.WidgetWrap):
 
             announce_button = urwid.Button("Announce", on_press=announce_query)
             connect_button = urwid.Button("Browse", on_press=connect_query)
+            edit_button = urwid.Button("Edit", on_press=edit_query)
             reset_button = urwid.Button("Rst Stats", on_press=stats_query)
+            qr_button = urwid.Button("Show Destination", on_press=show_qr_query)
 
             if not self.app.disable_propagation:
                 pile = urwid.Pile([
@@ -1491,6 +1540,11 @@ class NodeInfo(urwid.WidgetWrap):
                         (urwid.WEIGHT, 8, reset_button),
                         (urwid.WEIGHT, 0.5, urwid.Text("")),
                         (urwid.WEIGHT, 7, announce_button),
+                    ]),
+                    urwid.Columns([
+                        (urwid.WEIGHT, 4, edit_button),
+                        (urwid.WEIGHT, 0.5, urwid.Text("")),
+                        (urwid.WEIGHT, 9, qr_button),
                     ])
                 ])
             else:
@@ -1513,6 +1567,11 @@ class NodeInfo(urwid.WidgetWrap):
                     (urwid.WEIGHT, 8, reset_button),
                     (urwid.WEIGHT, 0.5, urwid.Text("")),
                     (urwid.WEIGHT, 7, announce_button),
+                ]),
+                urwid.Columns([
+                    (urwid.WEIGHT, 4, edit_button),
+                    (urwid.WEIGHT, 0.5, urwid.Text("")),
+                    (urwid.WEIGHT, 9, qr_button),
                 ])
             ])
         else:
@@ -1640,10 +1699,11 @@ class NetworkDisplay():
         self.known_nodes_display.delegate = self
 
         self.list_display = 1
+        default_info_display = self.node_info_display if self.app.enable_node else self.local_peer_display
         self.left_pile = NetworkLeftPile([
             (urwid.WEIGHT, 1, self.known_nodes_display),
             # (urwid.PACK, self.network_stats_display),
-            (urwid.PACK, self.local_peer_display),
+            (urwid.PACK, default_info_display),
         ])
 
         self.left_pile.parent = self

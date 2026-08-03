@@ -412,8 +412,9 @@ class DirectoryEntry:
     UNKNOWN   = 0x02
     TRUSTED   = 0xFF
 
-    DIRECT     = 0x01
-    PROPAGATED = 0x02
+    DIRECT        = 0x01
+    PROPAGATED    = 0x02
+    OPPORTUNISTIC = 0x03
 
     def __init__(self, source_hash, display_name=None, trust_level=UNKNOWN, hosts_node=False, preferred_delivery=None, identify_on_connect=False, sort_rank=None, notes=None):
         if len(source_hash) == RNS.Identity.TRUNCATED_HASHLENGTH//8:

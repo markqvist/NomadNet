@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from nomadnet.Directory import DirectoryEntry
 from LXMF import pn_announce_data_is_valid, PN_META_NAME
 from nomadnet.Conversation import ConversationMessage
+from .FileBrowser import FileBrowser
 
 from nomadnet.util import strip_modifiers
 from nomadnet.util import sanitize_name
@@ -20,7 +21,7 @@ from nomadnet.util import sanitize_name
 from RNS.Utilities.rngit.util import MarkdownToMicron
 from RNS.Utilities.rngit.highlight import SyntaxHighlighter
 from .MicronParser import markup_to_attrmaps
-from .Helpers import ClickableIcon, osc52_copy
+from .Helpers import ClickableIcon, osc52_copy, qr_ascii
 from .ReadlineEdit import ReadlineMixin, ReadlineEdit
 from nomadnet.util import strip_modifiers, strip_micron, strip_escaped_micron, unescape_micron, strip_non_formatting_tags
 from nomadnet.ui import THEME_DARK, THEME_LIGHT
@@ -71,13 +72,13 @@ class ConversationDisplayShortcuts():
     def __init__(self, app):
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("[C-d] Send  [C-p] Paper Msg  [C-t] Title  [C-f] Attach  [C-s] Save  [Tab] ↑ Messages"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-d] Send  [C-p] Paper Msg  [C-t] Title  [C-f] Attach  [C-v] Delivery  [C-r] Details  [C-s] Save  [Tab] ↑ Messages"), "shortcutbar")
 
 class ConversationBodyShortcuts():
     def __init__(self, app):
         self.app = app
 
-        self.widget = urwid.AttrMap(urwid.Text("[C-s] Save  [C-u] Purge  [C-o] Sort  [C-x] Clear History  [C-g] Fullscreen  [C-w] Close  [Tab] ↓ Editor"), "shortcutbar")
+        self.widget = urwid.AttrMap(urwid.Text("[C-r] Details  [C-v] Delivery  [C-o] Sort  [C-s] Save  [C-u] Purge  [C-k] Cancel Send  [C-x] Clear History  [C-g] Fullscreen  [C-w] Close  [Tab] ↓ Editor"), "shortcutbar")
 
 class TabButton(urwid.Button):
     button_left  = urwid.Text("[")
@@ -572,9 +573,10 @@ class ConversationsDisplay():
     def delete_selected_conversation(self):
         self.dialog_open = True
         item = self.ilb.get_selected_item()
-        if item == None:
+        source_hash = getattr(item, "source_hash", None) if item is not None else None
+        if source_hash is None:
+            self.dialog_open = False
             return
-        source_hash = item.source_hash
 
         def dismiss_dialog(sender):
             self.dialog_open = False
@@ -650,22 +652,7 @@ class ConversationsDisplay():
         self.show_qr_dialog(addr, title=display)
 
     def show_qr_dialog(self, data, title=None):
-        qr_text = None
-        try:
-            import qrcode
-            try:
-                qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=1, border=1)
-                qr.add_data(data)
-                qr.make()
-                import io
-                buf = io.StringIO()
-                qr.print_ascii(out=buf, invert=False)
-                qr_text = buf.getvalue().rstrip("\n")
-            except Exception as e:
-                RNS.log("QR generation failed: "+str(e), RNS.LOG_ERROR)
-                qr_text = None
-        except Exception:
-            qr_text = None
+        qr_text = qr_ascii(data)
 
         def dismiss(_b):
             self._restore_listbox_pane()
@@ -864,8 +851,9 @@ class ConversationsDisplay():
         unknown_selected    = True
         trusted_selected    = False
 
-        direct_selected     = True
-        propagated_selected = False
+        direct_selected        = True
+        propagated_selected    = False
+        opportunistic_selected = False
 
         pinned_initial = False
         notes_initial  = ""
@@ -887,9 +875,13 @@ class ConversationsDisplay():
                     unknown_selected   = False
                     trusted_selected   = True
 
-                if self.app.directory.preferred_delivery(bytes.fromhex(source_hash_text)) == DirectoryEntry.PROPAGATED:
+                preferred = self.app.directory.preferred_delivery(bytes.fromhex(source_hash_text))
+                if preferred == DirectoryEntry.PROPAGATED:
                     direct_selected = False
                     propagated_selected = True
+                elif preferred == DirectoryEntry.OPPORTUNISTIC:
+                    direct_selected = False
+                    opportunistic_selected = True
 
                 pinned_initial = existing_entry.sort_rank is not None
                 notes_initial  = getattr(existing_entry, "notes", "") or ""
@@ -906,8 +898,9 @@ class ConversationsDisplay():
         r_trusted   = urwid.RadioButton(trust_button_group, "Trusted", state=trusted_selected)
 
         method_button_group = []
-        r_direct     = urwid.RadioButton(method_button_group, "Deliver directly", state=direct_selected)
-        r_propagated = urwid.RadioButton(method_button_group, "Use propagation nodes", state=propagated_selected)
+        r_direct        = urwid.RadioButton(method_button_group, "Deliver over direct link", state=direct_selected)
+        r_opportunistic = urwid.RadioButton(method_button_group, "Deliver opportunistically", state=opportunistic_selected)
+        r_propagated    = urwid.RadioButton(method_button_group, "Use propagation nodes", state=propagated_selected)
 
         def dismiss_dialog(sender):
             self.dialog_open = False
@@ -926,6 +919,8 @@ class ConversationsDisplay():
                 delivery = DirectoryEntry.DIRECT
                 if r_propagated.state == True:
                     delivery = DirectoryEntry.PROPAGATED
+                elif r_opportunistic.state == True:
+                    delivery = DirectoryEntry.OPPORTUNISTIC
 
                 sort_rank = 0 if cb_pin.state else None
                 notes_value = e_notes.get_edit_text()
@@ -997,6 +992,7 @@ class ConversationsDisplay():
             r_trusted,
             urwid.Divider(g["divider1"]),
             r_direct,
+            r_opportunistic,
             r_propagated,
             urwid.Divider(g["divider1"]),
             cb_pin,
@@ -1062,7 +1058,7 @@ class ConversationsDisplay():
                 elif r_trusted.state == True:
                     trust_level = DirectoryEntry.TRUSTED
 
-                if not source_hash in [c[0] for c in existing_conversations]:
+                if not source_hash_text in [c[0] for c in existing_conversations]:
                     entry = DirectoryEntry(source_hash, display_name, trust_level)
                     self.app.directory.remember(entry)
 
@@ -1073,7 +1069,7 @@ class ConversationsDisplay():
                 if trust_level != DirectoryEntry.TRUSTED:
                     if self.list_filter != ConversationsDisplay.LIST_FILTER_UNTRUSTED:
                         self._set_filter(ConversationsDisplay.LIST_FILTER_UNTRUSTED)
-                self.display_conversation(source_hash_text)
+                self.display_conversation(None, source_hash_text)
                 self.dialog_open = False
                 self.update_conversation_list()
 
@@ -1620,7 +1616,7 @@ class ConversationsDisplay():
 
         if selected_hash is not None:
             for idx, widget in enumerate(self.list_widgets):
-                if widget.source_hash == selected_hash:
+                if getattr(widget, "source_hash", None) == selected_hash:
                     self.ilb.select_item(idx)
                     break
         nomadnet.NomadNetworkApp.get_shared_instance().ui.loop.draw_screen()
@@ -1657,7 +1653,7 @@ class ConversationsDisplay():
             conversation_position = None
             index = 0
             for widget in self.list_widgets:
-                if widget.source_hash == source_hash:
+                if getattr(widget, "source_hash", None) == source_hash:
                     conversation_position = index
                 index += 1
 
@@ -1815,6 +1811,24 @@ class ListEntry(urwid.Text):
         self._emit('click')
         return True
 
+LXM_STATE_NAMES = {
+    LXMF.LXMessage.GENERATING: "Generating",
+    LXMF.LXMessage.OUTBOUND: "Outbound",
+    LXMF.LXMessage.SENDING: "Sending",
+    LXMF.LXMessage.SENT: "Sent",
+    LXMF.LXMessage.DELIVERED: "Delivered",
+    LXMF.LXMessage.REJECTED: "Rejected",
+    LXMF.LXMessage.CANCELLED: "Cancelled",
+    LXMF.LXMessage.FAILED: "Failed",
+}
+
+LXM_METHOD_NAMES = {
+    LXMF.LXMessage.OPPORTUNISTIC: "Opportunistic",
+    LXMF.LXMessage.DIRECT: "Direct link",
+    LXMF.LXMessage.PROPAGATED: "Propagation node",
+    LXMF.LXMessage.PAPER: "Paper",
+}
+
 class MessageEdit(ReadlineMixin, urwid.Edit):
     def keypress(self, size, key):
         if key == "ctrl d":
@@ -1825,6 +1839,13 @@ class MessageEdit(ReadlineMixin, urwid.Edit):
             self.delegate.attach_file()
         elif key == "ctrl s":
             self.delegate.save_focused_attachments()
+        elif key == "ctrl v":
+            self.delegate.cycle_delivery_method()
+        elif key == "ctrl r":
+            self.delegate.toggle_message_details()
+        elif key == "ctrl k":
+            if not self.delegate.cancel_pending_send():
+                return super(MessageEdit, self).keypress(size, key)
         elif key == "up":
             y = self.get_cursor_coords(size)[1]
             if y == 0:
@@ -1883,6 +1904,8 @@ class ConversationFrame(urwid.Frame):
             return super(ConversationFrame, self).keypress(size, key)
 
 class ConversationWidget(urwid.WidgetWrap):
+    MAX_ATTACHMENT_SIZE = 100 * 1024 * 1024
+
     def __init__(self, source_hash, delegate):
         self.app = nomadnet.NomadNetworkApp.get_shared_instance()
         g = self.app.ui.glyphs
@@ -1902,6 +1925,7 @@ class ConversationWidget(urwid.WidgetWrap):
                 self.pending_attachments = []
                 self.dialog_active = False
                 self.editor_allowed = None
+                self.show_message_details = False
 
                 self.update_message_widgets()
 
@@ -2122,9 +2146,18 @@ class ConversationWidget(urwid.WidgetWrap):
         else:
             hops_str = str(hops)+" hop" + ("s" if hops != 1 else "")
 
+        preferred = self.app.directory.preferred_delivery(source_hash_bytes)
+        if preferred == DirectoryEntry.PROPAGATED:
+            via_str = "Propagation"
+        elif preferred == DirectoryEntry.OPPORTUNISTIC:
+            via_str = "Opportunistic"
+        else:
+            via_str = "Link"
+
         right_parts = []
         if stamp_cost is not None:
             right_parts.append("Stamp: "+str(stamp_cost))
+        right_parts.append("Via: "+via_str)
         right_parts.append(g["speed"]+hops_str)
 
         left = " "+display_name
@@ -2203,6 +2236,7 @@ class ConversationWidget(urwid.WidgetWrap):
                 return
             self.editor_allowed = allowed
             if allowed:
+                self.conversation.ensure_send_destination()
                 self.frame.contents["footer"] = (self._build_footer(), None)
             else:
                 warning = urwid.AttrMap(
@@ -2217,6 +2251,34 @@ class ConversationWidget(urwid.WidgetWrap):
                     "msg_header_caution",
                 )
                 self.frame.contents["footer"] = (warning, None)
+                self._schedule_editor_recheck()
+
+    def _schedule_editor_recheck(self):
+        if getattr(self, "_editor_recheck_pending", False):
+            return
+        try:
+            loop = nomadnet.NomadNetworkApp.get_shared_instance().ui.loop
+            if loop is None:
+                return
+            self._editor_recheck_pending = True
+            loop.set_alarm_in(1.0, self._editor_recheck)
+        except Exception:
+            self._editor_recheck_pending = False
+
+    def _editor_recheck(self, loop=None, user_data=None):
+        self._editor_recheck_pending = False
+        if not self.frame:
+            return
+        if getattr(self.delegate, "currently_displayed_conversation", None) != self.source_hash:
+            return
+        if nomadnet.NomadNetworkApp.get_shared_instance().directory.is_known(bytes.fromhex(self.source_hash)):
+            self.check_editor_allowed()
+            try:
+                loop.draw_screen()
+            except Exception:
+                pass
+        else:
+            self._schedule_editor_recheck()
 
     def toggle_focus_area(self):
         name = ""
@@ -2242,6 +2304,8 @@ class ConversationWidget(urwid.WidgetWrap):
         elif key == "ctrl u":
             self.conversation.purge_failed()
             self.conversation_changed(None)
+        elif key == "ctrl k":
+            self.cancel_pending_send()
         elif key == "ctrl t":
             self.toggle_editor()
         elif key == "ctrl x":
@@ -2255,8 +2319,60 @@ class ConversationWidget(urwid.WidgetWrap):
             self.attach_file()
         elif key == "ctrl s":
             self.save_focused_attachments()
+        elif key == "ctrl v":
+            self.cycle_delivery_method()
+        elif key == "ctrl r":
+            self.toggle_message_details()
         else:
             return key
+
+    def toggle_message_details(self):
+        self.show_message_details = not self.show_message_details
+        self.update_message_widgets(replace=True)
+
+    def _message_is_pending(self, conv_message):
+        try:
+            src = conv_message._cached_source_hash
+            state = conv_message.get_state()
+        except Exception:
+            return False
+        is_outbound = src is not None and self.app.lxmf_destination.hash == src
+        return is_outbound and state is not None and state < LXMF.LXMessage.SENT
+
+    def cancel_message(self, conv_message):
+        if conv_message is None:
+            return
+        try:
+            self.app.message_router.cancel_outbound(conv_message.get_hash())
+            conv_message._cached_state = LXMF.LXMessage.FAILED
+        except Exception as e:
+            RNS.log("Could not cancel outbound message: "+str(e), RNS.LOG_ERROR)
+        self.conversation_changed(None)
+
+    def cancel_pending_send(self):
+        for widget in reversed(self.message_widgets):
+            conv_message = getattr(widget, "conv_message", None)
+            if conv_message is not None and self._message_is_pending(conv_message):
+                self.cancel_message(conv_message)
+                return True
+        return False
+
+    def cycle_delivery_method(self):
+        source_hash_bytes = bytes.fromhex(self.source_hash)
+        order = [DirectoryEntry.DIRECT, DirectoryEntry.OPPORTUNISTIC, DirectoryEntry.PROPAGATED]
+        current = self.app.directory.preferred_delivery(source_hash_bytes)
+        try:
+            selected = order[(order.index(current) + 1) % len(order)]
+        except ValueError:
+            selected = order[0]
+        entry = self.app.directory.find(source_hash_bytes)
+        if entry is None:
+            display_name = self.app.directory.display_name(source_hash_bytes)
+            entry = DirectoryEntry(source_hash_bytes, display_name, DirectoryEntry.UNKNOWN, preferred_delivery=selected)
+        else:
+            entry.preferred_delivery = selected
+        self.app.directory.remember(entry)
+        self._update_peer_info()
 
     def _on_conversation_changed_from_callback(self, conversation):
         self.delegate._wake(lambda: self.conversation_changed(conversation))
@@ -2267,6 +2383,14 @@ class ConversationWidget(urwid.WidgetWrap):
         self.update_message_widgets(replace = True)
 
     def update_message_widgets(self, replace = False):
+        prev_pos = None
+        prev_count = len(self.message_widgets) if getattr(self, "message_widgets", None) else 0
+        if getattr(self, "messagelist", None) is not None:
+            try:
+                prev_pos = self.messagelist.get_selected_position()
+            except Exception:
+                prev_pos = None
+
         self.message_widgets = []
         added_hashes = set()
         needs_index = []
@@ -2299,10 +2423,19 @@ class ConversationWidget(urwid.WidgetWrap):
             self.message_widgets.sort(key=lambda m: m.sort_timestamp, reverse=False)
 
         from nomadnet.vendor.additional_urwid_widgets import IndicativeListBox
-        self.messagelist = IndicativeListBox(self.message_widgets, position = len(self.message_widgets)-1)
+        new_count = len(self.message_widgets)
+        if prev_pos is None or prev_count == 0 or prev_pos >= prev_count - 1:
+            position = max(0, new_count - 1)
+        else:
+            position = min(prev_pos, max(0, new_count - 1))
+        self.messagelist = IndicativeListBox(self.message_widgets, position = position)
         self.messagelist.name = "messagelist"
         if replace:
-            self.frame.contents["body"] = (self.messagelist, None)
+            current_body = self.frame.contents["body"][0]
+            if self.dialog_active and isinstance(current_body, urwid.Overlay):
+                current_body.bottom_w = self.messagelist
+            else:
+                self.frame.contents["body"] = (self.messagelist, None)
             nomadnet.NomadNetworkApp.get_shared_instance().ui.loop.draw_screen()
 
 
@@ -2452,7 +2585,31 @@ class ConversationWidget(urwid.WidgetWrap):
 
     def attach_file(self):
         self.dialog_active = True
-        browser = FileBrowserDialog(self)
+        initial_attachments = list(self.pending_attachments)
+
+        def on_change(selected):
+            self.pending_attachments[:] = selected
+            self.frame.contents["footer"] = (self._build_footer(), None)
+
+        def on_done(selected):
+            self.pending_attachments[:] = selected
+            self.frame.contents["footer"] = (self._build_footer(), None)
+            self.file_browser_closed()
+
+        def on_cancel():
+            self.pending_attachments[:] = initial_attachments
+            self.frame.contents["footer"] = (self._build_footer(), None)
+            self.file_browser_closed()
+
+        browser = FileBrowser(
+            on_done=on_done,
+            on_cancel=on_cancel,
+            on_change=on_change,
+            title="Attach File",
+            multi_select=True,
+            selected=self.pending_attachments,
+            max_file_size=ConversationWidget.MAX_ATTACHMENT_SIZE,
+        )
         bottom = self.messagelist
         overlay = urwid.Overlay(browser, bottom, align=urwid.CENTER, width=("relative", 90), valign=urwid.MIDDLE, height=("relative", 80), left=2, right=2)
         self.frame.contents["body"] = (overlay, self.frame.options())
@@ -2595,6 +2752,7 @@ class LXMessageWidget(urwid.WidgetWrap):
         app = nomadnet.NomadNetworkApp.get_shared_instance()
         g = app.ui.glyphs
         self._conversation_widget = conversation_widget
+        self.conv_message = message
         self.timestamp = message.get_timestamp()
         self.sort_timestamp = message.sort_timestamp
         self.transfer_done = False
@@ -2726,12 +2884,58 @@ class LXMessageWidget(urwid.WidgetWrap):
 
         pile_widgets = [title]
 
+        if conversation_widget is not None and getattr(conversation_widget, "show_message_details", False):
+            def _safe(fn):
+                try: return fn()
+                except Exception: return None
+
+            def _detail_row(glyph, values):
+                return urwid.Columns([
+                    (3, urwid.Text(("body_text", glyph), align=urwid.RIGHT)),
+                    urwid.Text(("inactive_text", "  ·  ".join(values))),
+                ], dividechars=1)
+
+            detail_rows = []
+
+            delivery = []
+            if msg_method is not None:
+                delivery.append(LXM_METHOD_NAMES.get(msg_method, "Unknown"))
+            if is_outbound and msg_state is not None:
+                delivery.append(LXM_STATE_NAMES.get(msg_state, "Unknown"))
+            if delivery:
+                detail_rows.append(_detail_row(g.get("sent" if is_outbound else "peer", ">"), delivery))
+
+            signal = []
+            snr = _safe(message.get_snr)
+            rssi = _safe(message.get_rssi)
+            q = _safe(message.get_q)
+            if snr is not None:  signal.append("SNR "+str(round(snr, 1))+" dB")
+            if rssi is not None: signal.append("RSSI "+str(round(rssi, 1))+" dBm")
+            if q is not None:    signal.append("Q "+str(round(q))+"%")
+            if signal:
+                detail_rows.append(_detail_row(g.get("speed", "~"), signal))
+
+            security = []
+            sig = _safe(message.get_signature_description)
+            if sig: security.append(sig)
+            enc = _safe(message.get_transport_encryption)
+            if enc: security.append(str(enc))
+            if security:
+                detail_rows.append(_detail_row(g.get("encrypted", "#"), security))
+
+            if msg_hash is not None:
+                short_hash = _safe(lambda: RNS.hexrep(msg_hash, delimit=False))
+                if short_hash:
+                    detail_rows.append(_detail_row(g.get("info", "i"), [short_hash]))
+
+            if detail_rows:
+                pile_widgets.append(urwid.Padding(urwid.Pile(detail_rows), left=2, right=2))
+
         if is_outbound and msg_state is not None and msg_state < LXMF.LXMessage.SENT and msg_hash is not None:
             try:
                 for pending in app.message_router.pending_outbound:
                     if pending.hash == msg_hash:
-                        if pending.representation == LXMF.LXMessage.RESOURCE:
-                            self._live_lxm = pending
+                        self._live_lxm = pending
                         break
             except Exception:
                 pass
@@ -2745,7 +2949,16 @@ class LXMessageWidget(urwid.WidgetWrap):
                 else:
                     bar = "#" * filled + "-" * (bar_width - filled)
                 self.progress_widget.set_text("  ["+bar+"] "+str(pct)+"%")
-                pile_widgets.append(self.progress_attr)
+                if conversation_widget is not None:
+                    cancel_icon = ClickableIcon(" "+g["cross"]+" Cancel ",
+                        on_click=lambda cw=conversation_widget, cm=message: cw.cancel_message(cm))
+                    progress_row = urwid.Columns([
+                        ("weight", 1, self.progress_attr),
+                        ("pack", urwid.AttrMap(cancel_icon, "msg_notice_caution")),
+                    ], dividechars=1)
+                    pile_widgets.append(progress_row)
+                else:
+                    pile_widgets.append(self.progress_attr)
                 self._start_progress_poll()
 
         if markdown: pile_widgets.append(content_pile)
@@ -2914,188 +3127,6 @@ def _save_attachment_to_disk(filename, data):
     with open(save_path, "wb") as f:
         f.write(data)
     return save_path
-
-
-class FileBrowserEntry(urwid.WidgetWrap):
-    signals = ["click"]
-
-    def __init__(self, name, full_path, is_dir=False, is_parent=False, selected=False):
-        self.full_path = full_path
-        self.name = name
-        self.is_dir = is_dir
-        self.is_parent = is_parent
-        self.selected = selected
-        g = nomadnet.NomadNetworkApp.get_shared_instance().ui.glyphs
-        if is_parent:
-            display = g["arrow_l"]+" .."
-        elif is_dir:
-            display = g["arrow_r"]+" "+name+"/"
-        elif selected:
-            display = g["check"]+" "+name
-        else:
-            display = "  "+name
-        self.text_widget = urwid.SelectableIcon(display, 0)
-        if is_dir or is_parent:
-            style = "list_trusted"
-            focus_style = "list_focus"
-        elif selected:
-            style = "list_trusted"
-            focus_style = "list_focus_trusted"
-        else:
-            style = "list_unknown"
-            focus_style = "list_focus"
-        display_widget = urwid.AttrMap(self.text_widget, style, focus_style)
-        super().__init__(display_widget)
-
-    def keypress(self, size, key):
-        if key == "enter":
-            self._emit("click")
-        else:
-            return key
-
-    def mouse_event(self, size, event, button, x, y, focus):
-        if button == 1 and urwid.util.is_mouse_press(event):
-            self._emit("click")
-            return True
-        return False
-
-
-class FileBrowserDialog(urwid.WidgetWrap):
-    def __init__(self, delegate):
-        self.delegate = delegate
-        app = nomadnet.NomadNetworkApp.get_shared_instance()
-        self.g = app.ui.glyphs
-        self.current_path = os.path.expanduser("~")
-
-        self.path_label = urwid.Text("")
-        self.status_label = urwid.Text("")
-        self.file_walker = urwid.SimpleFocusListWalker([])
-        self.file_listbox = urwid.ListBox(self.file_walker)
-
-        self.button_columns = urwid.Columns([
-            (urwid.WEIGHT, 0.45, urwid.Button("Done", on_press=self._dismiss)),
-            (urwid.WEIGHT, 0.1, urwid.Text("")),
-            (urwid.WEIGHT, 0.45, urwid.Button("Cancel", on_press=self._cancel)),
-        ])
-
-        header_pile = urwid.Pile([
-            self.path_label,
-            self.status_label,
-            urwid.Divider(self.g["divider1"]),
-        ])
-
-        footer_pile = urwid.Pile([
-            urwid.Divider(self.g["divider1"]),
-            self.button_columns,
-        ])
-
-        self._populate()
-
-        self.browser_frame = urwid.Frame(
-            self.file_listbox,
-            header=header_pile,
-            footer=footer_pile,
-        )
-
-        linebox = urwid.LineBox(self.browser_frame, title="Attach File")
-        super().__init__(linebox)
-
-    def _update_status(self):
-        pending = self.delegate.pending_attachments
-        if pending:
-            names = [os.path.basename(p) for p in pending]
-            self.status_label.set_text("  "+self.g["file"]+" "+str(len(pending))+" selected: "+", ".join(names))
-        else:
-            self.status_label.set_text("  No files selected")
-
-    def _populate(self):
-        self.path_label.set_text("  "+self.current_path)
-        self._update_status()
-
-        focus_pos = None
-        try:
-            focus_pos = self.file_listbox.focus_position
-        except Exception:
-            pass
-
-        entries = []
-        parent = os.path.dirname(self.current_path)
-        if parent != self.current_path:
-            entry = FileBrowserEntry("..", parent, is_parent=True)
-            urwid.connect_signal(entry, "click", self._entry_clicked, entry)
-            entries.append(entry)
-
-        try:
-            items = sorted(os.listdir(self.current_path))
-        except PermissionError:
-            entries.append(urwid.Text(("error_text", "  Permission denied")))
-            self.file_walker[:] = entries
-            return
-
-        dirs = []
-        files = []
-        for item in items:
-            if item.startswith("."):
-                continue
-            full = os.path.join(self.current_path, item)
-            if os.path.isdir(full):
-                dirs.append((item, full))
-            elif os.path.isfile(full):
-                files.append((item, full))
-
-        for name, full in dirs:
-            entry = FileBrowserEntry(name, full, is_dir=True)
-            urwid.connect_signal(entry, "click", self._entry_clicked, entry)
-            entries.append(entry)
-
-        for name, full in files:
-            is_selected = full in self.delegate.pending_attachments
-            entry = FileBrowserEntry(name, full, selected=is_selected)
-            urwid.connect_signal(entry, "click", self._entry_clicked, entry)
-            entries.append(entry)
-
-        if not dirs and not files:
-            entries.append(urwid.Text(("inactive_text", "  (empty)")))
-
-        self.file_walker[:] = entries
-        if focus_pos is not None and focus_pos < len(entries):
-            self.file_listbox.set_focus(focus_pos)
-        elif entries:
-            self.file_listbox.set_focus(0)
-
-    def _entry_clicked(self, entry_widget, user_data=None):
-        entry = user_data if user_data else entry_widget
-        if entry.is_dir or entry.is_parent:
-            self.current_path = entry.full_path
-            self._populate()
-        else:
-            if entry.full_path in self.delegate.pending_attachments:
-                self.delegate.pending_attachments.remove(entry.full_path)
-            else:
-                self.delegate.pending_attachments.append(entry.full_path)
-            self.delegate.frame.contents["footer"] = (self.delegate._build_footer(), None)
-            self._populate()
-
-    def _dismiss(self, sender):
-        self.delegate.file_browser_closed()
-
-    def _cancel(self, sender):
-        self.delegate.pending_attachments.clear()
-        self.delegate.frame.contents["footer"] = (self.delegate._build_footer(), None)
-        self.delegate.file_browser_closed()
-
-    def keypress(self, size, key):
-        if key == "esc":
-            self.delegate.file_browser_closed()
-            return
-        result = super().keypress(size, key)
-        if result == "down" and self.browser_frame.focus_position == "body":
-            self.browser_frame.focus_position = "footer"
-            return
-        elif result == "up" and self.browser_frame.focus_position == "footer":
-            self.browser_frame.focus_position = "body"
-            return
-        return result
 
 
 class SyncProgressBar(urwid.ProgressBar):

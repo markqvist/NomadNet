@@ -55,8 +55,10 @@ THEMES = {
             ("progress_empty",              "light gray", "default",                "default",                  "#ddd", "default"),
             ("interface_title",             "", "",                                 "default",                  "", ""),
             ("interface_title_selected",    "bold", "",                             "bold",                     "", ""),
+            ("interface_tile_focus",        "light blue,bold", "default",           "bold",                     "#5af,bold", "default"),
             ("connected_status",            "dark green", "default",                "default",                  "dark green", "default"),
-            ("disconnected_status",         "dark red", "default",                  "default",                  "dark red", "default"),
+            ("disconnected_status",         "dark red", "default",                   "default",                  "dark red", "default"),
+            ("disabled_status",             "dark red", "default",                   "default",                  "dark red", "default"),
             ("placeholder",                 "dark gray", "default",                 "default",                  "dark gray", "default"),
             ("placeholder_text",            "dark gray", "default",                 "default",                  "dark gray", "default"),
             ("error",                       "light red,blink",                      "default", "blink",         "#f44,blink", "default"),
@@ -108,8 +110,10 @@ THEMES = {
             ("progress_empty",              "dark gray", "default",                "default",                  "#ddd", "default"),
             ("interface_title",             "dark gray", "default",                "default",                  "#444", "default"),
             ("interface_title_selected",    "dark gray,bold", "default",           "bold",                     "#444,bold", "default"),
+            ("interface_tile_focus",        "dark blue,bold", "default",           "bold",                     "#06c,bold", "default"),
             ("connected_status",            "dark green", "default",               "default",                  "#4a0", "default"),
-            ("disconnected_status",         "dark red", "default",                 "default",                  "#a22", "default"),
+            ("disconnected_status",         "dark red", "default",                  "default",                  "#a22", "default"),
+            ("disabled_status",             "dark red", "default",                  "default",                  "#a22", "default"),
             ("placeholder",                 "light gray", "default",               "default",                  "#999", "default"),
             ("placeholder_text",            "light gray", "default",               "default",                  "#999", "default"),
             ("error",                       "dark red,blink", "default",           "blink",                    "#a22,blink", "default"),
@@ -123,6 +127,23 @@ THEMES = {
         ],
     }
 }
+
+CONFIG_SECTION_COLORS = {
+    "logging":   ("yellow",        "#fd3", "brown",        "#a80"),
+    "client":    ("light cyan",    "#3cd", "dark cyan",    "#077"),
+    "textui":    ("light green",   "#6c5", "dark green",   "#2a0"),
+    "utilities": ("light gray",    "#bbb", "dark gray",    "#555"),
+    "rrc":       ("light magenta", "#d7f", "dark magenta", "#a2a"),
+    "node":      ("light blue",    "#5af", "dark blue",    "#06c"),
+    "printing":  ("brown",         "#b86", "brown",        "#852"),
+    "reticulum": ("light magenta", "#a6f", "dark magenta", "#63c"),
+}
+
+for _section, (_d16, _dhi, _l16, _lhi) in CONFIG_SECTION_COLORS.items():
+    THEMES[THEME_DARK]["urwid_theme"].append(("config_title_"+_section, _d16, "default", "default", _dhi, "default"))
+    THEMES[THEME_DARK]["urwid_theme"].append(("config_title_"+_section+"_selected", _d16+",bold", "default", "bold", _dhi+",bold", "default"))
+    THEMES[THEME_LIGHT]["urwid_theme"].append(("config_title_"+_section, _l16, "default", "default", _lhi, "default"))
+    THEMES[THEME_LIGHT]["urwid_theme"].append(("config_title_"+_section+"_selected", _l16+",bold", "default", "bold", _lhi+",bold", "default"))
 
 GLYPHSETS = {
     "plain": 1,
@@ -164,11 +185,20 @@ GLYPHS = {
     ("qrcode",          "QR",        "\u25a4",      "\uf029"),
     ("selected",        "[*] ",      "\u25CF",      "\u25CF"),
     ("unselected",      "[ ] ",      "\u25CB",      "\u25CB"),
+    ("focus_arrow",     ">",         "\u25B8",      "\u25B8"),
+    ("sep_dot",         "|",         "\u00B7",      "\u00B7"),
+    ("connected",       "+",         "\u2713",      "\U000f0201"),
+    ("disconnected",    "x",         "\u2717",      "\U000f0202"),
     ("file",            "[F]",       "\u25a4",      "\uf15b"),
     ("image",           "[I]",       "\u25a3",      "\uf1c5"),
     ("audio",           "[~]",       "\u266b",      "\uf1c7"),
     ("pin",             "*",         "\u2605",      "\uf08d"),
     ("copy",            "[C]",       "\u29c9",      "\uf0c5"),
+    ("folder",          "[+]",       "\u25b8",      "\uf07b"),
+    ("folder_open",     "[-]",       "\u25be",      "\uf07c"),
+    ("fold_open",       "-",         "▾",      "▾"),
+    ("fold_closed",     "+",         "▸",      "▸"),
+    ("dropdown",        " [v]",      " ▾",          " "),
 }
 
 class TextUI:
@@ -261,7 +291,7 @@ class TextUI:
 
     def unhandled_input(self, key):
         if key == "ctrl q":
-            raise urwid.ExitMainLoop
+            self.main_display.show_quit_dialog()
         elif key == "ctrl e":
             pass
 
