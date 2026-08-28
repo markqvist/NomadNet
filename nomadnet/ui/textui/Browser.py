@@ -1761,8 +1761,8 @@ class Browser:
             if self.saved_file_name == None: resp_size = self.response_size
             else:                            resp_size = self.saved_file_size
 
-            if resp_size:
-                stats_string = "  "+self.g["page"]+size_str(resp_size)
+            if resp_size: stats_string = "  "+self.g["page"]+size_str(resp_size)
+            else:         stats_string = "  "
             if self.response_transfer_size:
                 stats_string += "   "+self.g["arrow_d"]+size_str(self.response_transfer_size)+" in "+response_time_str
             if self.response_transfer_size and self.response_time:
