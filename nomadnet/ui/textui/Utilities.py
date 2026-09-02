@@ -419,7 +419,7 @@ class ProbeView:
 
     def _timeout(self):
         try:
-            return DEFAULT_PROBE_TIMEOUT + self.app.rns.get_first_hop_timeout(self._dest_hash)
+            return max(DEFAULT_PROBE_TIMEOUT + self.app.rns.get_first_hop_timeout(self._dest_hash), self.app.rns.get_medium_path_timeout())
         except Exception:
             return DEFAULT_PROBE_TIMEOUT
 
@@ -639,7 +639,7 @@ class PathView:
 
     def _timeout(self):
         try:
-            return DEFAULT_PROBE_TIMEOUT + self.app.rns.get_first_hop_timeout(self._dest_hash)
+            return max(DEFAULT_PROBE_TIMEOUT + self.app.rns.get_first_hop_timeout(self._dest_hash), self.app.rns.get_medium_path_timeout())
         except Exception:
             return DEFAULT_PROBE_TIMEOUT
 
@@ -830,7 +830,7 @@ class IdentityView:
         self.lookup_button.original_widget.set_label("Looking up…")
         self._log("Identity unknown, requesting from the network …")
         try:
-            self._deadline = time.time() + DEFAULT_PROBE_TIMEOUT + self.app.rns.get_first_hop_timeout(dest_hash)
+            self._deadline = time.time() + max(DEFAULT_PROBE_TIMEOUT + self.app.rns.get_first_hop_timeout(dest_hash), self.app.rns.get_medium_path_timeout())
         except Exception:
             self._deadline = time.time() + DEFAULT_PROBE_TIMEOUT
         self.app.ui.loop.set_alarm_in(0.25, self._await_identity)
@@ -975,7 +975,7 @@ class SendFileView:
 
     def _timeout(self):
         try:
-            return DEFAULT_PROBE_TIMEOUT + self.app.rns.get_first_hop_timeout(self._dest_hash)
+            return max(DEFAULT_PROBE_TIMEOUT + self.app.rns.get_first_hop_timeout(self._dest_hash), self.app.rns.get_medium_path_timeout())
         except Exception:
             return DEFAULT_PROBE_TIMEOUT
 
@@ -1040,7 +1040,7 @@ class SendFileView:
             self._log("Could not establish link: %s" % str(e), "error_text")
             self._finish()
             return
-        self._link_deadline = time.time() + self._timeout()
+        self._link_deadline = time.time() + max(self._timeout(), self._link.establishment_timeout)
         self.app.ui.loop.set_alarm_in(0.5, self._check_link)
 
     def _check_link(self, loop, user_data):
@@ -1402,7 +1402,7 @@ class SpeedTestView:
             return
         self._incoming_link = link
         link.set_remote_identified_callback(self._on_remote_identified)
-        self.app.ui.loop.set_alarm_in(8, lambda l, u: self._incoming_timeout(link))
+        self.app.ui.loop.set_alarm_in(max(8, self.app.rns.get_medium_path_timeout()), lambda l, u: self._incoming_timeout(link))
 
     def _incoming_timeout(self, link):
         if self._recv_link is link:
@@ -1565,7 +1565,7 @@ class SpeedTestView:
 
     def _timeout(self):
         try:
-            return DEFAULT_PROBE_TIMEOUT + self.app.rns.get_first_hop_timeout(self._dest_hash)
+            return max(DEFAULT_PROBE_TIMEOUT + self.app.rns.get_first_hop_timeout(self._dest_hash), self.app.rns.get_medium_path_timeout())
         except Exception:
             return DEFAULT_PROBE_TIMEOUT
 
@@ -1594,7 +1594,7 @@ class SpeedTestView:
             self._log("Could not establish link: %s" % str(e), "error_text")
             self._finish()
             return
-        self._link_deadline = time.time() + self._timeout()
+        self._link_deadline = time.time() + max(self._timeout(), self._client_link.establishment_timeout)
         self.app.ui.loop.set_alarm_in(0.5, self._check_link)
 
     def _check_link(self, loop, user_data):

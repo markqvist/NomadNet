@@ -8,6 +8,7 @@ from urwid.util import is_mouse_press
 from urwid.text_layout import calc_coords
 from .ReadlineEdit import ReadlineEdit
 from RNS.Utilities.rngit.util import MarkdownToMicron
+from nomadnet.util import STRIP_CONTROL_RE
 
 DEFAULT_FG_DARK  = "ddd"
 DEFAULT_FG_LIGHT = "222"
@@ -101,6 +102,7 @@ def ensure_selected_styles():
     else:                                      SELECTED_STYLES = STYLES_LIGHT
 
 def markup_to_attrmaps(markup, url_delegate = None, fg_color=None, bg_color=None, link_class=None, anchors=None):
+    markup = STRIP_CONTROL_RE.sub("", markup)
     global LINK_CLASS
     if link_class: LINK_CLASS = link_class
     else: LINK_CLASS = LinkableText

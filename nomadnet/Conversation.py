@@ -873,7 +873,7 @@ class ConversationMessage:
                 name = str(name) if name is not None else ""
         except Exception:
             name = ""
-        name = re.sub(r"[\x00-\x1f\x7f]", "", name)
+        name = re.sub(r"[\x00-\x1f\x7f-\x9f]", "", name)
         parts = re.split(r"[/\\]", name)
         name = parts[-1] if parts else ""
         if ":" in name:

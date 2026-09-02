@@ -9,6 +9,7 @@ import RNS.vendor.umsgpack as msgpack
 
 class Node:
     JOB_INTERVAL = 5
+    SETTINGS_FLUSH_INTERVAL = 60
     START_ANNOUNCE_DELAY = 6
 
     def __init__(self, app):
@@ -24,6 +25,8 @@ class Node:
         self.file_refresh_interval = self.app.file_refresh_interval
         self.job_interval = Node.JOB_INTERVAL
         self.should_run_jobs = True
+        self.settings_dirty = False
+        self.last_settings_flush = time.time()
         self.app_data = None
         self.name = self.app.node_name
 
@@ -100,7 +103,8 @@ class Node:
         directories = [file for file in os.listdir(base_path) if os.path.isdir(os.path.join(base_path, file)) and file[:1] != "."]
 
         for file in files:
-            self.servedfiles.append(base_path+"/"+file)
+            if not file.endswith(".allowed"):
+                self.servedfiles.append(base_path+"/"+file)
 
         for directory in directories:
             self.scan_files(base_path+"/"+directory)
@@ -109,51 +113,13 @@ class Node:
         RNS.log("Page request "+RNS.prettyhexrep(request_id)+" for: "+str(path), RNS.LOG_VERBOSE)
         try:
             self.app.peer_settings["served_page_requests"] += 1
-            self.app.save_peer_settings()
+            self.settings_dirty = True
             
         except Exception as e:
             RNS.log("Could not increase served page request count", RNS.LOG_ERROR)
 
         file_path = path.replace("/page", self.app.pagespath, 1)
-
-        allowed_path = file_path+".allowed"
-        request_allowed = False
-
-        if os.path.isfile(allowed_path):
-            allowed_list = []
-
-            try:
-                if os.access(allowed_path, os.X_OK):
-                    allowed_result = subprocess.run([allowed_path], stdout=subprocess.PIPE)
-                    allowed_input = allowed_result.stdout
-
-                else:
-                    with open(allowed_path, "rb") as fh:
-                        allowed_input = fh.read()
-
-                allowed_hash_strs = allowed_input.splitlines()
-
-                for hash_str in allowed_hash_strs:
-                    if len(hash_str) == RNS.Identity.TRUNCATED_HASHLENGTH//8*2:
-                        try:
-                            allowed_hash = bytes.fromhex(hash_str.decode("utf-8"))
-                            allowed_list.append(allowed_hash)
-
-                        except Exception as e:
-                            RNS.log("Could not decode RNS Identity hash from: "+str(hash_str), RNS.LOG_DEBUG)
-                            RNS.log("The contained exception was: "+str(e), RNS.LOG_DEBUG)
-
-            except Exception as e:
-                RNS.log("Error while fetching list of allowed identities for request: "+str(e), RNS.LOG_ERROR)
-
-            if hasattr(remote_identity, "hash") and remote_identity.hash in allowed_list:
-                request_allowed = True
-            else:
-                request_allowed = False
-                RNS.log("Denying request, remote identity was not in list of allowed identities", RNS.LOG_VERBOSE)
-
-        else:
-            request_allowed = True
+        request_allowed = self.request_allowed(file_path, remote_identity)
 
         try:
             if request_allowed:
@@ -187,18 +153,52 @@ class Node:
             RNS.log("The contained exception was: "+str(e), RNS.LOG_ERROR)
             return None
 
+    def request_allowed(self, file_path, remote_identity):
+        allowed_path = file_path+".allowed"
+        if not os.path.isfile(allowed_path):
+            return True
+
+        allowed_list = []
+        try:
+            if os.access(allowed_path, os.X_OK):
+                allowed_input = subprocess.run([allowed_path], stdout=subprocess.PIPE).stdout
+            else:
+                with open(allowed_path, "rb") as fh:
+                    allowed_input = fh.read()
+
+            for hash_str in allowed_input.splitlines():
+                if len(hash_str) == RNS.Identity.TRUNCATED_HASHLENGTH//8*2:
+                    try:
+                        allowed_list.append(bytes.fromhex(hash_str.decode("utf-8")))
+                    except Exception as e:
+                        RNS.log("Could not decode RNS Identity hash from: "+str(hash_str), RNS.LOG_DEBUG)
+                        RNS.log("The contained exception was: "+str(e), RNS.LOG_DEBUG)
+
+        except Exception as e:
+            RNS.log("Error while fetching list of allowed identities for request: "+str(e), RNS.LOG_ERROR)
+
+        if hasattr(remote_identity, "hash") and remote_identity.hash in allowed_list:
+            return True
+
+        RNS.log("Denying request, remote identity was not in list of allowed identities", RNS.LOG_VERBOSE)
+        return False
+
     # TODO: Improve file handling, this will be slow for large files
     def serve_file(self, path, data, request_id, remote_identity, requested_at):
         RNS.log("File request "+RNS.prettyhexrep(request_id)+" for: "+str(path), RNS.LOG_VERBOSE)
         try:
             self.app.peer_settings["served_file_requests"] += 1
-            self.app.save_peer_settings()
+            self.settings_dirty = True
             
         except Exception as e:
             RNS.log("Could not increase served file request count", RNS.LOG_ERROR)
 
         file_path = path.replace("/file", self.app.filespath, 1)
         file_name = path.replace("/file/", "", 1)
+        if not self.request_allowed(file_path, remote_identity):
+            RNS.log("Request denied", RNS.LOG_VERBOSE)
+            return DEFAULT_NOTALLOWED.encode("utf-8")
+
         try:
             RNS.log("Serving file: "+file_path, RNS.LOG_VERBOSE)
             return [open(file_path, "rb"), {"name": file_name.encode("utf-8")}]
@@ -236,13 +236,19 @@ class Node:
                     self.register_files()
                     self.last_file_refresh = time.time()
 
+            if self.settings_dirty and now > self.last_settings_flush + Node.SETTINGS_FLUSH_INTERVAL:
+                self.settings_dirty = False
+                self.last_settings_flush = now
+                try: self.app.save_peer_settings()
+                except Exception as e: RNS.log("Could not save peer settings: "+str(e), RNS.LOG_ERROR)
+
             time.sleep(self.job_interval)
 
     def peer_connected(self, link):
         RNS.log("Peer connected to "+str(self.destination), RNS.LOG_VERBOSE)
         try:
             self.app.peer_settings["node_connects"] += 1
-            self.app.save_peer_settings()
+            self.settings_dirty = True
 
         except Exception as e:
             RNS.log("Could not increase node connection count", RNS.LOG_ERROR)

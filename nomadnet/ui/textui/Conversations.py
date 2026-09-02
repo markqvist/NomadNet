@@ -2809,7 +2809,7 @@ class LXMessageWidget(urwid.WidgetWrap):
                 title_string = g["warning"]+" "+g["arrow_l"]+" "+message.get_signature_description() + "\n  " + title_string
 
         if message.get_title() != "":
-            title_string += " | " + message.get_title()
+            title_string += " | " + strip_modifiers(message.get_title())
 
         inbound_untrusted = False
         if not is_outbound and msg_source_hash is not None:

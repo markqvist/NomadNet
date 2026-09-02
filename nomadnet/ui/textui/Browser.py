@@ -11,6 +11,7 @@ import threading
 from threading import Lock
 from .MicronParser import markup_to_attrmaps, make_style, default_state
 from nomadnet.Directory import DirectoryEntry
+from nomadnet.Conversation import ConversationMessage
 from nomadnet.vendor.Scrollable import *
 from nomadnet.util import strip_modifiers
 from nomadnet.util import sanitize_name
@@ -825,10 +826,9 @@ class Browser:
                 partial["pr_throttle"] = time.time()+15
                 RNS.log(f"Requesting path for partial: {partial_destination_hash} / {path}", RNS.LOG_EXTREME)
                 RNS.Transport.request_path(partial_destination_hash)
-                pr_time = time.time()+RNS.Transport.first_hop_timeout(partial_destination_hash)
+                pr_time = time.time()+self.path_timeout(partial_destination_hash)
                 while not RNS.Transport.has_path(partial_destination_hash):
-                    now = time.time()
-                    if now > pr_time+self.timeout: return
+                    if time.time() > pr_time: return
                     time.sleep(0.25)
 
         for pid in self.page_partials:
@@ -853,7 +853,7 @@ class Browser:
                 partial["link"] = None
             
             partial["link"] = RNS.Link(destination, established_callback = established, closed_callback = closed)
-            timeout = time.time()+self.timeout
+            timeout = time.time()+max(self.timeout, partial["link"].establishment_timeout)
             while partial["link"].status != RNS.Link.ACTIVE and time.time() < timeout: time.sleep(0.1)
 
         if partial["link"] and partial["link"].status == RNS.Link.ACTIVE and partial["request_id"] == None:
@@ -1065,6 +1065,9 @@ class Browser:
     def set_timeout(self, timeout):
         self.timeout = timeout
 
+    def path_timeout(self, destination_hash):
+        return max(self.timeout + self.app.rns.get_first_hop_timeout(destination_hash), self.app.rns.get_medium_path_timeout())
+
     def download_local_file(self, path):
         try:
             file_path = self.app.filespath+path.replace("/file", "", 1)
@@ -1110,10 +1113,9 @@ class Browser:
                 self.status = Browser.PATH_REQUESTED
                 self.update_display()
 
-                pr_time = time.time()+RNS.Transport.first_hop_timeout(self.destination_hash)
+                pr_time = time.time()+self.path_timeout(self.destination_hash)
                 while not RNS.Transport.has_path(self.destination_hash):
-                    now = time.time()
-                    if now > pr_time+self.timeout:
+                    if time.time() > pr_time:
                         self.request_timeout()
                         return
 
@@ -1493,10 +1495,9 @@ class Browser:
                 self.status = Browser.PATH_REQUESTED
                 self.update_display()
 
-                pr_time = time.time()+RNS.Transport.first_hop_timeout(self.destination_hash)
+                pr_time = time.time()+self.path_timeout(self.destination_hash)
                 while not RNS.Transport.has_path(self.destination_hash):
-                    now = time.time()
-                    if now > pr_time+self.timeout:
+                    if time.time() > pr_time:
                         self.request_timeout()
                         return
 
@@ -1738,9 +1739,13 @@ class Browser:
 
     def file_received(self, request_receipt):
         try:
-            if type(request_receipt.response) == io.BufferedReader:
+            if isinstance(request_receipt.response, bytes):
+                markup = request_receipt.response.decode("utf-8")
+                self.attr_maps = markup_to_attrmaps(strip_modifiers(markup), url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
+
+            elif type(request_receipt.response) == io.BufferedReader:
                 if request_receipt.metadata != None:
-                    file_name   = os.path.basename(request_receipt.metadata["name"].decode("utf-8"))
+                    file_name   = ConversationMessage.safe_attachment_name(request_receipt.metadata["name"])
                     file_handle = request_receipt.response
                     file_destination = self.app.downloads_path+"/"+file_name
 
@@ -1759,7 +1764,7 @@ class Browser:
             else:
                 file_name = request_receipt.response[0]
                 file_data = request_receipt.response[1]
-                file_destination_name = os.path.basename(file_name)
+                file_destination_name = ConversationMessage.safe_attachment_name(file_name)
                 file_destination = self.app.downloads_path+"/"+file_destination_name
 
                 counter = 0

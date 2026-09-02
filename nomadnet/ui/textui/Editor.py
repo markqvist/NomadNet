@@ -953,18 +953,18 @@ class PageEditorDisplay():
             common, restricted, total = self._folder_permissions(path)
             content = common or ""
             if not total:
-                state = "This folder contains no pages."
+                state = "This folder contains no files."
             elif not restricted:
-                state = "All %d pages here are public." % total
+                state = "All %d files here are public." % total
             elif common is not None:
-                state = "All %d pages here share these entries." % total
+                state = "All %d files here share these entries." % total
             else:
-                state = "Entries differ across pages (%d of %d restricted)." % (restricted, total)
+                state = "Entries differ across files (%d of %d restricted)." % (restricted, total)
             note = ("Allowed identity hashes per line.\n"
-                    + state + "\nSaving applies these entries to every page in this folder and its subfolders.")
+                    + state + "\nSaving applies these entries to every file in this folder and its subfolders.")
         else:
             content = self._read_allowed(path)
-            note = "Allowed identity hashes per line. Empty = public.\nApplies to this page."
+            note = "Allowed identity hashes per line. Empty = public.\nApplies to this page or file."
 
         title = "Permissions: " + os.path.basename(path) + ("/" if is_dir else "")
         self.show_dialog(PermissionsDialog(title, note, content,

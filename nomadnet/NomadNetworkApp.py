@@ -8,6 +8,7 @@ import threading
 import traceback
 import subprocess
 import contextlib
+import tempfile
 
 import RNS
 import LXMF
@@ -129,6 +130,7 @@ class NomadNetworkApp:
         self.firstrun               = False
         self.should_run_jobs        = True
         self.job_interval           = 5
+        self.peer_settings_lock     = threading.Lock()
         self.defer_jobs             = 90
         self.page_refresh_interval  = 0
         self.file_refresh_interval  = 0
@@ -249,11 +251,13 @@ class NomadNetworkApp:
                 RNS.log("The contained exception was: %s" % (str(e)), RNS.LOG_ERROR)
                 nomadnet.panic()
 
-        if os.path.isfile(self.peersettingspath):
+        self.peer_settings = None
+        self.peer_settings_notice = None
+        for path in (self.peersettingspath, self.peersettingspath+".bak"):
+            if self.peer_settings != None or not os.path.isfile(path): continue
             try:
-                file = open(self.peersettingspath, "rb")
-                self.peer_settings = msgpack.unpackb(file.read())
-                file.close()
+                with open(path, "rb") as file:
+                    self.peer_settings = msgpack.unpackb(file.read())
 
                 if not "node_last_announce" in self.peer_settings:
                     self.peer_settings["node_last_announce"] = None
@@ -274,17 +278,21 @@ class NomadNetworkApp:
                     self.peer_settings["served_file_requests"] = 0
 
                 self.peer_settings["announce_interval"] = self.announce_interval
+                if path != self.peersettingspath:
+                    self.peer_settings_notice = "Peer settings were restored from the last backup.\nCheck your display name and propagation node."
 
             except Exception as e:
-                RNS.logdest = RNS.LOG_STDOUT
-                RNS.log(f"Could not load local peer settings from {self.peersettingspath}", RNS.LOG_ERROR)
+                RNS.log(f"Could not load local peer settings from {path}", RNS.LOG_ERROR)
                 RNS.log(f"The contained exception was: {e}", RNS.LOG_ERROR)
-                RNS.log(f"This likely means that the peer settings file has become corrupt.", RNS.LOG_ERROR)
-                RNS.log(f"You can try deleting the file at {self.peersettingspath} and restarting nomadnet.", RNS.LOG_ERROR)
-                nomadnet.panic()
-        else:
+                RNS.log(f"Moving the corrupt file to {path}.corrupt", RNS.LOG_ERROR)
+                try: os.replace(path, path+".corrupt")
+                except Exception: pass
+                self.peer_settings = None
+                self.peer_settings_notice = "Peer settings were corrupt and have been reset.\nCheck your display name and propagation node."
+
+        if self.peer_settings == None:
             try:
-                RNS.log("No peer settings file found, creating new...")
+                RNS.log("Creating new peer settings file...")
                 self.peer_settings = {
                     "display_name": "Anonymous Peer",
                     "announce_interval": self.announce_interval,
@@ -650,9 +658,16 @@ class NomadNetworkApp:
         return self.message_router.get_outbound_propagation_node()
 
     def save_peer_settings(self):
-        tmp_path = f"{self.peersettingspath}.tmp"
-        with open(tmp_path, "wb") as file: file.write(msgpack.packb(self.peer_settings))
-        os.replace(tmp_path, self.peersettingspath)
+        with self.peer_settings_lock:
+            fd, tmp_path = tempfile.mkstemp(dir=os.path.dirname(self.peersettingspath), prefix=".peersettings.")
+            try:
+                with os.fdopen(fd, "wb") as file: file.write(msgpack.packb(self.peer_settings))
+                if os.path.isfile(self.peersettingspath): os.replace(self.peersettingspath, self.peersettingspath+".bak")
+                os.replace(tmp_path, self.peersettingspath)
+            except Exception:
+                try: os.unlink(tmp_path)
+                except Exception: pass
+                raise
 
     def lxmf_delivery(self, message):
         time_string = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(message.timestamp))

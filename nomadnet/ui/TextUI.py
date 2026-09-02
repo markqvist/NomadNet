@@ -279,6 +279,7 @@ class TextUI:
         self.set_colormode(colormode)
 
         self.main_display.start()
+        if intro_timeout <= 0 and self.app.peer_settings_notice: self.main_display.show_notice(self.app.peer_settings_notice)
         self.loop.run()
 
     def set_colormode(self, colormode):
@@ -297,3 +298,4 @@ class TextUI:
 
     def display_main(self, loop, user_data):
         self.loop.widget = self.main_display.widget
+        if self.app.peer_settings_notice: self.main_display.show_notice(self.app.peer_settings_notice)

@@ -4,6 +4,7 @@ import itertools
 import mmap
 import urwid
 import nomadnet
+from nomadnet.util import strip_modifiers
 
 
 class LogDisplayShortcuts():
@@ -68,7 +69,7 @@ class LogTerminal(urwid.WidgetWrap):
 class LogTail(urwid.WidgetWrap):
     def __init__(self, app):
         self.app = app
-        self.log_tail = urwid.Text(tail(self.app.logfilepath, 50))
+        self.log_tail = urwid.Text(strip_modifiers(tail(self.app.logfilepath, 50)))
         self.log = urwid.Scrollable(self.log_tail)
         self.log.set_scrollpos(-1)
         self.log_scrollbar = urwid.ScrollBar(self.log)

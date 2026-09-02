@@ -8,6 +8,7 @@ from collections import deque
 import RNS
 
 from nomadnet.vendor import cbor
+from nomadnet.util import strip_modifiers
 
 
 HISTORY_DIR_NAME = "rrc_history"
@@ -192,7 +193,7 @@ class RRCMessage:
         self.room = room
         self.src  = src
         self.nick = nick
-        self.text = text
+        self.text = strip_modifiers(text)
         self.ts   = ts
         self.mention = False
 
@@ -355,10 +356,11 @@ class RRCHub:
 
     def _connect_worker(self):
         try:
-            timeout_s = 20.0
+            path_timeout = self.manager.app.rns.get_medium_path_timeout()
+            timeout_s = max(20.0, path_timeout)
             if not RNS.Transport.has_path(self.hub_hash):
                 RNS.Transport.request_path(self.hub_hash)
-                deadline = time.monotonic() + min(5.0, timeout_s)
+                deadline = time.monotonic() + max(5.0, path_timeout)
                 while time.monotonic() < deadline:
                     if RNS.Transport.has_path(self.hub_hash):
                         break
@@ -429,7 +431,7 @@ class RRCHub:
                 except Exception as e:
                     self._log("HELLO send failed: "+str(e), RNS.LOG_ERROR)
                 attempts += 1
-                self._stop_hello.wait(timeout=3.0)
+                self._stop_hello.wait(timeout=max(3.0, (cur_link.rtt or 0)*cur_link.traffic_timeout_factor))
             if not self.welcomed and not self._stop_hello.is_set():
                 self._set_status(RRCHub.STATUS_FAILED, "WELCOME timeout")
                 try:
@@ -847,7 +849,7 @@ class RRCHub:
         parsed = _parse_room_list_notice(text)
         if parsed is not None:
             with self._lock:
-                self.available_rooms = parsed
+                self.available_rooms = {strip_modifiers(name): strip_modifiers(topic) for name, topic in parsed.items()}
                 silent = self._silent_list_pending > 0
                 if silent:
                     self._silent_list_pending -= 1
@@ -925,7 +927,7 @@ class RRCHub:
             if isinstance(body, dict):
                 hub_name = body.get(B_WELCOME_HUB)
                 if isinstance(hub_name, str):
-                    self.hub_name = hub_name
+                    self.hub_name = strip_modifiers(hub_name)
                 ver = body.get(B_WELCOME_VER)
                 if isinstance(ver, str):
                     self.hub_version = ver
@@ -1135,7 +1137,7 @@ class RRCHub:
                 room_n = room.strip().lower() if isinstance(room, str) else None
                 if room_n is None and isinstance(body, str) and body.strip():
                     with self._lock:
-                        self.motd = body
+                        self.motd = strip_modifiers(body)
                     self.manager._notify_change(self)
                 msg = RRCMessage(
                     "notice",
@@ -1273,7 +1275,7 @@ class RRCHub:
                     return
                 if kind == RES_KIND_MOTD:
                     with self._lock:
-                        self.motd = text
+                        self.motd = strip_modifiers(text)
                     self.manager._notify_change(self)
                 elif self._process_notice_text(text):
                     return

@@ -249,6 +249,12 @@ class MainDisplay():
             valign="middle", height=8, min_width=20,
         )
 
+    def show_notice(self, text):
+        def close(button=None): self.app.ui.loop.widget = self.frame
+        pile = urwid.Pile([urwid.Text(text, align="center"), urwid.Divider(), urwid.Button("OK", on_press=close)])
+        dialog = QuitDialogLineBox(urwid.Filler(pile, urwid.TOP), title="Notice", on_cancel=close)
+        self.app.ui.loop.widget = urwid.Overlay(dialog, self.frame, align="center", width=64, valign="middle", height=9, min_width=20)
+
     def do_quit(self, sender=None):
         logterm_pid = None
         if True or RNS.vendor.platformutils.is_android():

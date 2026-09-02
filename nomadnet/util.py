@@ -121,8 +121,9 @@ def strip_modifiers(text):
     stripped = re.sub(r'[\U0001F3FB-\U0001F3FF]', '', stripped, flags=re.UNICODE)
     stripped = re.sub(r'[\u200D\u200C]', '', stripped)
     stripped = re.sub(r'\r\n?', '\n', stripped)
-    
-    return stripped.strip().replace("\x00", "")
+    stripped = STRIP_CONTROL_RE.sub('', stripped)
+
+    return stripped.strip()
 
 def sanitize_name(name):
     if name is None: return None

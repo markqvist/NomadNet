@@ -498,9 +498,9 @@ By default, you can find the examples in `!~/.nomadnetwork/examples`!. If you bu
 
 >>Authenticating Users
 
-Sometimes, you don't want everyone to be able to view certain pages or execute certain scripts. In such cases, you can use `*authentication`* to control who gets to run certain requests.
+Sometimes, you don't want everyone to be able to view certain pages, download certain files or execute certain scripts. In such cases, you can use `*authentication`* to control who gets to run certain requests.
 
-To enable authentication for any page, simply add a new file to your pages directory with ".allowed" added to the file-name of the page. If your page is named "secret_page.mu", just add a file named "secret_page.mu.allowed".
+To enable authentication for any page or file, simply add a new file next to it with ".allowed" added to its file-name. If your page is named "secret_page.mu", just add a file named "secret_page.mu.allowed". The same works for files in your files directory, and the ".allowed" file itself is never served.
 
 For each user allowed to access the page, add a line to this file, containing the hash of that users primary identity. Users can find their own identity hash in the `![ Network ]`! part of the program, under `!Local Peer Info`!. If you want to allow access for three different users, your file would look like this:
 
