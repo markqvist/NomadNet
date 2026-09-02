@@ -347,6 +347,8 @@ class Browser:
             if target_idx is None:
                 return
 
+        self.reveal_index(int(target_idx))
+
         row_offset = self._rows_above(int(target_idx), cols)
 
         try:
@@ -363,7 +365,7 @@ class Browser:
             browser_cols = screen_cols-lw-2
             cols = browser_cols
 
-        except Exception:
+        except Exception as e:
             RNS.log(f"Could not calculate browser width, anchors will be inaccurate: {e}", RNS.LOG_WARNING)
             RNS.trace_exception(e)
             cols = 100
@@ -373,8 +375,10 @@ class Browser:
     def _rows_above(self, index, cols):
         if index <= 0 or not self.attr_maps: return 0
 
+        hidden = self.hidden_indices()
         total = 0
         for i in range(min(index, len(self.attr_maps))):
+            if i in hidden: continue
             try: total += self.attr_maps[i].rows((cols,))
             except Exception: total += 1
 
@@ -627,6 +631,106 @@ class Browser:
         self.page_partials = {}
         self.browser_body = urwid.AttrMap(ScrollBar(Scrollable(pile, force_forward_keypress=True), thumb_char="\u2503", trough_char=" "), "scrollbar")
         self.detect_partials()
+        self.init_folds()
+
+    # render an arbitrary markup buffer (used by the page editor preview) and
+    # return the content widget, with partials/folds/fields wired as usual
+    def render_markup_buffer(self, markup):
+        self.status = Browser.DONE
+        self.markup = markup
+        self.page_background_color = None
+        self.page_foreground_color = None
+        for tag, attr in (("#!bg=", "page_background_color"), ("#!fg=", "page_foreground_color")):
+            pos = markup.find(tag)
+            if pos >= 0:
+                endpos = markup.find("\n", pos)
+                if endpos < 0: endpos = len(markup)
+                if endpos-(pos+len(tag)) in (3, 6):
+                    setattr(self, attr, markup[pos+len(tag):endpos])
+        try:
+            self.attr_maps = markup_to_attrmaps(strip_modifiers(markup), url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
+        except Exception as e:
+            self.attr_maps = [urwid.AttrMap(urwid.Text(f"Could not render preview: {e}"), "browser_inactive")]
+        self.update_page_display()
+        return self.browser_body
+
+    def init_folds(self):
+        self.fold_sections = {}
+        self.collapsed_headings = set()
+        attrmaps = self.attr_maps
+        header_levels = getattr(attrmaps, "header_levels", None) or {}
+        row_levels    = getattr(attrmaps, "row_levels", None) or {}
+        collapsibles  = getattr(attrmaps, "collapsibles", None) or {}
+        if not collapsibles:
+            return
+
+        n = len(attrmaps)
+        for idx in sorted(collapsibles.keys()):
+            widget = self.collapsible_widget_at(idx)
+            if widget is None: continue
+            depth = header_levels.get(idx, 1)
+            end = n
+            for i in range(idx+1, n):
+                if row_levels.get(i, depth) < depth or \
+                   (i in header_levels and header_levels.get(i, 1) <= depth):
+                    end = i; break
+            self.fold_sections[widget] = (idx+1, end)
+            if collapsibles[idx]:
+                self.collapsed_headings.add(widget)
+                try: widget.set_collapsed(True)
+                except Exception: pass
+
+        if self.collapsed_headings:
+            self.rebuild_visible()
+
+    def collapsible_widget_at(self, idx):
+        try:
+            o = self.attr_maps[idx]._original_widget
+            if getattr(o, "is_collapsible_heading", False): return o
+        except Exception: pass
+        return None
+
+    def hidden_indices(self):
+        hidden = set()
+        for widget in getattr(self, "collapsed_headings", ()):
+            rng = getattr(self, "fold_sections", {}).get(widget)
+            if rng: hidden.update(range(rng[0], rng[1]))
+        return hidden
+
+    def rebuild_visible(self):
+        pile = getattr(self, "page_pile", None)
+        if pile is None: return
+        hidden = self.hidden_indices()
+        opts = pile.options()
+        pile.contents = [(w, opts) for i, w in enumerate(self.attr_maps) if i not in hidden]
+        try:
+            if pile.focus_position >= len(pile.contents):
+                pile.focus_position = max(0, len(pile.contents)-1)
+        except Exception: pass
+
+    def fold_changed(self, heading_widget):
+        if getattr(heading_widget, "collapsed", False):
+            self.collapsed_headings.add(heading_widget)
+        else:
+            self.collapsed_headings.discard(heading_widget)
+        self.rebuild_visible()
+        try:
+            for pos, (w, _) in enumerate(self.page_pile.contents):
+                if getattr(w, "_original_widget", None) is heading_widget:
+                    self.page_pile.focus_position = pos
+                    break
+        except Exception: pass
+
+    def reveal_index(self, idx):
+        changed = False
+        for widget in list(getattr(self, "collapsed_headings", ())):
+            rng = getattr(self, "fold_sections", {}).get(widget)
+            if rng and rng[0] <= idx < rng[1]:
+                self.collapsed_headings.discard(widget)
+                try: widget.set_collapsed(False)
+                except Exception: pass
+                changed = True
+        if changed: self.rebuild_visible()
 
     def parse_url(self, url):
         path = None

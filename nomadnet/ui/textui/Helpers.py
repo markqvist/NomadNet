@@ -17,6 +17,21 @@ def osc52_copy(text):
         return False
 
 
+def qr_ascii(data):
+    try:
+        import qrcode
+        import io
+        qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=1, border=1)
+        qr.add_data(data)
+        qr.make()
+        buf = io.StringIO()
+        qr.print_ascii(out=buf, invert=False)
+        return buf.getvalue().rstrip("\n")
+    except Exception as e:
+        RNS.log("QR generation failed: "+str(e), RNS.LOG_ERROR)
+        return None
+
+
 class ClickableIcon(urwid.Text):
     _selectable = False
 

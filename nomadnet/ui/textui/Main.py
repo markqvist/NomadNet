@@ -6,9 +6,12 @@ from .Channels import *
 from .Directory import *
 from .Config import *
 from .Interfaces import *
+from .Transport import *
+from .Utilities import *
 from .Map import *
 from .Log import *
 from .Guide import *
+from .Editor import *
 import urwid
 
 class SubDisplays():
@@ -20,14 +23,22 @@ class SubDisplays():
         self.directory_display = DirectoryDisplay(self.app)
         self.config_display = ConfigDisplay(self.app)
         self.interface_display = InterfaceDisplay(self.app)
+        self.utilities_display = UtilitiesDisplay(self.app) if self._utilities_enabled(app) else None
         self.map_display = MapDisplay(self.app)
         self.log_display = LogDisplay(self.app)
         self.guide_display = GuideDisplay(self.app)
+        self.page_editor_display = PageEditorDisplay(self.app) if app.enable_node else None
 
         if app.firstrun:
             self.active_display = self.guide_display
         else:
             self.active_display = self.conversations_display
+
+    def _utilities_enabled(self, app):
+        try:
+            return app.config["utilities"].as_bool("enable_utilities")
+        except Exception:
+            return False
 
     def active(self):
         return self.active_display
@@ -85,6 +96,18 @@ class MainFrame(urwid.Frame):
 
         return super(MainFrame, self).keypress(size, key)
 
+class QuitDialogLineBox(urwid.LineBox):
+    def __init__(self, *args, on_cancel=None, **kwargs):
+        self.on_cancel = on_cancel
+        super().__init__(*args, **kwargs)
+
+    def keypress(self, size, key):
+        if key == "esc":
+            if self.on_cancel is not None:
+                self.on_cancel()
+            return None
+        return super().keypress(size, key)
+
 class MainDisplay():
     def __init__(self, ui, app):
         self.ui = ui
@@ -127,6 +150,13 @@ class MainDisplay():
         self.update_active_sub_display()
         self.sub_displays.interface_display.start()
 
+    def show_utilities(self, user_data):
+        if self.sub_displays.utilities_display is None:
+            return
+        self.sub_displays.active_display = self.sub_displays.utilities_display
+        self.update_active_sub_display()
+        self.sub_displays.utilities_display.start()
+
     def show_log(self, user_data):
         self.sub_displays.active_display = self.sub_displays.log_display
         self.sub_displays.log_display.show()
@@ -135,6 +165,14 @@ class MainDisplay():
     def show_guide(self, user_data):
         self.sub_displays.active_display = self.sub_displays.guide_display
         self.update_active_sub_display()
+
+    def show_page_editor(self, user_data):
+        if not self.app.enable_node:
+            return
+        self.sub_displays.active_display = self.sub_displays.page_editor_display
+        self.update_active_sub_display()
+        self.sub_displays.page_editor_display.start()
+        self.frame.focus_position = "body"
 
     def update_active_sub_display(self):
         self.frame.contents["body"] = (self.sub_displays.active().widget, None)
@@ -156,6 +194,62 @@ class MainDisplay():
         self.menu_display.start()
 
     def quit(self, sender=None):
+        self.show_quit_dialog()
+
+    def show_quit_dialog(self, sender=None):
+        if getattr(self, "_quit_dialog_open", False):
+            return
+
+        active = self.sub_displays.active_display
+        if active is self.sub_displays.log_display:
+            self.do_quit()
+            return
+        if active is self.sub_displays.config_display and self.sub_displays.config_display.editor_term is not None:
+            self.do_quit()
+            return
+
+        def confirm(button=None):
+            self.do_quit()
+
+        def cancel(button=None):
+            self._quit_dialog_open = False
+            self.app.ui.loop.widget = self.frame
+
+        buttons = urwid.Columns([
+            (urwid.WEIGHT, 0.45, urwid.Button("Yes", on_press=confirm)),
+            (urwid.WEIGHT, 0.1, urwid.Text("")),
+            (urwid.WEIGHT, 0.45, urwid.Button("No", on_press=cancel)),
+        ])
+        try:
+
+
+            buttons.focus_position = 2  # default to "No"
+
+
+        except Exception:
+            pass
+
+        pile = urwid.Pile([
+            urwid.Text("Are you sure you want to quit?", align="center"),
+            urwid.Divider(),
+            buttons,
+        ])
+
+        dialog = QuitDialogLineBox(
+            urwid.Filler(pile, urwid.TOP),
+            title="Quit NomadNet",
+            on_cancel=cancel,
+        )
+
+        self._quit_dialog_open = True
+
+        self.app.ui.loop.widget = urwid.Overlay(
+            dialog, self.frame,
+            align="center", width=44,
+            valign="middle", height=8, min_width=20,
+        )
+
+    def do_quit(self, sender=None):
         logterm_pid = None
         if True or RNS.vendor.platformutils.is_android():
             if self.sub_displays.log_display != None and self.sub_displays.log_display.log_term != None:
@@ -194,14 +288,27 @@ class MenuDisplay():
         button_log            = (7,  MenuButton("Log", on_press=handler.show_log))
         button_config         = (10, MenuButton("Config", on_press=handler.show_config))
         button_interfaces     = (14, MenuButton("Interfaces", on_press=handler.show_interfaces))
+        button_utilities      = (13, MenuButton("Utilities", on_press=handler.show_utilities))
         button_guide          = (9,  MenuButton("Guide", on_press=handler.show_guide))
+        button_mynode         = (11, MenuButton("My Node", on_press=handler.show_page_editor))
         button_quit           = (8,  MenuButton("Quit", on_press=handler.quit))
 
         # buttons = [menu_text, button_conversations, button_node, button_directory, button_map]
-        if self.app.config["textui"]["hide_guide"]:
-            buttons = [menu_text, button_conversations, button_network, button_channels, button_log, button_interfaces, button_config, button_quit]
-        else:
-            buttons = [menu_text, button_conversations, button_network, button_channels, button_log, button_interfaces, button_config, button_guide, button_quit]
+        buttons = [menu_text, button_conversations, button_network]
+        if self.app.enable_node:
+            buttons.append(button_mynode)
+        buttons += [button_channels, button_log, button_interfaces]
+        enable_utilities = False
+        try:
+            enable_utilities = self.app.config["utilities"].as_bool("enable_utilities")
+        except Exception:
+            enable_utilities = False
+        if enable_utilities:
+            buttons.append(button_utilities)
+        buttons.append(button_config)
+        if not self.app.config["textui"]["hide_guide"]:
+            buttons.append(button_guide)
+        buttons.append(button_quit)
 
         columns = MenuColumns(buttons, dividechars=1)
         columns.handler = handler

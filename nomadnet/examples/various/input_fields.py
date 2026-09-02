@@ -25,6 +25,8 @@ An masked field   : `B444`<!|password`Value of Field>`b
 
 An small field    : `B444`<8|small`test>`b, and some more text.
 
+A multi-row field : `B444`<40x4|notes`>`b
+
 Two fields        : `B444`<8|one`One>`b `B444`<8|two`Two>`b
 
 The data can be `!`[submitted`:/page/input_fields.mu`username|two]`!.

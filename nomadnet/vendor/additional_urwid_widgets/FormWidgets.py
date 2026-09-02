@@ -1,6 +1,13 @@
 import urwid
+import nomadnet
 
 from nomadnet.ui.textui.ReadlineEdit import ReadlineMixin, ReadlineEdit
+
+def dropdown_indicator():
+    try:
+        return nomadnet.NomadNetworkApp.get_shared_instance().ui.glyphs["dropdown"]
+    except Exception:
+        return " ▾"
 
 class DialogLineBox(urwid.LineBox):
     def __init__(self, body, parent=None, title="?"):
@@ -38,6 +45,13 @@ class Dropdown(urwid.WidgetWrap):
         self.main_button = urwid.SelectableIcon(self.main_text, 0)
         self.main_button = urwid.AttrMap(self.main_button, "button_normal", "button_focus")
 
+        self.indicator_widget = urwid.Text(dropdown_indicator())
+        self.main_row = urwid.Columns([
+            ('pack', self.main_button),
+            ('pack', self.indicator_widget),
+            ('weight', 1, urwid.Text("")),
+        ])
+
         self.option_widgets = []
         for opt in options:
             icon = urwid.SelectableIcon(opt, 0)
@@ -48,7 +62,7 @@ class Dropdown(urwid.WidgetWrap):
         self.options_listbox = urwid.ListBox(self.options_walker)
         self.dropdown_box = None  # will be created on open_dropdown
 
-        self.pile = urwid.Pile([self.main_button])
+        self.pile = urwid.Pile([self.main_row])
         self.dropdown_visible = False
 
         super().__init__(self.pile)
@@ -125,9 +139,20 @@ class FormEdit(Placeholder, FormField):
                     self.error = "This field is required"
                     break
             elif validation == "number":
-                if value and not value.replace('-', '').replace('.', '').isdigit():
-                    self.error = "This field must be a number"
+                try:
+                    if value:
+                        int(value)
+                except ValueError:
+                    self.error = "This field must be a whole number"
                     break
+            elif validation == "stamp_cost":
+                if value and value.lower() != "none":
+                    try:
+                        if not 1 <= int(value) <= 255:
+                            raise ValueError
+                    except ValueError:
+                        self.error = "This field must be 1-255 or None"
+                        break
             elif validation == "float":
                 try:
                     if value:
@@ -158,7 +183,7 @@ class FormCheckbox(urwid.CheckBox, FormField):
         for validation in self.validation_types:
             if validation == "required":
                 if not value:
-                    self.error = "This field is  required"
+                    self.error = "This field is required"
                     break
 
         self.error_widget.set_text(("error", self.error or ""))
@@ -241,13 +266,24 @@ class FormMultiList(urwid.Pile, FormField):
         urwid.Pile.__init__(self, pile_widgets)
         FormField.__init__(self, config_key, transform)
 
-    def create_entry_row(self):
-        edit = ReadlineEdit("", "")
+    def create_entry_row(self, text=""):
+        edit = ReadlineEdit("", text)
         entry_row = urwid.Columns([
             ('weight', 1, edit),
             (3, urwid.Button("×", on_press=lambda button: self.remove_entry(button, entry_row))),
         ])
         return entry_row
+
+    def set_value(self, value):
+        self.entries = []
+        if not value:
+            self.entries.append(self.create_entry_row())
+        else:
+            if isinstance(value, str):
+                value = [value]
+            for item in value:
+                self.entries.append(self.create_entry_row(str(item)))
+        self.contents = [(w, self.options()) for w in self.get_pile_widgets()]
 
     def remove_entry(self, button, entry_row):
         if len(self.entries) > 1:

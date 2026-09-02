@@ -55,9 +55,13 @@ class LogTerminal(urwid.WidgetWrap):
 
 
     def keypress(self, size, key):
+        if key == "ctrl q":
+            nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.show_quit_dialog()
+            return None
+
         if key == "up":
             nomadnet.NomadNetworkApp.get_shared_instance().ui.main_display.frame.focus_position = "header"
-            
+
         return super(LogTerminal, self).keypress(size, key)
 
 

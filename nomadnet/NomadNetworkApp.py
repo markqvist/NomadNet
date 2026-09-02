@@ -331,6 +331,9 @@ class NomadNetworkApp:
         self.rrc = RRCManager(self)
         self.rrc.load()
 
+        from nomadnet.InterfaceProfiles import InterfaceProfiles
+        self.interface_profiles = InterfaceProfiles(self)
+
         static_peers = []
         for static_peer in self.static_peers:
             try:
@@ -982,6 +985,13 @@ class NomadNetworkApp:
                     if value == "web":
                         self.uimode = nomadnet.ui.UI_WEB
 
+        if not "utilities" in self.config:
+            self.config["utilities"] = {}
+        if not "enable_utilities" in self.config["utilities"]:
+            self.config["utilities"]["enable_utilities"] = False
+        else:
+            self.config["utilities"]["enable_utilities"] = self.config["utilities"].as_bool("enable_utilities")
+
         if "rrc" in self.config:
             for option in self.config["rrc"]:
                 if option == "history_per_room_cap":
@@ -1386,6 +1396,14 @@ sanitize_names = yes
 # relies on your terminal supporting OSC52
 # escape sequences.
 clipboard_copy = no
+
+[utilities]
+
+# You can enable a Utilities section in the
+# menu, where you can view the path and announce
+# rate tables and probe destinations. Disabled
+# by default.
+enable_utilities = no
 
 [rrc]
 
