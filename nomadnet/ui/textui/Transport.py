@@ -352,7 +352,11 @@ class TransportDisplay:
         return TransportRow(columns)
 
     def _make_iface_row(self, entry, position):
-        name = entry.get("short_name") or entry.get("name") or "?"
+        short_name = entry.get("short_name")
+        if short_name == "None": short_name = None
+        name = short_name or entry.get("name") or "?"
+        RNS.log(name)
+        name = name.replace("\x00", "")
         paths = self.paths_per_interface.get(entry.get("name", ""), 0)
         held = entry.get("held_announces", 0) or 0
         queue = entry.get("announce_queue")
