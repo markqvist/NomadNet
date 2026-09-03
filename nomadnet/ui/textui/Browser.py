@@ -267,7 +267,7 @@ class Browser:
                                     pass  # do nothing if checkbox is not check
 
             recurse_down(self.attr_maps)
-            RNS.log("Including request data: "+str(request_data), RNS.LOG_DEBUG)
+            RNS.log("Including request data: "+str(request_data), RNS.LOG_EXTREME)
 
         # In-document anchor link (#name or empty #)
         if link_target.startswith("#"):
@@ -917,7 +917,7 @@ class Browser:
                                     pass  # do nothing if checkbox is not check
 
             recurse_down(self.attr_maps)
-            RNS.log("Including request data: "+str(request_data), RNS.LOG_DEBUG)
+            RNS.log("Including request data: "+str(request_data), RNS.LOG_EXTREME)
 
         return request_data
 
