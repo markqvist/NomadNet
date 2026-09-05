@@ -668,7 +668,7 @@ class Browser:
             if hasattr(o, "_contained_image"): o = o._contained_image
             if hasattr(o, "image_url"):
                 resolved_image = self.resolve_image(o.image_url)
-                if resolved_image: o.load(resolved_image)
+                if resolved_image: o.load(resolved_image, remote_source=True)
                 else:
                     image = { "widget": o, "id": o.image_id, "url": o.image_url, "refresh": None, "updated": None,
                               "update_requested": None, "request_id": None, "link": None, "failed": False, "pr_throttle": 0,
@@ -858,7 +858,7 @@ class Browser:
                             shutil.move(file_handle.name, file_destination)
 
                     resolved_path = self.resolve_image(url)
-                    if resolved_path: w.load(resolved_path)
+                    if resolved_path: w.load(resolved_path, remote_source=True)
 
                 except Exception as e:
                     RNS.log("Error while handling image response: "+str(e), RNS.LOG_ERROR)

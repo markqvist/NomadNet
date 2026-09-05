@@ -69,7 +69,7 @@ def parse_image_header(data):
 # (Kitty's f=100 data format). The dimensions are used only for layout.
 # WebP sources are converted transparently to PNG on load.
 class ImageData(object):
-    def __init__(self, path, max_bytes=MAX_PAYLOAD_BYTES):
+    def __init__(self, path, max_bytes=MAX_PAYLOAD_BYTES, remote_source=False):
         self.path = path
         self.error = None
         self.format = None
@@ -81,15 +81,15 @@ class ImageData(object):
         try:
             with open(path, "rb") as f: data = f.read()
         except OSError as e:
-            self.error = "could not read file: %s" % e
+            self.error = "Could not read file: %s" % e
             return
         
         if len(data) > max_bytes:
-            self.error = "file too large (%.1f MiB > %d MiB)" % (len(data) / (1024 * 1024), max_bytes // (1024 * 1024))
+            self.error = "File too large (%.1f MiB > %d MiB)" % (len(data) / (1024 * 1024), max_bytes // (1024 * 1024))
             return
         
         if not data:
-            self.error = "empty file"
+            self.error = "Empty file"
             return
         
         try: self.format, self.width, self.height = parse_image_header(data)
@@ -102,17 +102,22 @@ class ImageData(object):
             from . import _webp
             png = _webp.convert_webp_to_png(data)
             if png is None:
-                self.error = "webp conversion failed (no working backend available)"
+                self.error = "WebP conversion failed (no working backend available)"
                 return
             if len(png) > MAX_CONVERTED_PAYLOAD_BYTES:
-                self.error = "converted image too large (%.1f MiB > %d MiB)" % (len(png) / (1024 * 1024), MAX_CONVERTED_PAYLOAD_BYTES // (1024 * 1024))
+                self.error = "Converted image too large (%.1f MiB > %d MiB)" % (len(png) / (1024 * 1024), MAX_CONVERTED_PAYLOAD_BYTES // (1024 * 1024))
                 return
 
             self.data = png
             self.format = "PNG"
             self.conversion_backend = _webp.last_backend()
         
-        else: self.data = data
+        else:
+            if remote_source:
+                self.error = "Invalid image format, remote images must be WebP"
+                return
+            else:
+                self.data = data
         
         # Content key for de-duplication: identical bytes = same key, so
         # the same image transmitted once can be placed many times.

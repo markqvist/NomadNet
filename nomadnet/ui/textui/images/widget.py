@@ -86,12 +86,12 @@ class ImageWidget(urwid.Widget):
         super().__init__()
         if self.path: self.load()
 
-    def load(self, path=None):
+    def load(self, path=None, remote_source=False):
         if path: self.path = path
         if self.path:
             from ._imagedata import ImageData
             self._ti_path = os.path.abspath(os.fspath(self.path))
-            self._ti_data = ImageData(self._ti_path)
+            self._ti_data = ImageData(self._ti_path, remote_source=remote_source)
 
             if self._ti_data.ok:
                 # Register with the image store (de-duplicates identical data
@@ -99,6 +99,9 @@ class ImageWidget(urwid.Widget):
                 self._ti_key = self._ti_data.key
                 image_store.register(self._ti_key, self._ti_data.data)
                 self._invalidate()
+            else:
+                error_msg = self._ti_data.error or "Unknown error"
+                self.notice(f"Error: {error_msg}")
 
     def notice(self, msg=""):
         if not msg: self._notice = None
