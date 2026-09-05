@@ -102,7 +102,6 @@ class GuideLinkDelegate:
         self.reader.focus_topics()
 
     def resolve_image(self, url):
-        RNS.log(f"RESOLVE {url}")
         if url.endswith("demo.webp"):
             import os
             import nomadnet.ui.textui.images as images_module
@@ -184,7 +183,7 @@ class TopicList(urwid.WidgetWrap):
             GuideEntry(self.app, self, guide_display, "Hosting a Node"),
             GuideEntry(self.app, self, guide_display, "Configuration Options"),
             GuideEntry(self.app, self, guide_display, "Keyboard Shortcuts"),
-            GuideEntry(self.app, self, guide_display, "Markup"),
+            GuideEntry(self.app, self, guide_display, "Micron Markup"),
             self.first_run_entry,
             GuideEntry(self.app, self, guide_display, "Network Configuration"),
             GuideEntry(self.app, self, guide_display, "Display Test"),
@@ -1791,17 +1790,29 @@ The above markup produces the following table:
 
 >Images
 
-You can include images.
+You can include images in pages by using the image tag. All images must specify at least an alt-text and a URL, and can optionally specify rendering options such as width, height and alignment. The alt-text is required so a meaningful placeholder can be displayed for clients that do not support image rendering.
+
+Width (`Faaaw=`f) and height (`Faaah=`f) can be specified either in terminal columns/rows, in percentages, or using the `Faaan`f specifier, which will render the image as close to its native resolution as possible
+
+Alignment (`Faaaa=`f) can be either `Faaaleft`f (`Faaal`f), `Faaaright`f (`Faaar`f) or `Faaacenter`f (`Faaac`f).
 
 `Faaa
 `=
-`(The RNS logo`w=60%`a=center`:/media/demo.webp)
+`(The RNS logo`w=n`a=c`:/media/demo.webp)
 `=
 ``
 
+Images are block-level elements, and must be placed independently on their own line.
+
 If your terminal supports image rendering, the image will be displayed as specified. If not, a text placeholder is shown instead:
 
-`(The RNS logo`w=60%`a=center`:/media/demo.webp)
+`(The RNS logo`w=n`a=c`:/media/demo.webp)
+
+If you see the image above, your terminal supports image rendering! If not, you can use a terminal that supports the Kitty Terminal Graphics Protocol, for example Kitty, Konsole, Wezterm and others.
+
+It is also important to note, that for image rendering to work, your operating system will need `*some sort`* of mechanism to actually decode the WebP format. Nomadnet will attempt to detect a suitable decoding backend on your system, and should be able to do so on 99% of variants across Linux, BSD, macOS and Windows, as long as `Faaalibwebp`f or one of the fallback decoders are available. If all else fails, you can install PIL (`Faaapip install pillow`f) or download the open-source `Faaadwebp`f decoder utility and place it on your path (for example at `Faaa~/.local/bin/dwebp`f); nomadnet will auto-detect either.
+
+`!Important!`! For the sake of bandwidth efficiency, images sent over the network `!must`! be in WebP format. Nomadnet will reject and ignore all other image formats. You can easily convert images to WebP with command-line utilities such as `Faaaconvert`f and similar. The WebP format supports both efficient compression and lossless alpha masks, so it is suitable for anything you can achieve with PNG, JPEG or other formats, but much lighter on bandwidth.
 
 >Fields & Requests
 
@@ -2017,7 +2028,7 @@ TOPICS = {
     "Hosting a Node": TOPIC_HOSTING,
     "Configuration Options": TOPIC_CONFIG,
     "Keyboard Shortcuts": TOPIC_SHORTCUTS,
-    "Markup": TOPIC_MARKUP,
+    "Micron Markup": TOPIC_MARKUP,
     "Display Test": TOPIC_DISPLAYTEST,
     "Network Configuration": TOPIC_NETWORKS,
     "Credits & Licenses": TOPIC_LICENSES,
