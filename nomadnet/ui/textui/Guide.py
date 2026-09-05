@@ -1392,6 +1392,15 @@ Devices / files   : \uf233  \uf07b  \uf15b  \uf019  \uf093  \uf1c0
 
 `cIf the above renders correctly, you have a working Nerd Font setup and can leave the defaults as-is. If not, see the `*First Time Information`* topic for install instructions.
 ``
+
+>>Image Rendering Test
+
+`(The RNS logo`w=n`a=c`:/media/demo.webp)
+
+If you see the RNS logo above, your terminal supports image rendering! If not, you can use a terminal that supports the Kitty Terminal Graphics Protocol, for example Kitty, Konsole, Wezterm and others.
+
+It is also important to note, that for image rendering to work, your operating system will need `*some sort`* of mechanism to actually decode the WebP format. Nomadnet will attempt to detect a suitable decoding backend on your system, and should be able to do so on 99% of variants across Linux, BSD, macOS and Windows, as long as `Faaalibwebp`f or one of the fallback decoders are available. If all else fails, you can install PIL (`Faaapip install pillow`f) or download the open-source `Faaadwebp`f decoder utility and place it on your path (for example at `Faaa~/.local/bin/dwebp`f); nomadnet will auto-detect either.
+
 '''
 
 
