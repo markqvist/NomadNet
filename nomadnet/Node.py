@@ -184,7 +184,7 @@ class Node:
             
             else:
                 RNS.log("Request denied", RNS.LOG_VERBOSE)
-                return None
+                return False
 
         except Exception as e:
             RNS.log("Error occurred while handling request "+RNS.prettyhexrep(request_id)+" for: "+str(media_path), RNS.LOG_ERROR)
