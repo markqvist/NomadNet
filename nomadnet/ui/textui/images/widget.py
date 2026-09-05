@@ -33,6 +33,7 @@ def _check_align(value):
 
 
 def _check_size_spec(value, name):
+    # None = auto, int = absolute cells/rows, "NN%" = percent, "n" = native resolution
     if value is None: return None
     
     if isinstance(value, int):
@@ -40,9 +41,10 @@ def _check_size_spec(value, name):
         return value
     
     if isinstance(value, str):
+        if value.lower() == "n": return "n"
         match = _SIZE_SPEC_RE.fullmatch(value)
         if not match or float(match.group(1)) <= 0:
-            raise ValueError("invalid %s specification %r (expected a positive integer or a percent string like '50%%')" % (name, value))
+            raise ValueError("invalid %s specification %r (expected a positive integer, a percent string like '50%%' or 'n' for native resolution)" % (name, value))
         return value
     
     raise TypeError("invalid type for %s (got %s)" % (name, type(value).__name__))
@@ -140,8 +142,8 @@ class ImageWidget(urwid.Widget):
     width = property(
         lambda self: self._ti_width,
         doc="""Display width specification: None (full width), a positive
-        int (columns) or a percent string ("NN%") of the available layout
-        width.""",
+        int (columns), a percent string ("NN%") of the available layout
+        width, or "n" for native resolution.""",
     )
 
     @width.setter
@@ -152,8 +154,8 @@ class ImageWidget(urwid.Widget):
     height = property(
         lambda self: self._ti_height,
         doc="""Display height specification: None (derived, aspect
-        preserving), a positive int (rows) or a percent string ("NN%") of
-        the visible page height.""",
+        preserving), a positive int (rows), a percent string ("NN%") of
+        the visible page height, or "n" for native resolution.""",
     )
 
     @height.setter
@@ -185,11 +187,13 @@ class ImageWidget(urwid.Widget):
         def _raw_width():
             if w_spec is None: return float(maxcol)
             if isinstance(w_spec, int): return float(w_spec)
+            if w_spec == "n": return iw / cell_w
             return maxcol * _pct(w_spec)
 
         def _raw_height():
             if h_spec is None: return None
             if isinstance(h_spec, int): return float(h_spec)
+            if h_spec == "n": return ih / cell_h
             columns, lines = _termlib.get_terminal_size()
             page = max(1, lines - UI_MARGIN)
             return page * _pct(h_spec)

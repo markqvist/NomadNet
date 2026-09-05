@@ -255,7 +255,7 @@ def test_webp_conversion():
         with os.fdopen(fd, "wb") as f:
             f.write(fixture)
         d = ImageData(webp_path)
-        check(not d.ok and "converted image too large" in d.error,
+        check(not d.ok and "Converted image too large" in d.error,
               "converted payload capped at %d MiB"
               % (MAX_CONVERTED_PAYLOAD_BYTES // (1024 * 1024)))
         os.unlink(webp_path)
@@ -413,6 +413,43 @@ def test_widget_layout(image_path):
         c, r = w._display_size(80)
         check((c, r) == (27, 10), "height-only after reset -> (27, 10), got (%d, %d)" % (c, r))
         w.close()
+
+        # native resolution specification ("n"): display at the image's own
+        # pixel size, quantized to the terminal cell grid. Cell = (1, 2),
+        # small fixture 64x32 -> native 64 cols, 16 rows.
+        from nomadnet.ui.textui.images import _webp
+        small_png = _webp._encode_png_rgba(bytes(64 * 32 * 4), 64, 32)
+        fd, small_path = tempfile.mkstemp(suffix=".png")
+        with os.fdopen(fd, "wb") as f:
+            f.write(small_png)
+        try:
+            wn = ImageWidget(small_path, width="n")
+            wn.render((80,))  # sets _ti_cols/_ti_rows
+            check((wn._ti_cols, wn._ti_rows) == (64, 16),
+                  "width='n' displays native size (64, 16), got (%d, %d)"
+                  % (wn._ti_cols, wn._ti_rows))
+            wn.close()
+            hn = ImageWidget(small_path, height="n")
+            hn.render((80,))
+            check((hn._ti_cols, hn._ti_rows) == (64, 16),
+                  "height='n' displays native size (64, 16), got (%d, %d)"
+                  % (hn._ti_cols, hn._ti_rows))
+            hn.close()
+            bn = ImageWidget(small_path, width="n", height="n")
+            bn.render((80,))
+            check((bn._ti_cols, bn._ti_rows) == (64, 16),
+                  "width='n' height='n' displays native size (64, 16), got (%d, %d)"
+                  % (bn._ti_cols, bn._ti_rows))
+            bn.close()
+            big = ImageWidget(image_path, width="n")  # 1280x960, overflows
+            c, r = big._display_size(80)
+            check((c, r) == (80, 30),
+                  "native of a large image clamps to available width (80, 30), got (%d, %d)" % (c, r))
+            big.close()
+            check(raises(lambda: ImageWidget(image_path, width="x"), ValueError),
+                  "width='x' raises ValueError")
+        finally:
+            os.unlink(small_path)
 
         # alignment: placement column of a narrowed image inside its canvas
         w = ImageWidget(image_path, width=40)  # default center
