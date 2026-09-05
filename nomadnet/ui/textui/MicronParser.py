@@ -242,6 +242,10 @@ def parse_image(line, state, url_delegate):
             elif key == "h": height = value
             elif key == "a": align = value
 
+        if align == "c": align = "center"
+        if align == "l": align = "left"
+        if align == "r": align = "right"
+
         widget = None
         if image_url:
             try: path = url_delegate.resolve_image(image_url)
