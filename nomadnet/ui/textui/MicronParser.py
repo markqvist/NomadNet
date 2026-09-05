@@ -308,9 +308,7 @@ def render_table(lines, state, url_delegate):
     return widgets if widgets else None
 
 class FormColumns(urwid.Columns):
-
     MIN_FIELD_WIDTH = 4
-
     
     @staticmethod
     def _natural_width(widget, maxcol, focused):
@@ -354,13 +352,7 @@ class FormColumns(urwid.Columns):
             return super().column_widths(size, focus)
 
         if available < self.MIN_FIELD_WIDTH * len(field_idxs):
-
             return super().column_widths(size, focus)
-
-
-
-
-
 
         overflow = requested - available
         slack = {i: max(0, nat[i] - self.MIN_FIELD_WIDTH) for i in field_idxs}
