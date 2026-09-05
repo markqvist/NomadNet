@@ -162,11 +162,18 @@ class Node:
         if not type(data) == dict: return None
         if not "path" in data: return None
         if not "key" in data: return None
-        media_path = data["path"].replace("/media/", "").lstrip("/").replace("../", "")
-        media_path = f"{self.app.pagespath}/{media_path}"
-        if not media_path.startswith(self.app.pagespath):
+
+        jail       = os.path.normpath(self.app.pagespath)
+        media_path = os.path.join(self.app.pagespath, data["path"].replace("/media/", "").lstrip("/"))
+        media_path = os.path.normpath(media_path)
+
+        if not media_path.startswith(jail+os.sep):
             RNS.log(f"Invalid media request path: {media_path}", RNS.LOG_DEBUG)
-            return None
+            return False
+
+        if len(media_path) > 512:
+            RNS.log(f"Invalid media request path length: {len(media_path)}", RNS.LOG_DEBUG)
+            return False
 
         RNS.log(f"Media request {RNS.prettyhexrep(request_id)} for: {media_path}", RNS.LOG_VERBOSE)
         try:
@@ -189,7 +196,7 @@ class Node:
         except Exception as e:
             RNS.log("Error occurred while handling request "+RNS.prettyhexrep(request_id)+" for: "+str(media_path), RNS.LOG_ERROR)
             RNS.log("The contained exception was: "+str(e), RNS.LOG_ERROR)
-            return None
+            return False
 
     def request_allowed(self, file_path, remote_identity):
         allowed_path = file_path+".allowed"
