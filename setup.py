@@ -13,6 +13,7 @@ if "--getversion" in sys.argv:
 package_data = {
 "": [
     "examples/messageboard/*",
+    "ui/textui/images/demo.webp",
     ]
 }
 
