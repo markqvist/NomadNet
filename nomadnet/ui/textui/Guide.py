@@ -91,6 +91,7 @@ class GuideColumns(urwid.Columns):
 class GuideLinkDelegate:
     def __init__(self, app, reader=None):
         self.app = app
+        self.g = app.ui.glyphs
         self.reader = reader
         self.last_keypress = 0
 
@@ -99,6 +100,17 @@ class GuideLinkDelegate:
 
     def micron_released_focus(self):
         self.reader.focus_topics()
+
+    def resolve_image(self, url):
+        RNS.log(f"RESOLVE {url}")
+        if url.endswith("demo.webp"):
+            import os
+            import nomadnet.ui.textui.images as images_module
+            path = f"{os.path.dirname(images_module.__file__)}/demo.webp"
+            RNS.log(path)
+            return path
+
+        return None
 
     def handle_link(self, target, fields=None):
         if not target:
@@ -1450,6 +1462,7 @@ With micron you can easily create structured documents and pages with formatting
  `F79d`_`[Links`#links]`_`f
  `F79d`_`[Anchors`#anchors]`_`f
  `F79d`_`[Tables`#tables]`_`f
+ `F79d`_`[Images`#images]`_`f
  `F79d`_`[Fields & Requests`#fields-requests]`_`f
  `F79d`_`[Comments`#comments]`_`f
  `F79d`_`[Partials`#partials]`_`f
@@ -1775,6 +1788,20 @@ The above markup produces the following table:
 | `F3a3Apple`f | Free | `!5`! |
 | Orange | Ask, nicely | 3 |
 `t
+
+>Images
+
+You can include images.
+
+`Faaa
+`=
+`(The RNS logo`w=60%`a=center`:/media/demo.webp)
+`=
+``
+
+If your terminal supports image rendering, the image will be displayed as specified. If not, a text placeholder is shown instead:
+
+`(The RNS logo`w=60%`a=center`:/media/demo.webp)
 
 >Fields & Requests
 
