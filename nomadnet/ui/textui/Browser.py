@@ -15,6 +15,7 @@ from nomadnet.Conversation import ConversationMessage
 from nomadnet.vendor.Scrollable import *
 from nomadnet.util import strip_modifiers
 from nomadnet.util import sanitize_name
+from nomadnet.ui.textui.images import _termlib
 from .Helpers import ClickableIcon, osc52_copy
 from .ReadlineEdit import ReadlineMixin, ReadlineEdit
 
@@ -130,6 +131,7 @@ class Browser:
         self.image_updater_running = False
         self.partial_updater_lock = Lock()
         self.image_updater_lock = Lock()
+        self.image_rendering_supported = _termlib.is_kitty_supported()
         self.build_display()
 
         self.history = []
@@ -146,6 +148,9 @@ class Browser:
             self.load_page()
 
         self.clean_cache()
+
+        if self.image_rendering_supported: RNS.log(f"In-browser image rendering supported", RNS.LOG_DEBUG)
+        else:                              RNS.log(f"In-browser image rendering is not supported", RNS.LOG_DEBUG)
 
     def current_url(self):
         if self.destination_hash == None:
@@ -657,18 +662,20 @@ class Browser:
             else: return None
 
     def _purge_page_images(self):
+        if not self.image_rendering_supported: return
         try:
             screen = getattr(getattr(self.app.ui, "loop", None), "screen", None)
             if hasattr(screen, "purge_images"): screen.purge_images()
         except Exception: pass
 
     def detect_images(self):
+        if not self.image_rendering_supported: return
         for w in self.attr_maps:
             o = w._original_widget
             if hasattr(o, "_contained_image"): o = o._contained_image
             if hasattr(o, "image_url"):
                 resolved_image = self.resolve_image(o.image_url)
-                if resolved_image: o.load(resolved_image, remote_source=True)
+                if resolved_image and self.image_rendering_supported: o.load(resolved_image, remote_source=True)
                 else:
                     image = { "widget": o, "id": o.image_id, "url": o.image_url, "refresh": None, "updated": None,
                               "update_requested": None, "request_id": None, "link": None, "failed": False, "pr_throttle": 0,
@@ -679,9 +686,11 @@ class Browser:
         if len(self.page_images) > 0: self.start_image_updater()
 
     def start_image_updater(self):
+        if not self.image_rendering_supported: return
         if not self.image_updater_running: self.update_images()
 
     def update_images(self, loop=None, user_data=None):
+        if not self.image_rendering_supported: return
         def job():
             if self.image_updater_lock.locked(): return
             with self.image_updater_lock:
@@ -717,7 +726,7 @@ class Browser:
         if image_destination_hash == self.loopback:
             local_image = path.replace("/media/", "")
             local_path = f"{self.app.pagespath}/{local_image}"
-            w.load(local_path)
+            if self.image_rendering_supported: w.load(local_path)
             image["updated"] = time.time()
             return
 
@@ -858,7 +867,7 @@ class Browser:
                             shutil.move(file_handle.name, file_destination)
 
                     resolved_path = self.resolve_image(url)
-                    if resolved_path: w.load(resolved_path, remote_source=True)
+                    if resolved_path and self.image_rendering_supported: w.load(resolved_path, remote_source=True)
 
                 except Exception as e:
                     RNS.log("Error while handling image response: "+str(e), RNS.LOG_ERROR)
