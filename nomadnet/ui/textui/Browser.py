@@ -125,8 +125,11 @@ class Browser:
         self.attr_maps = []
         self.page_pile = None
         self.page_partials = {}
+        self.page_images = {}
         self.updater_running = False
+        self.image_updater_running = False
         self.partial_updater_lock = Lock()
+        self.image_updater_lock = Lock()
         self.build_display()
 
         self.history = []
@@ -481,6 +484,7 @@ class Browser:
 
         self.page_pile = None
         self.page_partials = {}
+        self.page_images = {}
         self.browser_body = urwid.Filler(
             urwid.Text("Disconnected\n"+self.g["arrow_l"]+"  "+self.g["arrow_r"], align=urwid.CENTER),
             urwid.MIDDLE,
@@ -556,6 +560,7 @@ class Browser:
             self.display_widget.set_attr_map({None: "browser_inactive"})
             self.page_pile = None
             self.page_partials = {}
+            self.page_images = {}
             self.browser_body = urwid.Filler(
                 urwid.Text("Disconnected\n"+self.g["arrow_l"]+"  "+self.g["arrow_r"], align=urwid.CENTER),
                 urwid.MIDDLE,
@@ -626,15 +631,240 @@ class Browser:
         self.frame.contents["footer"] = (self.browser_footer, self.frame.options())
 
     def update_page_display(self):
+        self._purge_page_images()
         pile = urwid.Pile(self.attr_maps)
         pile.automove_cursor_on_scroll = True
         self.page_pile = pile
         self.page_partials = {}
+        self.page_images = {}
         self.browser_body = urwid.AttrMap(ScrollBar(Scrollable(pile, force_forward_keypress=True), thumb_char="\u2503", trough_char=" "), "scrollbar")
         self.detect_partials()
+        self.detect_images()
         self.init_folds()
 
-    # render an arbitrary markup buffer (used by the page editor preview) and
+    def image_cache_path(self, url):
+        url_hash = self.url_hash(url)
+        if not url_hash: return None
+        else:
+            path = f"{self.app.cachepath}/images/{url_hash}"
+            return path
+
+    def resolve_image(self, url):
+        cachepath = self.image_cache_path(url)
+        if not cachepath: return None
+        else:
+            if os.path.exists(cachepath): return cachepath
+            else: return None
+
+    def _purge_page_images(self):
+        try:
+            screen = getattr(getattr(self.app.ui, "loop", None), "screen", None)
+            if hasattr(screen, "purge_images"): screen.purge_images()
+        except Exception: pass
+
+    def detect_images(self):
+        for w in self.attr_maps:
+            o = w._original_widget
+            if hasattr(o, "_contained_image"): o = o._contained_image
+            if hasattr(o, "image_url"):
+                resolved_image = self.resolve_image(o.image_url)
+                if resolved_image: o.load(resolved_image)
+                else:
+                    image = { "widget": o, "id": o.image_id, "url": o.image_url, "refresh": None, "updated": None,
+                              "update_requested": None, "request_id": None, "link": None, "failed": False, "pr_throttle": 0,
+                              "progress_updated": None, "previous_progress": 0 }
+
+                    self.page_images[o.image_id] = image
+
+        if len(self.page_images) > 0: self.start_image_updater()
+
+    def start_image_updater(self):
+        if not self.image_updater_running: self.update_images()
+
+    def update_images(self, loop=None, user_data=None):
+        def job():
+            if self.image_updater_lock.locked(): return
+            with self.image_updater_lock:
+                self.image_updater_running = True
+
+                for iid in self.page_images:
+                    try:
+                        image = self.page_images[iid]
+                        if image["failed"]: continue
+                        if not image["updated"] or (image["refresh"] != None and time.time() > image["updated"]+image["refresh"]):
+                            image["update_requested"] = time.time()
+                            self.__load_image(image)
+                            while not image["updated"] and not image["failed"] and len(self.page_images) > 0: time.sleep(0.2)
+
+                    except Exception as e: RNS.log(f"Error updating page image: {e}", RNS.LOG_ERROR)
+                
+                if len(self.page_images) > 0: self.app.ui.loop.set_alarm_in(1, self.update_images)
+                else:                         self.image_updater_running = False
+
+        threading.Thread(target=job, daemon=True).start()
+
+    def __load_image(self, image):
+        if image["failed"] == True: return
+        w = image["widget"]
+        url = image["url"]
+        try: image_destination_hash, path = self.parse_url(image["url"])
+        except Exception as e:
+            RNS.log(f"Could not parse image URL: {e}", RNS.LOG_ERROR)
+            image["failed"] = True
+            w.notice(f"Could not load image {url}: {e}")
+            return
+
+        if image_destination_hash == self.loopback:
+            local_image = path.replace("/media/", "")
+            local_path = f"{self.app.pagespath}/{local_image}"
+            w.load(local_path)
+            image["updated"] = time.time()
+            return
+
+        if not RNS.Transport.has_path(image_destination_hash):
+            if time.time() <= image["pr_throttle"]: return
+            else:
+                image["pr_throttle"] = time.time()+15
+                RNS.log(f"Requesting path for image: {path}", RNS.LOG_DEBUG)
+                RNS.Transport.request_path(image_destination_hash)
+                pr_time = time.time()+self.path_timeout(image_destination_hash)
+                while not RNS.Transport.has_path(image_destination_hash):
+                    if time.time() > pr_time: return
+                    time.sleep(0.25)
+
+        if not image["link"]:
+            if self.link and self.link.destination.hash == image_destination_hash and self.link.status == RNS.Link.ACTIVE:
+                image["link"] = self.link
+                RNS.log(f"Re-using existing page link for image {url}", RNS.LOG_EXTREME)
+
+        if not image["link"]:
+            for pid in self.page_images:
+                other_image = self.page_images[pid]
+                if other_image["link"]:
+                    existing_link = other_image["link"]
+                    if existing_link.destination.hash == image_destination_hash and existing_link.status == RNS.Link.ACTIVE:
+                        RNS.log(f"Re-using existing link for image {url}", RNS.LOG_EXTREME)
+                        image["link"] = existing_link
+                        break
+
+        if not image["link"] or image["link"].status == RNS.Link.CLOSED:
+            RNS.log(f"Establishing link for image: {image_destination_hash} / {path}", RNS.LOG_DEBUG)
+            identity = RNS.Identity.recall(image_destination_hash)
+            destination = RNS.Destination(identity, RNS.Destination.OUT, RNS.Destination.SINGLE, self.app_name, self.aspects)
+            w.notice(f"Establishing link...")
+            
+            def f_established(wd):
+                def established(link):
+                    RNS.log(f"Link established for image: {path}", RNS.LOG_DEBUG)
+                    wd.notice(f"Link established")
+                return established
+
+            def f_closed(wd):
+                def closed(link):
+                    RNS.log(f"Link closed for image: {path}", RNS.LOG_DEBUG)
+                    image["link"] = None
+                    image["failed"] = True
+                    wd.notice(f"Link closed during transfer")
+                return closed
+            
+            image["link"] = RNS.Link(destination, established_callback = f_established(w), closed_callback = f_closed(w))
+            timeout = time.time()+max(self.timeout, image["link"].establishment_timeout)
+            while image["link"].status != RNS.Link.ACTIVE and time.time() < timeout: time.sleep(0.1)
+
+        if image["link"] and image["link"].status == RNS.Link.ACTIVE and image["request_id"] == None:
+            RNS.log(f"Sending request for image: {path}", RNS.LOG_DEBUG)
+            receipt = image["link"].request("/media", data=self.__get_image_request_data(image), response_callback = self.image_received,
+                                            failed_callback = self.image_failed, progress_callback = self.image_progressed)
+            w.notice(f"Request sent")
+
+            if receipt: image["request_id"] = receipt.request_id
+            else:
+                RNS.log(f"Image request failed", RNS.LOG_ERROR)
+                image["failed"] = True
+                w.notice(f"Request failed")
+
+    def __get_image_request_data(self, image):
+        destination_hash, path = self.parse_url(image["url"])
+        request_data = {"path": path, "key": None}
+        return request_data
+
+    def image_failed(self, request_receipt):
+        RNS.log("Loading page image failed", RNS.LOG_ERROR)
+        for iid in self.page_images:
+            image = self.page_images[iid]
+            if image["request_id"] == request_receipt.request_id:
+                try:
+                    image["updated"] = time.time()
+                    image["request_id"] = None
+                    image["failed"] = True
+                    url = image["url"]
+                    w = image["widget"]
+                    w.notice(f"Could not load image {url}")
+                except Exception as e:
+                    RNS.log(f"Error in image failed callback: {e}", RNS.LOG_ERROR)
+                    RNS.trace_exception(e)
+
+    def image_progressed(self, request_receipt):
+        for iid in self.page_images:
+            i = self.page_images[iid]
+            if i["request_id"] == request_receipt.request_id:
+                try:
+                    response_progress      = request_receipt.progress
+                    response_time          = request_receipt.get_response_time()
+                    response_size          = request_receipt.response_size
+                    response_transfer_size = request_receipt.response_transfer_size
+                    
+                    w = i["widget"]
+                    now = time.time()
+                    if i["progress_updated"] == None: i["progress_updated"] = now
+                    if now > i["progress_updated"]+0.5:
+                        td = now - i["progress_updated"]
+                        pd = response_progress - i["previous_progress"]
+                        bd = pd*response_transfer_size
+                        response_speed = (bd/td)*8
+                        i["previous_progress"] = response_progress
+                        i["progress_updated"] = now
+                        stats = f"{round(response_progress*100, 2)}% ({RNS.prettysize(response_progress*response_size)} of {RNS.prettysize(response_size)}) - {RNS.prettyspeed(response_speed)}"
+                        w.notice(stats)
+
+                except Exception as e: RNS.trace_exception(e)
+
+    def image_received(self, request_receipt):
+        if not request_receipt.response: self.image_failed(request_receipt)
+        for iid in self.page_images:
+            image = self.page_images[iid]
+            if image["request_id"] == request_receipt.request_id:
+                try:
+                    image["updated"] = image["update_requested"]
+                    image["request_id"] = None
+                    w = image["widget"]
+                    w.notice(f"Image loaded")
+                
+                except Exception as e:
+                    RNS.log(f"Error while loading received image: {e}", RNS.LOG_ERROR)
+                    RNS.trace_exception(e)
+                    image["failed"] = True
+
+                try:
+                    url = image["url"]
+                    cachepath = self.image_cache_path(url)
+                    if isinstance(request_receipt.response, bytes):
+                        with open(cachepath, "wb") as f: f.write(request_receipt.response)
+
+                    elif type(request_receipt.response) == io.BufferedReader:
+                        if request_receipt.metadata != None:
+                            file_handle = request_receipt.response
+                            file_destination = cachepath
+                            shutil.move(file_handle.name, file_destination)
+
+                    resolved_path = self.resolve_image(url)
+                    if resolved_path: w.load(resolved_path)
+
+                except Exception as e:
+                    RNS.log("Error while handling image response: "+str(e), RNS.LOG_ERROR)
+                    image["failed"] = True
+
+    # Render an arbitrary markup buffer (used by the page editor preview) and
     # return the content widget, with partials/folds/fields wired as usual
     def render_markup_buffer(self, markup):
         self.status = Browser.DONE
@@ -1805,10 +2035,8 @@ class Browser:
 
                 self.update_display()
                 if self.link != None:
-                    try:
-                        self.link.teardown()
-                    except Exception as e:
-                        pass
+                    try: self.link.teardown()
+                    except Exception as e: pass
         else:
             self.status = Browser.REQUEST_FAILED
             self.response_progress = 0

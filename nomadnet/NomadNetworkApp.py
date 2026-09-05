@@ -112,6 +112,7 @@ class NomadNetworkApp:
         self.storagepath       = self.configdir+"/storage"
         self.identitypath      = self.configdir+"/storage/identity"
         self.cachepath         = self.configdir+"/storage/cache"
+        self.imagecachepath    = self.configdir+"/storage/cache/images"
         self.resourcepath      = self.configdir+"/storage/resources"
         self.conversationpath  = self.configdir+"/storage/conversations"
         self.directorypath     = self.configdir+"/storage/directory"
@@ -121,7 +122,6 @@ class NomadNetworkApp:
 
         self.pagespath         = self.configdir+"/storage/pages"
         self.filespath         = self.configdir+"/storage/files"
-        self.cachepath         = self.configdir+"/storage/cache"
         self.examplespath      = self.configdir+"/examples"
 
         self.downloads_path    = os.path.expanduser("~/Downloads")
@@ -175,6 +175,9 @@ class NomadNetworkApp:
 
         if not os.path.isdir(self.cachepath):
             os.makedirs(self.cachepath)
+
+        if not os.path.isdir(self.imagecachepath):
+            os.makedirs(self.imagecachepath)
 
         if not os.path.isdir(self.resourcepath):
             os.makedirs(self.resourcepath)
@@ -274,8 +277,14 @@ class NomadNetworkApp:
                 if not "served_page_requests" in self.peer_settings:
                     self.peer_settings["served_page_requests"] = 0
 
+                if not "served_media_requests" in self.peer_settings:
+                    self.peer_settings["served_media_requests"] = 0
+
                 if not "served_file_requests" in self.peer_settings:
                     self.peer_settings["served_file_requests"] = 0
+
+                if not "quit_confirm" in self.peer_settings:
+                    self.peer_settings["quit_confirm"] = True
 
                 self.peer_settings["announce_interval"] = self.announce_interval
                 if path != self.peersettingspath:

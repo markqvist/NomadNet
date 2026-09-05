@@ -9,6 +9,8 @@ from urwid.text_layout import calc_coords
 from .ReadlineEdit import ReadlineEdit
 from RNS.Utilities.rngit.util import MarkdownToMicron
 from nomadnet.util import STRIP_CONTROL_RE
+try: from .images import ImageWidget
+except Exception: ImageWidget = None
 
 DEFAULT_FG_DARK  = "ddd"
 DEFAULT_FG_LIGHT = "222"
@@ -215,6 +217,72 @@ def parse_partial(line):
                 return [pile]
 
     except Exception as e: return None
+
+def parse_image(line, state, url_delegate):
+    try:
+        endpos = line.rfind(")")
+        if endpos <= 0: return None
+        image_data = line[:endpos]
+        fields = image_data.split("`")
+        if len(fields) < 2: return None
+
+        alt_text = fields[0].strip()
+        image_url = fields[-1].strip()
+        properties = fields[1:-1]
+
+        width = None
+        height = None
+        align = None
+        for prop in properties:
+            if "=" not in prop: continue
+            key, _, value = prop.partition("=")
+            key = key.strip()
+            value = value.strip()
+            if   key == "w": width = value
+            elif key == "h": height = value
+            elif key == "a": align = value
+
+        widget = None
+        if image_url:
+            try: path = url_delegate.resolve_image(image_url)
+            except Exception as e:
+                RNS.trace_exception(e) # TODO: Remove
+                path = None
+            
+            if ImageWidget is not None:
+                try:
+                    if not ImageWidget.placeholder_glyph: ImageWidget.placeholder_glyph = f"{url_delegate.g['image']} "
+
+                    widget = ImageWidget(path, name=alt_text)
+                    for prop_name, prop_value in ( ("width", width), ("height", height), ("align", align) ):
+                        if prop_value is not None:
+                            try:
+                                if isinstance(prop_value, str) and prop_value.isdigit(): prop_value = int(prop_value)
+                                setattr(widget, prop_name, prop_value)
+                            except Exception as e:
+                                RNS.trace_exception(e) # TODO: Remove
+                                pass
+
+                except Exception as e:
+                    RNS.trace_exception(e) # TODO: Remove
+                    widget = None
+
+        if widget is None:
+            placeholder = alt_text if alt_text else (image_url or "image")
+            widget = urwid.Text(f"[{url_delegate.g['warning']} Error loading image: {placeholder}]")
+
+        widget.image_url = image_url
+        widget.image_alt = alt_text
+        if state["depth"] == 0: return [widget]
+        else:
+            padded = urwid.Padding(widget, left=left_indent(state), right=right_indent(state))
+            padded._contained_image = widget
+            return [padded]
+    
+    except Exception as e:
+        # TODO: Remove
+        RNS.trace_exception(e)
+        return None
 
 def render_table(lines, state, url_delegate):
     if len(lines) < 2: return None
@@ -481,6 +549,10 @@ def parse_line(line, state, url_delegate):
             # Check for partials
             elif line.startswith("`{"):
                 return parse_partial(line[2:])
+
+            # Check for images
+            elif line.startswith("`("):
+                return parse_image(line[2:], state, url_delegate)
 
             # Check for section heading reset
             elif first_char == "<":

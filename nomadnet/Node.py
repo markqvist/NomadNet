@@ -32,6 +32,7 @@ class Node:
 
         self.register_pages()
         self.register_files()
+        self.register_media()
 
         self.destination.set_link_established_callback(self.peer_connected)
 
@@ -72,6 +73,10 @@ class Node:
                 request_path,
                 response_generator = self.serve_page,
                 allow = RNS.Destination.ALLOW_ALL)
+
+    def register_media(self):
+        self.destination.register_request_handler("/media", response_generator = self.serve_media,
+                                                  allow = RNS.Destination.ALLOW_ALL)
 
     def register_files(self):
         # TODO: Deregister previously registered files
@@ -153,6 +158,39 @@ class Node:
             RNS.log("The contained exception was: "+str(e), RNS.LOG_ERROR)
             return None
 
+    def serve_media(self, path, data, request_id, link_id, remote_identity, requested_at):
+        if not type(data) == dict: return None
+        if not "path" in data: return None
+        if not "key" in data: return None
+        media_path = data["path"].replace("/media/", "").lstrip("/").replace("../", "")
+        media_path = f"{self.app.pagespath}/{media_path}"
+        if not media_path.startswith(self.app.pagespath):
+            RNS.log(f"Invalid media request path: {media_path}", RNS.LOG_DEBUG)
+            return None
+
+        RNS.log(f"Media request {RNS.prettyhexrep(request_id)} for: {media_path}", RNS.LOG_VERBOSE)
+        try:
+            self.app.peer_settings["served_media_requests"] += 1
+            self.settings_dirty = True
+        except Exception as e: RNS.log("Could not increase served page request count", RNS.LOG_ERROR)
+
+        request_allowed = self.request_allowed(media_path, remote_identity)
+        try:
+            if request_allowed:
+                file_path = media_path
+                file_name = os.path.basename(file_path)
+                RNS.log(f"Serving media: {file_path}", RNS.LOG_VERBOSE)
+                return [open(file_path, "rb"), {"name": file_name.encode("utf-8")}]
+            
+            else:
+                RNS.log("Request denied", RNS.LOG_VERBOSE)
+                return None
+
+        except Exception as e:
+            RNS.log("Error occurred while handling request "+RNS.prettyhexrep(request_id)+" for: "+str(media_path), RNS.LOG_ERROR)
+            RNS.log("The contained exception was: "+str(e), RNS.LOG_ERROR)
+            return None
+
     def request_allowed(self, file_path, remote_identity):
         allowed_path = file_path+".allowed"
         if not os.path.isfile(allowed_path):
@@ -194,7 +232,7 @@ class Node:
             RNS.log("Could not increase served file request count", RNS.LOG_ERROR)
 
         file_path = path.replace("/file", self.app.filespath, 1)
-        file_name = path.replace("/file/", "", 1)
+        file_name = os.path.basename(file_path)
         if not self.request_allowed(file_path, remote_identity):
             RNS.log("Request denied", RNS.LOG_VERBOSE)
             return DEFAULT_NOTALLOWED.encode("utf-8")

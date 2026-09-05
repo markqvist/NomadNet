@@ -7,6 +7,7 @@ import platform
 import nomadnet
 from nomadnet.ui import THEME_DARK, THEME_LIGHT
 from nomadnet.ui.textui import *
+from nomadnet.ui.textui.images import ImageScreen
 from nomadnet import NomadNetworkApp
 
 COLORMODE_MONO = 1
@@ -245,7 +246,7 @@ class TextUI:
         for glyph in GLYPHS:
             self.glyphs[glyph[0]] = glyph[GLYPHSETS[glyphset]]
 
-        self.screen = urwid.raw_display.Screen()
+        self.screen = ImageScreen()
         self.screen.register_palette(self.palette)
         
         self.main_display = Main.MainDisplay(self, self.app)
@@ -291,10 +292,8 @@ class TextUI:
             self.restore_palette = True
 
     def unhandled_input(self, key):
-        if key == "ctrl q":
-            self.main_display.show_quit_dialog()
-        elif key == "ctrl e":
-            pass
+        if key == "ctrl q":   self.main_display.quit()
+        elif key == "ctrl e": pass
 
     def display_main(self, loop, user_data):
         self.loop.widget = self.main_display.widget

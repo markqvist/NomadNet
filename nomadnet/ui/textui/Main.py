@@ -194,11 +194,11 @@ class MainDisplay():
         self.menu_display.start()
 
     def quit(self, sender=None):
-        self.show_quit_dialog()
+        if self.app.peer_settings["quit_confirm"]: self.show_quit_dialog()
+        else: self.do_quit()
 
     def show_quit_dialog(self, sender=None):
-        if getattr(self, "_quit_dialog_open", False):
-            return
+        if getattr(self, "_quit_dialog_open", False): return
 
         active = self.sub_displays.active_display
         if active is self.sub_displays.log_display:
@@ -208,7 +208,14 @@ class MainDisplay():
             self.do_quit()
             return
 
+        dont_ask_again = urwid.CheckBox("Don't ask again")
+
         def confirm(button=None):
+            if dont_ask_again.get_state():
+                try:
+                    self.app.peer_settings["quit_confirm"] = False
+                    self.app.save_peer_settings()
+                except Exception: pass
             self.do_quit()
 
         def cancel(button=None):
@@ -220,19 +227,15 @@ class MainDisplay():
             (urwid.WEIGHT, 0.1, urwid.Text("")),
             (urwid.WEIGHT, 0.45, urwid.Button("No", on_press=cancel)),
         ])
-        try:
-
-
-            buttons.focus_position = 2  # default to "No"
-
-
-        except Exception:
-            pass
+        try: buttons.focus_position = 2  # default to "No"
+        except Exception: pass
 
         pile = urwid.Pile([
             urwid.Text("Are you sure you want to quit?", align="center"),
             urwid.Divider(),
             buttons,
+            urwid.Divider(),
+            dont_ask_again,
         ])
 
         dialog = QuitDialogLineBox(
@@ -246,7 +249,7 @@ class MainDisplay():
         self.app.ui.loop.widget = urwid.Overlay(
             dialog, self.frame,
             align="center", width=44,
-            valign="middle", height=8, min_width=20,
+            valign="middle", height=7, min_width=20,
         )
 
     def show_notice(self, text):
