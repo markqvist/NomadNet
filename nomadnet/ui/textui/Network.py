@@ -29,8 +29,8 @@ class BrowserShortcuts():
 
         shortcut_text = "[C-w] Disconnect  [C-d] Back  [C-f] Forward  [C-r] Reload  [C-u] URL  "
         if app.config["textui"]["clipboard_copy"]: shortcut_text += "[C-y] Copy  "
-        shortcut_text += "[C-g] Fullscreen  [C-s / C-b] Save Node"
-        if browser.image_rendering_supported: shortcut_text += "  [C-l] Load Images"
+        shortcut_text += "[C-g] Fullscreen  [C-s/b] Save Node"
+        if browser.image_rendering_supported: shortcut_text += "  [C-l] Load Images  [C-x] Reload Images"
         self.widget = urwid.AttrMap(urwid.Text(shortcut_text), "shortcutbar")
 
 class DialogLineBox(urwid.LineBox):

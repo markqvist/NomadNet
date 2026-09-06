@@ -38,6 +38,8 @@ class BrowserFrame(urwid.Frame):
             self.delegate.url_dialog()
         elif key == "ctrl l":
             self.delegate.load_images()
+        elif key == "ctrl x":
+            self.delegate.load_images(force_reload=True)
         elif key == "ctrl s":
             self.delegate.save_node_dialog()
         elif key == "ctrl b":
@@ -694,19 +696,26 @@ class Browser:
 
         return False
 
-    def load_images(self):
+    def load_images(self, force_reload=False):
         if not self.image_rendering_supported: return
         elif self.image_mode == IMGLOAD_NEVER: return
-        else: self.detect_images()
+        else: self.detect_images(force_reload=force_reload)
 
-    def detect_images(self):
+    def detect_images(self, force_reload=False):
         if not self.image_rendering_supported: return
         for w in self.attr_maps:
             o = w._original_widget
             if hasattr(o, "_contained_image"): o = o._contained_image
             if hasattr(o, "image_url"):
                 resolved_image = self.resolve_image(o.image_url)
-                if resolved_image and self.image_rendering_supported: o.load(resolved_image, remote_source=True)
+                if resolved_image and force_reload:
+                    RNS.log(f"Clearing image cache for {o.image_url} ({resolved_image})", RNS.LOG_DEBUG)
+                    try: os.unlink(resolved_image)
+                    except Exception as e: RNS.log(f"Could not clear image cache for {o.image_url}: {e}", RNS.LOG_ERROR)
+                    resolved_image = None
+
+                if   force_reload: continue
+                elif resolved_image and self.image_rendering_supported: o.load(resolved_image, remote_source=True)
                 else:
                     image = { "widget": o, "id": o.image_id, "url": o.image_url, "refresh": None, "updated": None,
                               "update_requested": None, "request_id": None, "link": None, "failed": False, "pr_throttle": 0,
@@ -714,7 +723,8 @@ class Browser:
 
                     self.page_images[o.image_id] = image
 
-        if len(self.page_images) > 0: self.start_image_updater()
+        if   force_reload: self.reload()
+        elif len(self.page_images) > 0: self.start_image_updater()
 
     def start_image_updater(self):
         if not self.image_rendering_supported: return
