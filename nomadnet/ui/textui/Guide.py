@@ -1183,6 +1183,17 @@ Tells the program what color palette is supported by the terminal. Most terminal
 <
 
 >>>
+`!image_loading = auto`!
+>>>>
+Specifies how, if at all, images on pages should be loaded. Available options:
+>>>>>
+`!never`! Never load any images
+`!manual`! Only load images when manually requseted with Ctrl-L
+`!auto`! Load images automatically if link conditions are sufficient
+`!always`! Always load images, regardless of link RTT and EDR
+<
+
+>>>
 `!theme = dark`!
 >>>>
 What color theme to use. Set it to match your terminal theme. Can be either `!dark`! or `!light`!.
