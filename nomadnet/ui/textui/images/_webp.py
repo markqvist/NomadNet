@@ -2,7 +2,7 @@
 # 
 # Kitty's graphics protocol decodes PNG natively but not WebP, so WebP
 # sources are converted transparently at the ImageData layer. This module
-# provides a conversion chain with that *should* work almost anywhere with
+# provides a conversion chain that *should* work almost anywhere with
 # zero extra dependencies:
 # 
 #  - Pillow/PIL, if installed with WebP support
