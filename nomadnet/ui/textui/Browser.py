@@ -31,6 +31,8 @@ class BrowserFrame(urwid.Frame):
             self.delegate.reload()
         elif key == "ctrl u":
             self.delegate.url_dialog()
+        elif key == "ctrl l":
+            self.delegate.load_images()
         elif key == "ctrl s":
             self.delegate.save_node_dialog()
         elif key == "ctrl b":
@@ -644,7 +646,7 @@ class Browser:
         self.page_images = {}
         self.browser_body = urwid.AttrMap(ScrollBar(Scrollable(pile, force_forward_keypress=True), thumb_char="\u2503", trough_char=" "), "scrollbar")
         self.detect_partials()
-        self.detect_images()
+        if self.should_load_images(): self.detect_images()
         self.init_folds()
 
     def image_cache_path(self, url):
@@ -667,6 +669,13 @@ class Browser:
             screen = getattr(getattr(self.app.ui, "loop", None), "screen", None)
             if hasattr(screen, "purge_images"): screen.purge_images()
         except Exception: pass
+
+    def should_load_images(self):
+        return False
+
+    def load_images(self):
+        if not self.image_rendering_supported: return
+        else: self.detect_images()
 
     def detect_images(self):
         if not self.image_rendering_supported: return
