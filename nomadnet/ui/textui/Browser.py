@@ -19,6 +19,11 @@ from nomadnet.ui.textui.images import _termlib
 from .Helpers import ClickableIcon, osc52_copy
 from .ReadlineEdit import ReadlineMixin, ReadlineEdit
 
+IMGLOAD_NEVER  = 0x00
+IMGLOAD_MANUAL = 0x01
+IMGLOAD_AUTO   = 0x02
+IMGLOAD_ALWAYS = 0x03
+
 class BrowserFrame(urwid.Frame):
     def keypress(self, size, key):
         if key == "ctrl w":
@@ -133,7 +138,8 @@ class Browser:
         self.image_updater_running = False
         self.partial_updater_lock = Lock()
         self.image_updater_lock = Lock()
-        self.image_rendering_supported = _termlib.is_kitty_supported()
+        self.image_mode = self.app.config["textui"]["image_loading"]
+        self.image_rendering_supported = _termlib.is_kitty_supported() and self.image_mode != IMGLOAD_NEVER
         self.build_display()
 
         self.history = []
@@ -671,10 +677,26 @@ class Browser:
         except Exception: pass
 
     def should_load_images(self):
+        if   self.image_mode == IMGLOAD_NEVER:  return False
+        elif self.image_mode == IMGLOAD_MANUAL: return False
+        elif self.image_mode == IMGLOAD_ALWAYS: return True
+        elif self.image_mode == IMGLOAD_AUTO:
+            if self.destination_hash == self.loopback: return True
+            rtt_limit = 1.5; edr_limit = 10000
+            if self.link:
+                rtt = self.link.rtt
+                edr = self.link.get_expected_rate() or self.last_response_speed()
+                rtt_ok = rtt and rtt < rtt_limit
+                edr_ok = edr and edr > edr_limit
+                RNS.log(f"Checking image load conditions, RTT is {RNS.prettyshorttime(rtt) if rtt else 'unknown'}, EDR is {RNS.prettyspeed(edr) if edr else 'unknown'}", RNS.LOG_DEBUG)
+                if rtt_ok and edr_ok: return True
+                else:                 return False
+
         return False
 
     def load_images(self):
         if not self.image_rendering_supported: return
+        elif self.image_mode == IMGLOAD_NEVER: return
         else: self.detect_images()
 
     def detect_images(self):
@@ -2107,6 +2129,10 @@ class Browser:
 
         self.update_display()
 
+    def last_response_speed(self):
+        if self.response_transfer_size and self.response_time:
+            return (self.response_transfer_size/max(self.response_time, 0.0001))*8
+        else: return None
 
     def status_text(self):
         if self.status == Browser.DONE and self.response_transfer_size != None:

@@ -240,6 +240,14 @@ CONFIG_SECTIONS = [
                 "help": "Colour capability of your terminal",
             },
             {
+                "config_key": "image_loading",
+                "label": "Image Loading: ",
+                "type": "dropdown",
+                "options": ["never", "manual", "auto", "always"],
+                "default": "auto",
+                "help": "How, or if at all, to load page images",
+            },
+            {
                 "config_key": "glyphs",
                 "label": "Glyphs: ",
                 "type": "dropdown",

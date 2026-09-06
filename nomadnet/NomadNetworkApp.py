@@ -994,6 +994,20 @@ class NomadNetworkApp:
                                 else:
                                     raise ValueError("The selected Text UI color mode is invalid")
 
+                            if not "image_loading" in self.config["textui"]:
+                                self.config["textui"]["image_loading"] = nomadnet.ui.TextUI.IMGLOAD_AUTO
+                            else:
+                                if self.config["textui"]["image_loading"].lower() == "never":
+                                    self.config["textui"]["image_loading"] = nomadnet.ui.TextUI.IMGLOAD_NEVER
+                                elif self.config["textui"]["image_loading"].lower() == "manual":
+                                    self.config["textui"]["image_loading"] = nomadnet.ui.TextUI.IMGLOAD_MANUAL
+                                elif self.config["textui"]["image_loading"].lower() == "auto":
+                                    self.config["textui"]["image_loading"] = nomadnet.ui.TextUI.IMGLOAD_AUTO
+                                elif self.config["textui"]["image_loading"].lower() == "always":
+                                    self.config["textui"]["image_loading"] = nomadnet.ui.TextUI.IMGLOAD_ALWAYS
+                                else:
+                                    raise ValueError("The selected image loading mode is invalid")
+
                             if not "theme" in self.config["textui"]:
                                 self.config["textui"]["theme"] = nomadnet.ui.TextUI.THEME_DARK
                             else:
@@ -1399,6 +1413,15 @@ colormode = 24bit
 # glyphs = plain
 # glyphs = unicode
 glyphs = nerdfont
+
+# If your terminal supports image output,
+# the page browser can display images and
+# graphics on pages. You can specify how,
+# or if at all, images are loaded. Valid
+# options are "auto", "manual", "never"
+# and "always".
+
+image_loading = auto
 
 # You can specify whether mouse events
 # should be considered as input to the
