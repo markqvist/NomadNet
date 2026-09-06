@@ -787,7 +787,7 @@ class Browser:
                         image["link"] = existing_link
                         break
 
-        if not image["link"] or image["link"].status == RNS.Link.CLOSED:
+        if not image["link"] or (image["link"] and image["link"].status) == RNS.Link.CLOSED:
             RNS.log(f"Establishing link for image: {image_destination_hash} / {path}", RNS.LOG_DEBUG)
             identity = RNS.Identity.recall(image_destination_hash)
             destination = RNS.Destination(identity, RNS.Destination.OUT, RNS.Destination.SINGLE, self.app_name, self.aspects)
