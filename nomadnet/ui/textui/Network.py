@@ -18,10 +18,19 @@ class NetworkDisplayShortcuts():
         self.app = app
         g = app.ui.glyphs
 
-        shortcut_text = "[C-l] Nodes/Announces  [C-x] Remove  [C-w] Disconnect  [C-d] Back  [C-f] Forward  [C-r] Reload  [C-u] URL  "
-        if app.config["textui"]["clipboard_copy"]:
-            shortcut_text += "[C-y] Copy  "
+        shortcut_text = "[C-l] Nodes/Announces  [C-x] Remove  [C-g] Fullscreen"
+        self.widget = urwid.AttrMap(urwid.Text(shortcut_text), "shortcutbar")
+
+class BrowserShortcuts():
+    def __init__(self, app, browser):
+        self.app = app
+        self.browser = browser
+        g = app.ui.glyphs
+
+        shortcut_text = "[C-w] Disconnect  [C-d] Back  [C-f] Forward  [C-r] Reload  [C-u] URL  "
+        if app.config["textui"]["clipboard_copy"]: shortcut_text += "[C-y] Copy  "
         shortcut_text += "[C-g] Fullscreen  [C-s / C-b] Save Node"
+        if browser.image_rendering_supported: shortcut_text += "  [C-i] Load Images"
         self.widget = urwid.AttrMap(urwid.Text(shortcut_text), "shortcutbar")
 
 class DialogLineBox(urwid.LineBox):
@@ -1722,7 +1731,9 @@ class NetworkDisplay():
             dividechars=0, focus_column=0
         )
 
-        self.shortcuts_display = NetworkDisplayShortcuts(self.app)
+        self.list_shortcuts = NetworkDisplayShortcuts(self.app)
+        self.browser_shortcuts = BrowserShortcuts(self.app, self.browser)
+        self.shortcuts_display = self.list_shortcuts
         self.widget = self.columns
 
     def toggle_list(self):
@@ -1799,6 +1810,12 @@ class NetworkDisplay():
         self.network_stats_display.start()
 
     def shortcuts(self):
+        try: focus_path = self.columns.get_focus_path()
+        except Exception: return self.list_shortcuts
+        try:
+            if focus_path[0] == 0: return self.list_shortcuts
+            if focus_path[0] == 1: return self.browser_shortcuts
+        except: pass
         return self.shortcuts_display
 
     def directory_change_callback(self):
