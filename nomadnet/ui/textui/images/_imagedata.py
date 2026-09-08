@@ -62,7 +62,7 @@ def parse_image_header(data):
     if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
         w, h = _parse_webp(data)
         return "WebP", w, h
-    raise ValueError("unsupported image format (only PNG and WebP)")
+    raise ValueError("unsupported image format")
 
 # Loads an image file and exposes its PNG bytes and dimensions.
 # The payload is always a PNG file, transmitted verbatim to the terminal

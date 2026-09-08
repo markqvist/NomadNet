@@ -158,6 +158,7 @@ class Node:
             RNS.log("The contained exception was: "+str(e), RNS.LOG_ERROR)
             return None
 
+    MEDIA_EXTS = [".webp"]
     def serve_media(self, path, data, request_id, link_id, remote_identity, requested_at):
         if not type(data) == dict: return None
         if not "path" in data: return None
@@ -166,6 +167,12 @@ class Node:
         jail       = os.path.normpath(self.app.pagespath)
         media_path = os.path.join(self.app.pagespath, data["path"].replace("/media/", "").lstrip("/"))
         media_path = os.path.normpath(media_path)
+        base_name  = os.path.basename(media_path)
+        base_ext   = os.path.splitext(base_name)[-1]
+
+        if not base_ext.lower() in self.MEDIA_EXTS:
+            RNS.log(f"Invalid media request type: {media_path}, must be in {self.MEDIA_EXTS}", RNS.LOG_DEBUG)
+            return False
 
         if not media_path.startswith(jail+os.sep):
             RNS.log(f"Invalid media request path: {media_path}", RNS.LOG_DEBUG)
@@ -199,9 +206,9 @@ class Node:
             return False
 
     def request_allowed(self, file_path, remote_identity):
+        if file_path.lower().endswith(".allowed"): return False
         allowed_path = file_path+".allowed"
-        if not os.path.isfile(allowed_path):
-            return True
+        if not os.path.isfile(allowed_path): return True
 
         allowed_list = []
         try:
