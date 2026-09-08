@@ -83,6 +83,10 @@ class Scrollable(urwid.WidgetDecoration):
 
         if canv_cols <= maxcol and canv_rows <= maxrow:
             # Canvas is small enough to fit without trimming
+            if self._trim_top != 0 or self._scroll_action is not None:
+                # Reset potentially stale _trim_top
+                self._trim_top = 0
+                self._scroll_action = None
             return canv
 
         self._adjust_trim_top(canv, size)
