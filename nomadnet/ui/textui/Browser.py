@@ -3,6 +3,7 @@ import LXMF
 import io
 import os
 import time
+import bisect
 import urwid
 import shutil
 import nomadnet
@@ -52,11 +53,11 @@ class BrowserFrame(urwid.Frame):
         elif self.focus_position == "body":
             if key == "down" or key == "up":
                 try:
-                    if hasattr(self.delegate, "page_pile") and self.delegate.page_pile:
+                    if hasattr(self.delegate, "page_list") and self.delegate.page_list:
                         def df(loop, user_data):
                             st = None
-                            if self.delegate.page_pile:
-                                nf = self.delegate.page_pile.focus
+                            if self.delegate.page_list:
+                                nf = self.delegate.page_list.focus
                                 if hasattr(nf, "key_timeout"):
                                     st = nf
                                 elif hasattr(nf, "original_widget"):
@@ -79,6 +80,109 @@ class BrowserFrame(urwid.Frame):
 
         else:
             return super(BrowserFrame, self).keypress(size, key)
+
+class PageList(urwid.ListBox):
+    def __init__(self, body):
+        super().__init__(body)
+        self._page_size = (0, 0)
+        self._page_focus = None
+        self._page_layouts = {}
+
+    def invalidate_layout(self):
+        self._page_layouts = {}
+        self._invalidate()
+
+    def _layout(self, maxcol):
+        if maxcol not in self._page_layouts:
+            layout_started = time.time()
+            offsets = [0]
+            for widget in self.body:
+                offsets.append(offsets[-1] + widget.rows((maxcol,), True))
+            self._page_layouts[maxcol] = offsets
+            # RNS.log(f" rebuilt {len(self.body)} widgets, {offsets[-1]} rows, width {maxcol}, {(time.time()-layout_started)*1000:.1f}ms", RNS.LOG_DEBUG)
+        return self._page_layouts[maxcol]
+
+    def render(self, size, focus=False):
+        self._page_size = size
+        if self.body and self.focus is not self._page_focus:
+            self._page_focus = self.focus
+            widget = self.focus
+            while widget is not None:
+                widget._invalidate()
+                widget = getattr(widget, "original_widget", None)
+        return super().render(size, focus)
+
+    def rows_max(self, size=None, focus=False):
+        size = size or self._page_size
+        return self._layout(size[0])[-1]
+
+    def get_scrollpos(self, size=None, focus=False):
+        size = size or self._page_size
+        if not self.body or not size[1]: return 0
+
+        middle, top, bottom = self.calculate_visible(size, focus)
+        if middle is None: return 0
+        return self._layout(size[0])[self.top_position(size)] + top.trim
+
+    def set_scrollpos(self, position):
+        size = self._page_size
+        maxcol,  maxrow = size
+        if not self.body or not maxrow: return
+        
+        offsets = self._layout(maxcol)
+        position = max(0, min(int(position), max(0, offsets[-1] - maxrow)))
+        pos = bisect.bisect_left(offsets, position, 0, len(self.body))
+        if pos == len(self.body) or offsets[pos] - position >= maxrow: pos -= 1
+        self.change_focus(size, pos, offsets[pos] - position)
+
+    def top_position(self, size=None):
+        size = size or self._page_size
+        if not self.body or not size[1]: return 0
+        middle, top, bottom = self.calculate_visible(size, True)
+        if middle is None: return 0
+        return top.fill[-1].position if top.fill else middle.focus_pos
+
+    def scroll(self, rows):
+        self.set_scrollpos(self.get_scrollpos() + rows)
+
+    def focused_widget_name(self):
+        widget = self.focus
+        while getattr(widget, "original_widget", None) is not None: widget = widget.original_widget
+        return type(widget).__name__
+
+    def keypress(self, size, key):
+        self._page_size = size
+        key_started   = time.time()
+        focus_before  = self.focus_position if self.body else None
+        scroll_before = self.get_scrollpos(size, True)
+        unhandled_key = self.handle_key(size, key)
+        
+        # RNS.log(f"  {key}: {unhandled_key} focus {focus_before} -> {self.focus_position if self.body else None} ({self.focused_widget_name()}) scrollpos {scroll_before}->{self.get_scrollpos(size, True)}, {(time.time()-key_started) * 1000:.1f}ms", RNS.LOG_DEBUG)
+        return unhandled_key
+
+    def handle_key(self, size, key):
+        if key in ("page up", "page down", "home", "end"):
+            focus_widget = self.focus
+            if focus_widget is not None and focus_widget.selectable():
+                key = focus_widget.keypress((size[0],), key)
+                if key is None:
+                    self.make_cursor_visible(size)
+                    return None
+
+            if   key == "page down": self.scroll(size[1] - 1)
+            elif key == "page up":   self.scroll(1 - size[1])
+            elif key == "home":      self.set_scrollpos(0)
+            elif key == "end":       self.set_scrollpos(self.rows_max(size))
+            return None
+
+        unhandled_key = super().keypress(size, key)
+        if key in ("up", "down"): return None
+        return unhandled_key
+
+    def mouse_event(self, size, event, button, col, row, focus):
+        self._page_size = size
+        if button in (4, 5): return False
+        return super().mouse_event(size, event, button, col, row, focus)
 
 class Browser:
     DEFAULT_PATH       = "/page/index.mu"
@@ -133,7 +237,8 @@ class Browser:
         self.link_target = None
         self.frame = None
         self.attr_maps = []
-        self.page_pile = None
+        self.page_list = None
+        self.page_rows = []
         self.page_partials = {}
         self.page_images = {}
         self.updater_running = False
@@ -344,8 +449,6 @@ class Browser:
         anchors     = getattr(self.attr_maps, "anchors", None) or {}
         header_rows = getattr(self.attr_maps, "header_rows", None) or []
 
-        cols = self._content_cols()
-
         target_idx = None
         if name:
             target_idx = anchors.get(name)
@@ -356,11 +459,11 @@ class Browser:
         else:
             current = 0
             try:
-                current = self.browser_body.original_widget.original_widget.get_scrollpos()
+                current = self.page_rows[self.page_list.top_position()]
             except Exception:
                 current = 0
             for hr in header_rows:
-                if self._rows_above(hr, cols) > current:
+                if hr > current:
                     target_idx = hr
                     break
             if target_idx is None:
@@ -368,12 +471,9 @@ class Browser:
 
         self.reveal_index(int(target_idx))
 
-        row_offset = self._rows_above(int(target_idx), cols)
-
         try:
-            scrollable = self.browser_body.original_widget.original_widget
-            scrollable.anchor_cursor_update = True
-            scrollable.set_scrollpos(row_offset)
+            self.page_list.set_focus(self.page_rows.index(int(target_idx)))
+            self.page_list.set_focus_valign("top")
 
         except Exception as e: RNS.log("Anchor jump failed: "+str(e), RNS.LOG_ERROR)
 
@@ -390,18 +490,6 @@ class Browser:
             cols = 100
 
         return max(40, cols)
-
-    def _rows_above(self, index, cols):
-        if index <= 0 or not self.attr_maps: return 0
-
-        hidden = self.hidden_indices()
-        total = 0
-        for i in range(min(index, len(self.attr_maps))):
-            if i in hidden: continue
-            try: total += self.attr_maps[i].rows((cols,))
-            except Exception: total += 1
-
-        return total
 
     def handle_lxmf_link(self, link_target):
         try:
@@ -497,7 +585,8 @@ class Browser:
         self.browser_header = urwid.Text("")
         self.browser_footer = urwid.Text("")
 
-        self.page_pile = None
+        self.page_list = None
+        self.page_rows = []
         self.page_partials = {}
         self.page_images = {}
         self.browser_body = urwid.Filler(
@@ -573,7 +662,8 @@ class Browser:
     def update_display(self):
         if self.status == Browser.DISCONECTED:
             self.display_widget.set_attr_map({None: "browser_inactive"})
-            self.page_pile = None
+            self.page_list = None
+            self.page_rows = []
             self.page_partials = {}
             self.page_images = {}
             self.browser_body = urwid.Filler(
@@ -647,15 +737,17 @@ class Browser:
 
     def update_page_display(self):
         self._purge_page_images()
-        pile = urwid.Pile(self.attr_maps)
-        pile.automove_cursor_on_scroll = True
-        self.page_pile = pile
+        self.page_rows = list(range(len(self.attr_maps)))
+        self.page_list = PageList(urwid.SimpleFocusListWalker(list(self.attr_maps)))
         self.page_partials = {}
         self.page_images = {}
-        self.browser_body = urwid.AttrMap(ScrollBar(Scrollable(pile, force_forward_keypress=True), thumb_char="\u2503", trough_char=" "), "scrollbar")
+        self.browser_body = urwid.AttrMap(ScrollBar(self.page_list, thumb_char="\u2503", trough_char=" "), "scrollbar")
         self.detect_partials()
         if self.should_load_images(): self.detect_images()
         self.init_folds()
+
+    def refresh_page_layout(self):
+        if self.page_list is not None: self.page_list.invalidate_layout()
 
     def image_cache_path(self, url):
         url_hash = self.url_hash(url)
@@ -723,6 +815,7 @@ class Browser:
 
                     self.page_images[o.image_id] = image
 
+        self.refresh_page_layout()
         if   force_reload: self.reload()
         elif len(self.page_images) > 0: self.start_image_updater()
 
@@ -767,7 +860,9 @@ class Browser:
         if image_destination_hash == self.loopback:
             local_image = path.replace("/media/", "")
             local_path = f"{self.app.pagespath}/{local_image}"
-            if self.image_rendering_supported: w.load(local_path)
+            if self.image_rendering_supported:
+                w.load(local_path)
+                self.refresh_page_layout()
             image["updated"] = time.time()
             return
 
@@ -908,7 +1003,9 @@ class Browser:
                             shutil.move(file_handle.name, file_destination)
 
                     resolved_path = self.resolve_image(url)
-                    if resolved_path and self.image_rendering_supported: w.load(resolved_path, remote_source=True)
+                    if resolved_path and self.image_rendering_supported:
+                        w.load(resolved_path, remote_source=True)
+                        self.refresh_page_layout()
 
                 except Exception as e:
                     RNS.log("Error while handling image response: "+str(e), RNS.LOG_ERROR)
@@ -979,15 +1076,14 @@ class Browser:
         return hidden
 
     def rebuild_visible(self):
-        pile = getattr(self, "page_pile", None)
-        if pile is None: return
+        page = getattr(self, "page_list", None)
+        if page is None: return
         hidden = self.hidden_indices()
-        opts = pile.options()
-        pile.contents = [(w, opts) for i, w in enumerate(self.attr_maps) if i not in hidden]
-        try:
-            if pile.focus_position >= len(pile.contents):
-                pile.focus_position = max(0, len(pile.contents)-1)
-        except Exception: pass
+        self.page_rows = [i for i in range(len(self.attr_maps)) if i not in hidden]
+        focus = page.focus_position if page.body else 0
+        page.body[:] = [self.attr_maps[i] for i in self.page_rows]
+        page.invalidate_layout()
+        if page.body: page.set_focus(min(focus, len(page.body)-1))
 
     def fold_changed(self, heading_widget):
         if getattr(heading_widget, "collapsed", False):
@@ -996,9 +1092,9 @@ class Browser:
             self.collapsed_headings.discard(heading_widget)
         self.rebuild_visible()
         try:
-            for pos, (w, _) in enumerate(self.page_pile.contents):
+            for pos, w in enumerate(self.page_list.body):
                 if getattr(w, "_original_widget", None) is heading_widget:
-                    self.page_pile.focus_position = pos
+                    self.page_list.set_focus(pos)
                     break
         except Exception: pass
 
@@ -1067,6 +1163,7 @@ class Browser:
                     url = partial["url"]
                     pile = partial["pile"]
                     pile.contents = [(urwid.Text(f"Could not load partial {url}: The resource transfer failed"), pile.options())]
+                    self.refresh_page_layout()
                 except Exception as e:
                     RNS.log(f"Error in partial failed callback: {e}", RNS.LOG_ERROR)
                     RNS.trace_exception(e)
@@ -1085,6 +1182,7 @@ class Browser:
                     partial["attr_maps"] = markup_to_attrmaps(strip_modifiers(partial["content"]), url_delegate=self, fg_color=self.page_foreground_color, bg_color=self.page_background_color)
                     pile = partial["pile"]
                     pile.contents = [(e, pile.options()) for e in partial["attr_maps"]]
+                    self.refresh_page_layout()
 
                 except Exception as e:
                     RNS.trace_exception(e)
@@ -1098,6 +1196,7 @@ class Browser:
             pile = partial["pile"]
             url = partial["url"]
             pile.contents = [(urwid.Text(f"Could not load partial {url}: {e}"), pile.options())]
+            self.refresh_page_layout()
             return
 
         if partial_destination_hash != self.loopback and not RNS.Transport.has_path(partial_destination_hash):

@@ -1159,6 +1159,8 @@ class LinkableText(urwid.Text):
         super().__init__(text, align=align)
         self.delegate = delegate
         self._cursor_position = 0
+        self._cursor_promised = None
+        self._cursor_promised_at = 0
         self.key_timeout = 2
         self.in_columns = False
         if self.delegate != None:
@@ -1265,28 +1267,35 @@ class LinkableText(urwid.Text):
     def kt_event(self, loop, user_data):
         self._invalidate()
 
+    def cursor_visible(self):
+        return self.delegate == None or time.time() < self.delegate.last_keypress+self.key_timeout
+
     def render(self, size, focus=False):
-        now = time.time()
         c = super().render(size, focus)
-
-        if focus and (self.delegate == None or now < self.delegate.last_keypress+self.key_timeout):
-            c = urwid.CompositeCanvas(c)
-            c.cursor = self.get_cursor_coords(size)
-            if self.delegate != None:
-                self.peek_link()
-
+        if focus:
+            if time.time() < self._cursor_promised_at+0.5:
+                coords = self._cursor_promised
+            else:
+                coords = self.get_cursor_coords(size)
+            if coords != None:
+                c = urwid.CompositeCanvas(c)
+                c.cursor = coords
+                if self.delegate != None:
+                    self.peek_link()
         return c
 
     def get_cursor_coords(self, size):
-            if self._cursor_position > len(self.text):
-                return None
-
-            (maxcol,) = size
-            trans = self.get_line_translation(maxcol)
-            x, y = calc_coords(self.text, trans, self._cursor_position)
-            if maxcol <= x:
-                return None
-            return x, y
+        self._cursor_promised_at = time.time()
+        self._cursor_promised = None
+        if not self.cursor_visible() or self._cursor_position > len(self.text):
+            return None
+        (maxcol,) = size
+        trans = self.get_line_translation(maxcol)
+        x, y = calc_coords(self.text, trans, self._cursor_position)
+        if maxcol <= x:
+            return None
+        self._cursor_promised = (x, y)
+        return x, y
 
     def mouse_event(self, size, event, button, x, y, focus):
         try:

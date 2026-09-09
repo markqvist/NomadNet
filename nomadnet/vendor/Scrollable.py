@@ -9,6 +9,7 @@
 # GNU General Public License for more details
 # http://www.gnu.org/licenses/gpl-3.0.txt
 
+import RNS
 import time
 import urwid
 from urwid.widget import BOX, FIXED, FLOW
@@ -371,6 +372,11 @@ class ScrollBar(urwid.WidgetDecoration):
         self._sevt_interval = 0
         self._sevt_start = 0
         self._sfreq_deque = deque(maxlen=5)
+        
+        self._debug_hz = 0
+        self._debug_hz_smoothed = 0
+        self._debug_scroll_ms = 0
+        self._debug_scroll_started = 0
 
     def render(self, size, focus=False):
         maxcol, maxrow = size
@@ -390,6 +396,12 @@ class ScrollBar(urwid.WidgetDecoration):
         ow_rows_max = ow_base.rows_max(ow_size, focus)
 
         ow_canv = ow.render(ow_size, focus)
+        
+        if self._debug_scroll_started:
+            total_ms = (time.time() - self._debug_scroll_started) * 1000
+            # RNS.log(f" accel={self._accel} , hz={RNS.prettyfrequency(self._debug_hz)} smoothed={RNS.prettyfrequency(self._debug_hz_smoothed)} scroll={self._debug_scroll_ms:.1f}ms total={total_ms:.1f}ms", RNS.LOG_DEBUG)
+            self._debug_scroll_started = 0
+        
         self._original_widget_size = ow_size
 
         pos = ow_base.get_scrollpos(ow_size, focus)
@@ -427,10 +439,6 @@ class ScrollBar(urwid.WidgetDecoration):
         combinelist = [(ow_canv, None, True, ow_size[0]),
                        (sb_canv, None, False, sb_width)]
 
-
-
-
-                       
         self._sb_visible = True
         self._sb_thumb_height = thumb_height
         self._sb_ow_rows_max = ow_rows_max
@@ -531,23 +539,22 @@ class ScrollBar(urwid.WidgetDecoration):
                 sevt_freq = 1/self._sevt_interval
                 self._sfreq_deque.append(sevt_freq)
                 freq_smth = sum(self._sfreq_deque)/len(self._sfreq_deque)
+                self._debug_hz          = sevt_freq
+                self._debug_hz_smoothed = freq_smth
                 if len(self._sfreq_deque) >= self._sfreq_deque.maxlen:
                     if freq_smth > 25.0:  self._accel = max(self._accel, 3)
                     elif freq_smth > 12.0: self._accel = max(self._accel, 2)
                     else:                 self._accel = max(self._accel, 1)
                 
-                # import RNS; RNS.log(f"a={self._accel}  s={RNS.prettyfrequency(freq_smth)}  f={RNS.prettyfrequency(sevt_freq)}", RNS.LOG_CRITICAL)
-            
             step = self._accel
-            if button == 4:    # scroll wheel up
+            if button in (4, 5):
+                scroll_started = time.time()
                 pos = ow.get_scrollpos(ow_size)
-                newpos = pos - step
-                if newpos < 0: newpos = 0
+                if button == 4: newpos = max(0, pos - step)
+                else:           newpos = pos + step
                 ow.set_scrollpos(newpos)
-                return True
-            elif button == 5:  # scroll wheel down
-                pos = ow.get_scrollpos(ow_size)
-                ow.set_scrollpos(pos + step)
+                self._debug_scroll_started = scroll_started
+                self._debug_scroll_ms      = (time.time() - scroll_started) * 1000
                 return True
 
         return False
