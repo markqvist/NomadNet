@@ -316,6 +316,7 @@ class NomadNetworkApp:
                     "last_announce": None,
                     "node_last_announce": None,
                     "propagation_node": None,
+                    "quit_confirm": True,
                     "last_lxmf_sync": 0,
                     "node_connects": 0,
                     "served_page_requests": 0,
