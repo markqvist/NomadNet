@@ -445,6 +445,8 @@ class PageEditorDisplay():
         self.register_styles()
 
         self.preview_browser = Browser(self.app, "nomadnetwork", "node", delegate=None)
+        self.preview_browser.loopback = self.app.node.destination.hash
+        self.preview_browser.destination_hash = self.app.node.destination.hash
         self.preview_browser.handle_link = self._preview_handle_link
         self.preview_browser.marked_link = lambda *a, **k: None
         self.preview_browser._content_cols = self._preview_cols

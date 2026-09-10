@@ -864,6 +864,13 @@ class Browser:
         if image_destination_hash == self.loopback:
             local_image = path.replace("/media/", "")
             local_path = f"{self.app.pagespath}/{local_image}"
+
+            if self.app.node:
+                image_ext = os.path.splitext(local_path)[-1]
+                if not image_ext in self.app.node.NATIVE_MEDIA_EXTS:
+                    RNS.log(f"Non-native media type for {local_path}, attempting auto-conversion", RNS.LOG_DEBUG)
+                    local_path = self.app.node.convert_media_to_webp(local_path)
+
             if self.image_rendering_supported:
                 w.load(local_path)
                 self.refresh_page_layout()
