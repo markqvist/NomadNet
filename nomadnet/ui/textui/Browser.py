@@ -161,23 +161,29 @@ class PageList(urwid.ListBox):
         return unhandled_key
 
     def handle_key(self, size, key):
-        if key in ("page up", "page down", "home", "end"):
-            focus_widget = self.focus
-            if focus_widget is not None and focus_widget.selectable():
-                key = focus_widget.keypress((size[0],), key)
-                if key is None:
-                    self.make_cursor_visible(size)
-                    return None
+        try:
+            if key in ("page up", "page down", "home", "end"):
+                focus_widget = self.focus
+                if focus_widget is not None and focus_widget.selectable():
+                    key = focus_widget.keypress((size[0],), key)
+                    if key is None:
+                        self.make_cursor_visible(size)
+                        return None
 
-            if   key == "page down": self.scroll(size[1] - 1)
-            elif key == "page up":   self.scroll(1 - size[1])
-            elif key == "home":      self.set_scrollpos(0)
-            elif key == "end":       self.set_scrollpos(self.rows_max(size))
+                if   key == "page down": self.scroll(size[1] - 1)
+                elif key == "page up":   self.scroll(1 - size[1])
+                elif key == "home":      self.set_scrollpos(0)
+                elif key == "end":       self.set_scrollpos(self.rows_max(size))
+                return None
+
+            unhandled_key = super().keypress(size, key)
+            if key in ("up", "down"): return None
+            return unhandled_key
+
+        except Exception as e:
+            RNS.log(f"Error while handling browser keypress: {e}", RNS.LOG_ERROR)
+            RNS.trace_exception(e)
             return None
-
-        unhandled_key = super().keypress(size, key)
-        if key in ("up", "down"): return None
-        return unhandled_key
 
     def mouse_event(self, size, event, button, col, row, focus):
         self._page_size = size
