@@ -274,27 +274,22 @@ class Browser:
         else:                              RNS.log(f"In-browser image rendering is not supported", RNS.LOG_DEBUG)
 
     def current_url(self):
-        if self.destination_hash == None:
-            return ""
+        if self.destination_hash == None: return ""
         path = "" if self.path == None else self.path
         url = RNS.hexrep(self.destination_hash, delimit=False)+":"+path
 
         if isinstance(self.request_data, dict) and self.request_data:
             parts = []
             for k, v in self.request_data.items():
-                if not isinstance(k, str):
-                    continue
-                if not k.startswith("var_"):
-                    continue
+                if not isinstance(k, str):   continue
+                if not k.startswith("var_"): continue
                 parts.append(k[4:]+"="+str(v))
-            if parts:
-                url += "`" + "|".join(parts)
+            if parts: url += "`" + "|".join(parts)
 
         return url
 
     def url_hash(self, url):
-        if url == None:
-            return None
+        if url == None: return None
         else:
             url = url.encode("utf-8")
             return RNS.hexrep(RNS.Identity.full_hash(url), delimit=False)
@@ -756,6 +751,8 @@ class Browser:
         if self.page_list is not None: self.page_list.invalidate_layout()
 
     def image_cache_path(self, url):
+        destination_hash, path = self.parse_url(url)
+        url = f"{RNS.hexrep(destination_hash, delimit=False)}:{path}"
         url_hash = self.url_hash(url)
         if not url_hash: return None
         else:
