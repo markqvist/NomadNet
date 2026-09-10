@@ -251,6 +251,7 @@ class Browser:
         self.image_updater_running = False
         self.partial_updater_lock = Lock()
         self.image_updater_lock = Lock()
+        self.image_cache_lock = Lock()
         self.image_mode = self.app.config["textui"]["image_loading"]
         self.image_rendering_supported = _termlib.is_kitty_supported() and self.image_mode != IMGLOAD_NEVER
         self.build_display()
@@ -756,7 +757,7 @@ class Browser:
         url_hash = self.url_hash(url)
         if not url_hash: return None
         else:
-            path = f"{self.app.cachepath}/images/{url_hash}"
+            path = f"{self.app.imagecachepath}/{url_hash}"
             return path
 
     def resolve_image(self, url):
@@ -1004,6 +1005,7 @@ class Browser:
                             file_handle = request_receipt.response
                             file_destination = cachepath
                             shutil.move(file_handle.name, file_destination)
+                            threading.Thread(target=self.clean_image_cache, daemon=True).start()
 
                     resolved_path = self.resolve_image(url)
                     if resolved_path and self.image_rendering_supported:
@@ -1013,6 +1015,33 @@ class Browser:
                 except Exception as e:
                     RNS.log("Error while handling image response: "+str(e), RNS.LOG_ERROR)
                     image["failed"] = True
+
+    IMAGE_CACHE_MAX_FILES = 256
+    IMAGE_CACHE_MAX_BYTES = 192*1024*1024
+    def clean_image_cache(self):
+        if self.image_cache_lock.locked(): return
+        with self.image_cache_lock:
+            try:
+                entries = []
+                for name in os.listdir(self.app.imagecachepath):
+                    path = os.path.join(self.app.imagecachepath, name)
+                    try:
+                        st = os.stat(path)
+                        if st.st_size > 0: entries.append((st.st_mtime, st.st_size, path))
+                    except OSError as exc: RNS.log(f"Could not get cached file information for {path}: {e}", RNS.LOG_DEBUG)
+
+                cleaned_b = 0; cleaned_c = 0
+                total = sum(e[1] for e in entries)
+                entries.sort()
+                while len(entries) > self.IMAGE_CACHE_MAX_FILES or total > self.IMAGE_CACHE_MAX_BYTES:
+                    _, size, path = entries.pop(0)
+                    total -= size
+                    cleaned_b += size
+                    cleaned_c += 1
+                    try: os.unlink(path)
+                    except OSError as exc: RNS.log(f"Could not remove cached file {path}: {exc}")
+                if cleaned_b or cleaned_c: RNS.log(f"Cleaned {RNS.prettysize(cleaned_b)} / {cleaned_c} image{'s' if cleaned_c != 1 else ''} from cache", RNS.LOG_DEBUG)
+            except Exception as exc: RNS.log(f"Error while cleaning browser image cache: {exc}", RNS.LOG_ERROR)
 
     # Render an arbitrary markup buffer (used by the page editor preview) and
     # return the content widget, with partials/folds/fields wired as usual
