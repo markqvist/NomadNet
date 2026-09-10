@@ -25,7 +25,6 @@
 # Environment overrides:
 # 
 #     NOMADNET_IMAGE_BACKEND   force a specific backend (strict)
-#     NOMADNET_IMAGE_CACHE     override the conversion cache directory
 
 import ctypes
 import ctypes.util
@@ -115,12 +114,13 @@ def _encode_png_rgba(rgba, width, height):
 # Conversion cache #
 ####################
 
+CONV_CACHE_BASE = None
 def cache_dir():
-    base = os.environ.get("NOMADNET_IMAGE_CACHE")
-    if not base:
-        base = os.environ.get("XDG_CACHE_HOME") or os.path.join(os.path.expanduser("~"), ".cache")
-        base = os.path.join(base, "nomadnet", "image-cache")
-    return base
+    global CONV_CACHE_BASE
+    if not CONV_CACHE_BASE:
+        from nomadnet.NomadNetworkApp import NomadNetworkApp
+        CONV_CACHE_BASE = NomadNetworkApp._shared_instance.dispcachepath
+    return CONV_CACHE_BASE
 
 def _cache_path(source_data):
     return os.path.join(cache_dir(), hashlib.sha256(source_data).hexdigest() + ".png")

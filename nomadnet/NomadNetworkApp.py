@@ -113,7 +113,8 @@ class NomadNetworkApp:
         self.identitypath      = self.configdir+"/storage/identity"
         self.cachepath         = self.configdir+"/storage/cache"
         self.imagecachepath    = self.configdir+"/storage/cache/images"
-        self.convcachepath     = self.configdir+"/storage/cache/images/converted"
+        self.convcachepath     = self.configdir+"/storage/cache/images/converted_node"
+        self.dispcachepath     = self.configdir+"/storage/cache/images/converted_disp"
         self.resourcepath      = self.configdir+"/storage/resources"
         self.conversationpath  = self.configdir+"/storage/conversations"
         self.directorypath     = self.configdir+"/storage/directory"
@@ -182,6 +183,9 @@ class NomadNetworkApp:
 
         if not os.path.isdir(self.convcachepath):
             os.makedirs(self.convcachepath)
+
+        if not os.path.isdir(self.dispcachepath):
+            os.makedirs(self.dispcachepath)
 
         if not os.path.isdir(self.resourcepath):
             os.makedirs(self.resourcepath)
