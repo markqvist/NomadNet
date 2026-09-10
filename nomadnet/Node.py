@@ -4,8 +4,12 @@ import sys
 import RNS
 import time
 import threading
+import hashlib
+import shutil
 import subprocess
 import RNS.vendor.umsgpack as msgpack
+
+from RNS.Utilities.rngit.media import convert_file_to_webp
 
 class Node:
     JOB_INTERVAL = 5
@@ -26,6 +30,7 @@ class Node:
         self.job_interval = Node.JOB_INTERVAL
         self.should_run_jobs = True
         self.settings_dirty = False
+        self.conversion_cache_lock = threading.Lock()
         self.last_settings_flush = time.time()
         self.app_data = None
         self.name = self.app.node_name
@@ -158,7 +163,12 @@ class Node:
             RNS.log("The contained exception was: "+str(e), RNS.LOG_ERROR)
             return None
 
-    MEDIA_EXTS = [".webp"]
+    NATIVE_MEDIA_EXTS = [".webp"]
+    MEDIA_EXTS = [".webp", ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tiff"]
+    CONVERSION_QUALITY = 85
+    CONVERSION_MAX_DIMENSION = 1200
+    CONVERSION_CACHE_MAX_FILES = 256
+    CONVERSION_CACHE_MAX_BYTES = 192*1024*1024
     def serve_media(self, path, data, request_id, link_id, remote_identity, requested_at):
         if not type(data) == dict: return None
         if not "path" in data: return None
@@ -191,8 +201,17 @@ class Node:
         request_allowed = self.request_allowed(media_path, remote_identity)
         try:
             if request_allowed:
-                file_path = media_path
-                file_name = os.path.basename(file_path)
+                if not base_ext.lower() in self.NATIVE_MEDIA_EXTS:
+                    converted_path = self.convert_media_to_webp(media_path)
+                    if converted_path is False:
+                        RNS.log(f"Could not convert {media_path} to WebP", RNS.LOG_DEBUG)
+                        return False
+                    file_path = converted_path
+                    file_name = os.path.splitext(base_name)[0]+".webp"
+                else:
+                    file_path = media_path
+                    file_name = base_name
+
                 RNS.log(f"Serving media: {file_path}", RNS.LOG_VERBOSE)
                 return [open(file_path, "rb"), {"name": file_name.encode("utf-8")}]
             
@@ -204,6 +223,65 @@ class Node:
             RNS.log("Error occurred while handling request "+RNS.prettyhexrep(request_id)+" for: "+str(media_path), RNS.LOG_ERROR)
             RNS.log("The contained exception was: "+str(e), RNS.LOG_ERROR)
             return False
+
+    def convert_media_to_webp(self, media_path, quality = CONVERSION_QUALITY, max_dimension = CONVERSION_MAX_DIMENSION):
+        try:
+            hasher = hashlib.sha256()
+            with open(media_path, "rb") as fh:
+                for chunk in iter(lambda: fh.read(65536), b""): hasher.update(chunk)
+            source_hash = hasher.hexdigest()
+        except Exception as e:
+            RNS.log(f"Could not read media source for conversion: {media_path}", RNS.LOG_WARNING)
+            return False
+
+        if quality == None: quality = Node.CONVERSION_QUALITY
+        if max_dimension == None: max_dimension = Node.CONVERSION_MAX_DIMENSION
+
+        cache_name  = f"{source_hash}.q{quality}.d{max_dimension if max_dimension is not None else 0}.webp"
+        cache_path  = os.path.join(self.app.convcachepath, cache_name)
+        return self.__cached_conversion(media_path, cache_path, quality, max_dimension)
+
+    def __cached_conversion(self, media_path, cache_path, quality, max_dimension):
+        with self.conversion_cache_lock:
+            if os.path.isfile(cache_path):
+                RNS.log(f"Using cached media conversion for: {media_path}", RNS.LOG_VERBOSE)
+                try: os.utime(cache_path, None)
+                except Exception: pass
+                return cache_path
+
+            try:
+                os.makedirs(self.app.convcachepath, exist_ok=True)
+                converted_path = convert_file_to_webp(media_path, quality=quality, max_dimension=max_dimension)
+                if converted_path is False: return False
+
+                shutil.move(converted_path, cache_path)
+                self._prune_conversion_cache()
+                RNS.log(f"Converted media: {media_path} -> {cache_path}", RNS.LOG_VERBOSE)
+                return cache_path
+
+            except Exception as e:
+                RNS.log(f"Error during media conversion of {media_path}: {e}", RNS.LOG_WARNING)
+                return False
+
+    def _prune_conversion_cache(self):
+        try:
+            entries = []
+            for name in os.listdir(self.app.convcachepath):
+                path = os.path.join(self.app.convcachepath, name)
+                try:
+                    st = os.stat(path)
+                    if st.st_size > 0:
+                        entries.append((st.st_mtime, st.st_size, path))
+                except OSError: pass
+
+            total = sum(e[1] for e in entries)
+            entries.sort()
+            while len(entries) > Node.CONVERSION_CACHE_MAX_FILES or total > Node.CONVERSION_CACHE_MAX_BYTES:
+                _, size, path = entries.pop(0)
+                total -= size
+                try: os.unlink(path)
+                except OSError: pass
+        except OSError: pass
 
     def request_allowed(self, file_path, remote_identity):
         if file_path.lower().endswith(".allowed"): return False
@@ -235,7 +313,6 @@ class Node:
         RNS.log("Denying request, remote identity was not in list of allowed identities", RNS.LOG_VERBOSE)
         return False
 
-    # TODO: Improve file handling, this will be slow for large files
     def serve_file(self, path, data, request_id, remote_identity, requested_at):
         RNS.log("File request "+RNS.prettyhexrep(request_id)+" for: "+str(path), RNS.LOG_VERBOSE)
         try:
