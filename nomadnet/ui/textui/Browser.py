@@ -93,14 +93,55 @@ class PageList(urwid.ListBox):
         self._invalidate()
 
     def _layout(self, maxcol):
-        if maxcol not in self._page_layouts:
+        offsets = self._page_layouts.get(maxcol)
+        if offsets is None or len(offsets) != len(self.body) + 1:
             layout_started = time.time()
             offsets = [0]
             for widget in self.body:
                 offsets.append(offsets[-1] + widget.rows((maxcol,), True))
             self._page_layouts[maxcol] = offsets
             # RNS.log(f" rebuilt {len(self.body)} widgets, {offsets[-1]} rows, width {maxcol}, {(time.time()-layout_started)*1000:.1f}ms", RNS.LOG_DEBUG)
-        return self._page_layouts[maxcol]
+        return offsets
+
+    def calculate_visible(self, size, focus=False):
+        visible = super().calculate_visible(size, focus)
+        if visible is not None and self.body:
+            self._sync_layout(size[0], visible)
+        return visible
+
+    def _sync_layout(self, maxcol, visible):
+        # Validate the cached layout against the live geometry of the
+        # currently visible widgets, and delta-update the cached offsets when a
+        # visible widget has changed height since the layout was built without
+        # rescanning the entire document on every render.
+
+        if not self.body or not self._page_layouts: return
+
+        offsets = self._page_layouts.get(maxcol)
+        if offsets is None or len(offsets) != len(self.body) + 1: return
+
+        def sync_position(pos, live_rows):
+            if pos < 0 or pos >= len(self.body) or live_rows < 0: return
+            cached_rows = offsets[pos + 1] - offsets[pos]
+            if cached_rows == live_rows: return
+
+            delta = live_rows - cached_rows
+            for i in range(pos + 1, len(offsets)): offsets[i] += delta
+
+            # Other cached widths may also be affected by this change. Sync
+            # them using the changed widget's live rows at their widths.
+            for width, other in list(self._page_layouts.items()):
+                if width == maxcol or len(other) != len(offsets): continue
+                other_cached = other[pos + 1] - other[pos]
+                other_live = self.body[pos].rows((width,), True)
+                if other_cached == other_live: continue
+                other_delta = other_live - other_cached
+                for i in range(pos + 1, len(other)): other[i] += other_delta
+
+        middle = visible.middle
+        sync_position(middle.focus_pos, middle.focus_rows)
+        for item in visible.top.fill:    sync_position(item.position, item.rows)
+        for item in visible.bottom.fill: sync_position(item.position, item.rows)
 
     def render(self, size, focus=False):
         self._page_size = size
@@ -128,12 +169,24 @@ class PageList(urwid.ListBox):
         size = self._page_size
         maxcol,  maxrow = size
         if not self.body or not maxrow: return
-        
+
         offsets = self._layout(maxcol)
         position = max(0, min(int(position), max(0, offsets[-1] - maxrow)))
         pos = bisect.bisect_left(offsets, position, 0, len(self.body))
         if pos == len(self.body) or offsets[pos] - position >= maxrow: pos -= 1
-        self.change_focus(size, pos, offsets[pos] - position)
+
+        # Guard against the cached layout being inconsistent
+        # with the live widget geometry. Without it, change_focus
+        # can be called with an offset that the live target widget
+        # cannot satisfy, raising ListBoxError.
+        pos = max(0, min(pos, len(self.body) - 1))
+        offset_inset = offsets[pos] - position
+        if offset_inset > maxrow - 1: offset_inset = maxrow - 1
+        elif offset_inset < 0:
+            tgt_rows = max(1, self.body[pos].rows((maxcol,), True))
+            if offset_inset < 1 - tgt_rows: offset_inset = 1 - tgt_rows
+
+        self.change_focus(size, pos, offset_inset)
 
     def top_position(self, size=None):
         size = size or self._page_size

@@ -407,6 +407,13 @@ class ScrollBar(urwid.WidgetDecoration):
         pos = ow_base.get_scrollpos(ow_size, focus)
         posmax = ow_rows_max - maxrow
 
+        # Clamp position to valid scroll range. The position
+        # reported by the underlying widget can transiently
+        # fall outside [0, posmax] if its layout state is
+        # inconsistent.
+        if pos < 0: pos = 0
+        elif pos > posmax: pos = posmax
+
         # Thumb shrinks/grows according to the ratio of
         # <number of visible lines> / <number of total lines>
         thumb_weight = min(1, maxrow / max(1, ow_rows_max))
@@ -418,9 +425,12 @@ class ScrollBar(urwid.WidgetDecoration):
         if top_height == 0 and top_weight > 0:
             top_height = 1
 
-        # Bottom part is remaining space
+        # Bottom part is remaining space. Guard against
+        # negative values so the scrollbar canvas can
+        # never be taller than maxrow.
         bottom_height = maxrow - thumb_height - top_height
-        assert thumb_height + top_height + bottom_height == maxrow
+        if bottom_height < 0: bottom_height = 0
+        assert thumb_height + top_height + bottom_height <= maxrow
 
         # Create scrollbar canvas
         # Creating SolidCanvases of correct height may result in "cviews do not
