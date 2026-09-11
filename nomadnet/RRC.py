@@ -118,7 +118,7 @@ def _msg_id():
 # greedy .+ intentionally captures nicks containing parens like "user (alt) (deadbeefcafe)"
 _WHO_ENTRY_RE = re.compile(
     r"(?:^|,\s)"
-    r"(?:(?P<bh>[0-9a-fA-F]{32})|(?P<nick>.+?)\s\((?P<np>[0-9a-fA-F]{12})\))"
+    r"(?:(?P<bh>[0-9a-fA-F]{64})|(?P<nick>.+?)\s\((?P<np>[0-9a-fA-F]{12})\))"
     r"(?=,\s|$)"
 )
 
@@ -168,6 +168,16 @@ def _parse_room_list_notice(text):
         else:
             rooms[s.strip().lstrip("#").lower()] = None
     return rooms
+
+
+# On low-MTU links the hub may deliver a /list reply as a sequence of
+# chunked NOTICE packets (one line per packet) instead of a single notice
+# or a resource transfer. The chunks carry no continuation marker, but each
+# line has a recognisable shape. Lines matching it, arriving within a short
+# window after a /list header, are treated as continuation fragments and
+# merged into the room list instead of being recorded as chat messages.
+_LIST_FRAGMENT_RE = re.compile(r"^  (?P<name>\S+?)(?: - (?P<topic>.*))?$")
+LIST_FRAGMENT_WINDOW = 60.0
 
 
 def _make_envelope(msg_type, src, room=None, body=None, nick=None, mid=None, ts=None):
@@ -235,6 +245,11 @@ class RRCHub:
         self.mention_rooms = set()
         self.members = {}
         self.nicks = {}
+        # Display-only member entries derived from 12-hex identity prefixes
+        # in /who replies. Populated when the full identity hash of a nicked
+        # member is not yet known, and promoted to regular members as soon
+        # as the full hash is learned from room traffic or join fanouts.
+        self.prefix_members = {}
 
         self.auto_reconnect = False
         self.auto_list = False
@@ -259,6 +274,7 @@ class RRCHub:
         self.available_rooms = {}
         self._silent_list_pending = 0
         self._silent_who_rooms = set()
+        self._list_fragment_until = 0.0
 
         self.nick_override = None
         self._pending_joins = set()
@@ -290,6 +306,7 @@ class RRCHub:
             self.unread_rooms.discard(r)
             self.mention_rooms.discard(r)
             self.members.pop(r, None)
+            self.prefix_members.pop(r, None)
         self._delete_history(r)
         self.manager.save()
         self.manager._notify_change(self)
@@ -306,7 +323,23 @@ class RRCHub:
 
     def get_members(self, room):
         with self._lock:
-            return list(self.members.get(room, set()))
+            return list(self.members.get(room, set()) | self.prefix_members.get(room, set()))
+
+    def _upgrade_prefix_member(self, room, full_hash):
+        # Once a full identity hash is learned from room traffic or join
+        # fanouts, promote any display-only prefix member that matches it,
+        # so the entry becomes a full, addressable member. The prefix
+        # entry's nickname is carried over unless the promoting source
+        # provides one.
+        pset = self.prefix_members.get(room)
+        if pset:
+            for p in list(pset):
+                if full_hash.startswith(p):
+                    pset.discard(p)
+                    nick = self.nicks.pop(p, None)
+                    if nick and full_hash not in self.nicks:
+                        self.nicks[full_hash] = nick
+                    break
 
     def display_name_for(self, peer):
         if not isinstance(peer, (bytes, bytearray)):
@@ -467,6 +500,7 @@ class RRCHub:
             self.welcomed = False
             self.motd = None
             self.members.clear()
+            self.prefix_members.clear()
             self._resource_expectations.clear()
             self._pending_joins.clear()
             self._pending_parts.clear()
@@ -844,23 +878,50 @@ class RRCHub:
     def _process_notice_text(self, text):
         # Parse hub service notices (/list and /who replies) regardless of
         # whether they arrived as a packet or a resource transfer. Returns
-        # True when the notice was consumed silently (auto /list or /who)
-        # and should not be recorded to the message log.
+        # True when the notice was consumed silently (auto /list or /who,
+        # or a /list continuation fragment) and should not be recorded to
+        # the message log.
         parsed = _parse_room_list_notice(text)
         if parsed is not None:
             with self._lock:
                 self.available_rooms = {strip_modifiers(name): strip_modifiers(topic) for name, topic in parsed.items()}
+                # The first line of a /list reply opens a short window in
+                # which continuation fragments (chunked NOTICE packets on
+                # low-MTU links) are absorbed into the room list.
+                self._list_fragment_until = time.monotonic()+LIST_FRAGMENT_WINDOW
                 silent = self._silent_list_pending > 0
                 if silent:
                     self._silent_list_pending -= 1
             self.manager._notify_change(self)
-            if silent:
+            if silent: return True
+        with self._lock:
+            list_window_active = time.monotonic() < self._list_fragment_until
+        if list_window_active:
+            fm = _LIST_FRAGMENT_RE.match(text)
+            if fm is not None:
+                with self._lock:
+                    frag_name = fm.group("name").strip().lower()
+                    frag_topic = fm.group("topic")
+                    if frag_topic:
+                        frag_topic = strip_modifiers(frag_topic.strip()) or None
+                    else:
+                        frag_topic = None
+                    self.available_rooms[frag_name] = frag_topic
+                    self._list_fragment_until = time.monotonic()+LIST_FRAGMENT_WINDOW
+                self.manager._notify_change(self)
                 return True
         parsed_who = _parse_who_notice(text)
         if parsed_who is not None:
             who_room, who_entries = parsed_who
             with self._lock:
                 members = self.members.setdefault(who_room, set())
+                # Treat /who replies as fresh roster snapshots: replace any
+                # display-only prefix members from earlier replies before
+                # applying this one.
+                prefix_members = self.prefix_members.setdefault(who_room, set())
+                for p in list(prefix_members):
+                    self.nicks.pop(p, None)
+                prefix_members.clear()
                 for nick, hash_hex in who_entries:
                     try:
                         hash_bytes = bytes.fromhex(hash_hex)
@@ -868,11 +929,23 @@ class RRCHub:
                         continue
                     if nick is None:
                         members.add(hash_bytes)
+                        self._upgrade_prefix_member(who_room, hash_bytes)
                         continue
+                    known = None
                     for ph in members:
                         if ph.startswith(hash_bytes):
-                            self.nicks[ph] = nick
+                            known = ph
                             break
+                    if known is not None:
+                        self.nicks[known] = nick
+                    else:
+                        # A /who line only carries a 12-hex identity prefix
+                        # for nicked members. If the full hash is not yet
+                        # known, keep the prefix as a display-only member.
+                        # It is promoted to a full member as soon as the
+                        # hash is learned from room traffic or fanouts.
+                        prefix_members.add(hash_bytes)
+                        self.nicks[hash_bytes] = nick
                 silent_who = who_room in self._silent_who_rooms
                 if silent_who:
                     self._silent_who_rooms.discard(who_room)
@@ -987,8 +1060,10 @@ class RRCHub:
                     members = self.members.setdefault(r, set())
                     for h in body_hashes:
                         members.add(h)
+                        self._upgrade_prefix_member(r, h)
                     if own_hash is not None:
                         members.add(own_hash)
+                        self._upgrade_prefix_member(r, own_hash)
 
                     # rrcd 0.3.2 attaches advisory K_NICK to fanout JOINED; learn it
                     # so display_name_for() can render the nick instead of a hash prefix.
@@ -1043,12 +1118,19 @@ class RRCHub:
                             self.nicks[ph] = parter_nick
 
                     members = self.members.get(r)
+                    pset = self.prefix_members.get(r)
                     if members is not None:
                         for h in body_hashes:
                             members.discard(h)
+                            if pset:
+                                for p in list(pset):
+                                    if h.startswith(p):
+                                        pset.discard(p)
+                                        self.nicks.pop(p, None)
                     if self_part:
                         self.rooms.discard(r)
                         self.members.pop(r, None)
+                        self.prefix_members.pop(r, None)
 
                 if self_part:
                     self.manager.save()
@@ -1075,7 +1157,9 @@ class RRCHub:
                 with self._lock:
                     self.nicks[bytes(src)] = nick
                     if isinstance(room, str) and room:
-                        self.members.setdefault(room.strip().lower(), set()).add(bytes(src))
+                        rn = room.strip().lower()
+                        self.members.setdefault(rn, set()).add(bytes(src))
+                        self._upgrade_prefix_member(rn, bytes(src))
             if isinstance(body, str):
                 msg = RRCMessage(
                     "msg",
@@ -1108,7 +1192,9 @@ class RRCHub:
                 with self._lock:
                     self.nicks[bytes(src)] = nick
                     if isinstance(room, str) and room:
-                        self.members.setdefault(room.strip().lower(), set()).add(bytes(src))
+                        rn = room.strip().lower()
+                        self.members.setdefault(rn, set()).add(bytes(src))
+                        self._upgrade_prefix_member(rn, bytes(src))
             if isinstance(body, str):
                 msg = RRCMessage(
                     "action",
@@ -1132,12 +1218,47 @@ class RRCHub:
             room = env.get(K_ROOM)
             src  = env.get(K_SRC)
             if isinstance(body, str):
-                if self._process_notice_text(body):
-                    return
+                #################### HACK ZONE #####################
+                # This is the kind of crazy mess that happens when
+                # an LLM designs a chat protocol, and the client
+                # maintainer is too open-minded, decides to go with
+                # it, and now is responsible for the fundamental
+                # architectural chaos.
+                #
+                # Yes, I love RRC, but trying to figure out an
+                # elegant way to solve the underlying issues that
+                # make this kind of mess necessary revealed the
+                # following answer: There is none.
+                #
+                # There are so many bugs, weird cases, architectural
+                # mismatches, impossible situations and general
+                # weirdness here, that I am just not going to go and
+                # attempt to sort it all out. Sorry, I don't have the
+                # time, so a hack like this is what it will be. This
+                # makes things actually work semi-expectedly, even
+                # over low-bandwidth links and such, so hacky fix it
+                # is. Until we have something better, this will do
+                # just fine. On a related note, I was considering
+                # taking up maintenance of rrcd, now that it seems to
+                # not really be worked on or updated anymore, but
+                # looking at the entire system, I think it's better
+                # left as it; it works fine, albeit with a few quirks
+                # for it's purpose. My future work in chat-related
+                # protocols on Reticulum will be focused on a better
+                # architecture, incorporating everything we learned
+                # from RRC, and makeing it Reticulum-native from the
+                # start, instead of mirroring IRC too closely.
+                #  - Mark
+                was_parsed = self._process_notice_text(body)
                 room_n = room.strip().lower() if isinstance(room, str) else None
                 if room_n is None and isinstance(body, str) and body.strip():
-                    with self._lock:
-                        self.motd = strip_modifiers(body)
+                    probably_motd = True
+                    if was_parsed: probably_motd = False
+                    if body.lstrip().lower().startswith("registered public rooms:"): probably_motd = False; was_parsed = True
+                    if body.lstrip().lower().startswith("members in "): probably_motd = False; was_parsed = True
+                    if probably_motd:
+                        with self._lock: self.motd = strip_modifiers(body)
+                        was_parsed = False
                     self.manager._notify_change(self)
                 msg = RRCMessage(
                     "notice",
@@ -1147,7 +1268,7 @@ class RRCHub:
                     body,
                     _now_ms(),
                 )
-                self._record_notice(msg)
+                if not was_parsed: self._record_notice(msg)
             return
 
         if t == T_ERROR:
