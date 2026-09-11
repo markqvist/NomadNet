@@ -1246,7 +1246,7 @@ class RRCHub:
                 # for it's purpose. My future work in chat-related
                 # protocols on Reticulum will be focused on a better
                 # architecture, incorporating everything we learned
-                # from RRC, and makeing it Reticulum-native from the
+                # from RRC, and making it Reticulum-native from the
                 # start, instead of mirroring IRC too closely.
                 #  - Mark
                 was_parsed = self._process_notice_text(body)
