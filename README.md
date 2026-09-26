@@ -5,7 +5,7 @@
 >
 > Any claimed assertion of copyright or grant of license that such projects are making are [void grants](https://reticulum.network/manual/brandolinis.html#void-grants-legal-foundations-of-machine-generated-code). Both the violators themselves, and **all** downstream projects using the infringing derivatives, are **directly** and **personally** liable for the legal consequences.
 >
-> For more detailed information, see the relevant sections of the [Brandolini's Reference](https://reticulum.network/manual/brandolinis.html) chapter of the manual. For software and projects recognized by the Reticulum community, see the [Programs Using Reticulum](https://reticulum.network/manual/software.html) chapter of the manual.
+> For more detailed information, see the relevant sections of the [Brandolini's Reference](https://reticulum.network/manual/brandolinis.html) chapter of the Reticulum Manual. For software and projects recognized by the Reticulum community, see the [Programs Using Reticulum](https://reticulum.network/manual/software.html) chapter.
 >
 > Do **not** use these "projects", they are a hazard to the entire ecosystem we have been carefully building over the last ten years.
 
