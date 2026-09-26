@@ -16,6 +16,7 @@ If you'd rather want to use an LXMF client with a graphical user interface, you 
  • Zero-configuration, minimal-infrastructure mesh communication
  • Distributed and encrypted message store holds messages for offline users
  • Connectable nodes that can host pages and files
+ • Image rendering support in terminals that support it
  • Node-side generated pages with PHP, Python, bash or others
  • Built-in text-based browser for interacting with contents on nodes
  • Built-in RRC client for live, many-to-many chat
@@ -119,4 +120,4 @@ For this to be possible, I need your help. Please support the continued developm
 
 >> Caveat Emptor
 
-Nomad Network is experimental software, and should be considered as such. While it has been built with cryptography best-practices very foremost in mind, it `!has not`! been externally security audited, and there could very well be privacy-breaking bugs. Use at your own risk and responsibility.
+Nomad Network is experimental software, and should be considered as such. Use at your own risk and responsibility.

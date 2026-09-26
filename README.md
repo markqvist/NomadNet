@@ -12,15 +12,17 @@ Nomad Network is build on [LXMF](https://github.com/markqvist/LXMF) and [Reticul
 
 Nomad Network does not need any connections to the public internet to work. In fact, it doesn't even need an IP or Ethernet network. You can use it entirely over packet radio, LoRa or even serial lines. But if you wish, you can bridge islanded networks over the Internet or private ethernet networks, or you can build networks running completely over the Internet. The choice is yours. Since Nomad Network uses Reticulum, it is efficient enough to run even over *extremely* low-bandwidth medium, and has been succesfully used over 300bps radio links.
 
-If you'd rather want to use an LXMF client with a graphical user interface, you may want to take a look at [Sideband](https://github.com/markqvist/sideband), which is available for Linux, Android and macOS.
+If you'd rather want to use an LXMF client with a graphical user interface, you may want to take a look at [Sideband](https://github.com/markqvist/sideband), which is available for Linux, Android, Windows and macOS.
 
 ## Notable Features
  - Encrypted messaging over packet-radio, LoRa, WiFi or anything else [Reticulum](https://github.com/markqvist/Reticulum) supports.
  - Zero-configuration, minimal-infrastructure mesh communication
  - Distributed and encrypted message store holds messages for offline users
  - Connectable nodes that can host pages and files
+ - Image rendering support in terminals that support it
  - Node-side generated pages with PHP, Python, bash or others
  - Built-in text-based browser for interacting with contents on nodes
+ - Built-in RRC client for live, many-to-many chat
  - An easy to use and bandwidth efficient markup language for writing pages
  - Page caching in browser
 
@@ -76,10 +78,10 @@ The first time the program is running, you will be presented with the **Guide se
 
 To use Nomad Network on packet radio or LoRa, you will need to configure your Reticulum installation to use any relevant packet radio TNCs or LoRa devices on your system. See the [Reticulum documentation](https://markqvist.github.io/Reticulum/manual/interfaces.html) for info. For a general introduction on how to set up such a system, take a look at [this post](https://unsigned.io/private-messaging-over-lora/).
 
-If you want to try Nomad Network without building your own physical network, you can connect to the [Unsigned.io RNS Testnet](https://github.com/markqvist/Reticulum#public-testnet) over the Internet, where there is already some Nomad Network and LXMF activity. If you connect to the testnet, you can leave nomadnet running for a while and wait for it to receive announces from other nodes on the network that host pages or services, or you can try connecting directly to some nodes listed here:
+If you want to try Nomad Network without building your own physical network, you can connect to the [distributed backbone](https://reticulum.network/manual/gettingstartedfast.html#bootstrapping-connectivity) over the Internet, where there is already quite a bit of Nomad Network and LXMF activity. If you connect to the testnet, you can leave nomadnet running for a while and wait for it to receive announces from other nodes on the network that host pages or services, or you can try connecting directly to some nodes listed here:
 
- - `abb3ebcd03cb2388a838e70c001291f9` Dublin Hub Testnet Node
- - `ea6a715f814bdc37e56f80c34da6ad51` Frankfurt Hub Testnet Node
+ - `9ce92808be498e9e05590ff27cbfdfe4` The rns.recipes forum
+ - `a4a5e861626ce97c9aa544d9ecdf6d22` rmap.world
 
 To browse pages on a node that is not currently known, open the URL dialog in the `Network` section of the program by pressing `Ctrl+U`, paste or enter the address and select `Go` or press enter. Nomadnet will attempt to discover and connect to the requested node.
 
@@ -88,42 +90,12 @@ You can install Nomad Network on Android using Termux, but there's a few more co
 
 For a native Android application with a graphical user interface, have a look at [Sideband](https://github.com/markqvist/Sideband).
 
-### Docker Images
-
-Nomad Network is automatically published as a docker image on Github Packages. Image tags are one of either `master` (for the very latest commit) or the version number (eg `0.2.0`) for a specific release.
-
-```sh
-$ docker pull ghcr.io/markqvist/nomadnet:master
-
-# Run nomadnet interactively in a container
-$ docker run -it ghcr.io/markqvist/nomadnet:master --textui
-
-# Run nomadnet as a daemon, using config stored on the host machine in specified
-# directories, and connect the containers network to the host network (which will
-# allow the default AutoInterface to automatically peer with other discovered
-# Reticulum instances).
-$ docker run -d \
-  -v /local/path/nomadnetconfigdir/:/root/.nomadnetwork/ \
-  -v /local/path/reticulumconfigdir/:/root/.reticulum/ \
-  --network host
-  ghcr.io/markqvist/nomadnet:master
-
-# You can also keep the network of the container isolated from the host, but you
-# will need to manually configure one or more Reticulum interfaces to reach other
-# nodes in a network, by editing the Reticulum configuration file.
-$ docker run -d \
-  -v /local/path/nomadnetconfigdir/:/root/.nomadnetwork/ \
-  -v /local/path/reticulumconfigdir/:/root/.reticulum/ \
-  ghcr.io/markqvist/nomadnet:master
-
-# Send daemon log output to console instead of file
-$ docker run -i ghcr.io/markqvist/nomadnet:master --daemon --console
-```
 
 ## Tools & Extensions
 
 Nomad Network is a very flexible and extensible platform, and a variety of community-provided tools, utilities and node-side extensions exist:
 
+- [Retipedia](https://github.com/RFnexus/Retipedia)
 - [NomadForum](https://codeberg.org/AutumnSpark1226/nomadForum) ([GitHub mirror](https://github.com/AutumnSpark1226/nomadForum))
 - [NomadForecast](https://github.com/faragher/NomadForecast)
 - [micron-blog](https://github.com/randogoth/micron-blog)
@@ -137,9 +109,6 @@ Nomad Network is a very flexible and extensible platform, and a variety of commu
 - [POPR](https://github.com/faragher/POPR)
 - [LXMF Tools](https://github.com/SebastianObi/LXMF-Tools)
 
-## Help & Discussion
-
-For help requests, discussion, sharing ideas or anything else related to Nomad Network, please have a look at the [Nomad Network discussions pages](https://github.com/markqvist/Reticulum/discussions/categories/nomad-network).
 
 ## Support Nomad Network
 You can help support the continued development of open, free and private communications systems by donating via one of the following channels:
@@ -161,28 +130,8 @@ You can help support the continued development of open, free and private communi
 - Ko-Fi: https://ko-fi.com/markqvist
 
 
-## Development Roadmap
-
-- New major features
-    - Network-wide propagated bulletins and discussion threads
-    - Collaborative maps and geospatial information sharing
-- Minor improvements and fixes
-    - Link status (RSSI and SNR) in conversation or conv list
-    - Ctrl-M shorcut for jumping to menu
-    - Share node with other users / send node info to user
-    - Fix internal editor failing on some OSes with no "editor" alias
-    - Possibly add a required-width header
-    - Improve browser handling of remote link close
-    - Better navigation handling when requests fail (also because of closed links)
-    - Retry failed messages mechanism
-    - Re-arrange buttons to be more consistent
-    - Term compatibility notice in readme
-    - Selected icon in conversation list
-    - Possibly a Search Local Nodes function
-    - Possibly add via entry in node info box, next to distance
-
 ## Caveat Emptor
-Nomad Network is beta software, and should be considered as such. While it has been built with cryptography best-practices very foremost in mind, it _has not_ been externally security audited, and there could very well be privacy-breaking bugs. If you want to help out, or help sponsor an audit, please do get in touch.
+Nomad Network is beta software, and should be considered as such. Use at your own risk and responsibility.
 
 ## Screenshots
 
