@@ -13,7 +13,7 @@
 
 Off-grid, resilient mesh communication with strong encryption, forward secrecy and extreme privacy.
 
-![Screenshot](https://github.com/markqvist/NomadNet/raw/master/docs/screenshots/1.png)
+![Screenshot](https://github.com/markqvist/NomadNet/raw/master/docs/screenshots/1a.png)
 
 Nomad Network allows you to build private and resilient communications platforms that are in complete control and ownership of the people that use them. No signups, no agreements, no handover of any data, no permissions and gatekeepers.
 
