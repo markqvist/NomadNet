@@ -1,5 +1,14 @@
 # Nomad Network - Communicate Freely
 
+> [!WARNING]  
+> Several hastily launched, incorrect, and in most cases entirely LLM-generated fakes of Nomad Network and associated tools are currently being circulated and marketed. Most of these "projects" violate the open source GPLv3 license that Nomad Network was published under, but claim independent ownership and license grants. Such claims or grants are **not** legally valid, and **not** recognized by the Nomad Network authors and copyright holders.
+>
+> Any claimed assertion of copyright or grant of license that such projects are making are [void grants](https://reticulum.network/manual/brandolinis.html#void-grants-legal-foundations-of-machine-generated-code). Both the violators themselves, and **all** downstream projects using the infringing derivatives, are **directly** and **personally** liable for the legal consequences.
+>
+> For more detailed information, see the relevant sections of the [Brandolini's Reference](https://reticulum.network/manual/brandolinis.html) chapter of the manual. For software and projects recognized by the Reticulum community, see the [Programs Using Reticulum](https://reticulum.network/manual/software.html) chapter of the manual.
+>
+> Do **not** use these "projects", they are a hazard to the entire ecosystem we have been carefully building over the last ten years.
+
 *This repository is [a public mirror](./MIRROR.md). All development is happening elsewhere.*
 
 Off-grid, resilient mesh communication with strong encryption, forward secrecy and extreme privacy.
