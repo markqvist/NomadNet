@@ -23,6 +23,12 @@ Nomad Network does not need any connections to the public internet to work. In f
 
 If you'd rather want to use an LXMF client with a graphical user interface, you may want to take a look at [Sideband](https://github.com/markqvist/sideband), which is available for Linux, Android, Windows and macOS.
 
+Other Nomad Network clients include:
+
+- [MeshChatX](https://meshchatx.com/)
+- [Columba (mobile)](https://github.com/torlando-tech/columba)
+- [Ren Browser](https://github.com/Quad4-Software/Ren-Browser)
+
 ## Notable Features
  - Encrypted messaging over packet-radio, LoRa, WiFi or anything else [Reticulum](https://github.com/markqvist/Reticulum) supports.
  - Zero-configuration, minimal-infrastructure mesh communication
