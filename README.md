@@ -153,3 +153,5 @@ Nomad Network is beta software, and should be considered as such. Use at your ow
 ![Screenshot 4](https://github.com/markqvist/NomadNet/raw/master/docs/screenshots/4.png)
 
 ![Screenshot 5](https://github.com/markqvist/NomadNet/raw/master/docs/screenshots/5.png)
+
+![Screenshot 6](https://github.com/markqvist/NomadNet/raw/master/docs/screenshots/6.png)
