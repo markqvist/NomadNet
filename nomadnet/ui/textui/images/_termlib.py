@@ -10,8 +10,10 @@ import os
 import select
 import shutil
 import sys
-import termios
 import time
+
+try: import termios
+except: termios = None
 
 from . import _ctlseqs
 
@@ -43,7 +45,7 @@ def _open_tty():
 def query_tty(request, timeout=QUERY_TIMEOUT):
     # Sends a query to the terminal and returns the raw response.
     global _query_failed
-    if _query_failed: return b""
+    if _query_failed or not termios: return b""
 
     fd = _open_tty()
     if fd == -1:
@@ -121,6 +123,7 @@ def _cell_size_from_winsize(buf):
 
 def _query_cell_size():
     # Determines the current cell size in pixels, or None if unknown.
+    if not termios: return None
     fd = _open_tty()
     if fd != -1:
         # First, try the TIOCGWINSZ pixel fields (fast, no query)
