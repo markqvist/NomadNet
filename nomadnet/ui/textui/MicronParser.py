@@ -603,14 +603,14 @@ def parse_line(line, state, url_delegate):
                 if len(line) == 2:
                     divider_char = line[1]
                     # Control characters don't make sense here and otherwise crash nomadnet
-                    if ord(divider_char) < 32:
-                        divider_char = "\u2500"
-                else:
-                    divider_char = "\u2500"
-                if state["depth"] == 0:
-                    return [urwid.Divider(divider_char)]
-                else:
-                    return [urwid.Padding(urwid.Divider(divider_char), left=left_indent(state), right=right_indent(state))]
+                    if ord(divider_char) < 32: divider_char = "\u2500"
+                    # Check if the divider char is renderable
+                    try: urwid.Divider(divider_char).render((30,))
+                    except Exception as e: divider_char = "\u2500"
+                else: divider_char = "\u2500"
+
+                if state["depth"] == 0: return [urwid.Divider(divider_char)]
+                else:                   return [urwid.Padding(urwid.Divider(divider_char), left=left_indent(state), right=right_indent(state))]
 
         output = make_output(state, line, url_delegate, pre_escape)
 
