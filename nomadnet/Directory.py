@@ -6,7 +6,7 @@ import nomadnet
 import threading
 import RNS.vendor.umsgpack as msgpack
 
-from LXMF import pn_announce_data_is_valid
+from LXMF import pn_announce_data_is_valid, PN_META_IMPL_NAME, PN_META_VERSION
 from nomadnet.util import strip_modifiers
 from nomadnet.util import sanitize_name
 
@@ -21,7 +21,10 @@ class PNAnnounceHandler:
                 data = msgpack.unpackb(app_data)
 
                 if data[2] == True:
-                    RNS.log("Received active propagation node announce from "+RNS.prettyhexrep(destination_hash), RNS.LOG_DEBUG)
+                    metadata = data[6]
+                    if not PN_META_IMPL_NAME in metadata or not PN_META_VERSION in metadata: impl_str = ""
+                    else: impl_str = f" running {metadata[PN_META_IMPL_NAME]} {metadata[PN_META_VERSION]}"
+                    RNS.log(f"Received active propagation node announce from {RNS.prettyhexrep(destination_hash)}{impl_str}", RNS.LOG_DEBUG)
 
                     associated_peer = RNS.Destination.hash_from_name_and_identity("lxmf.delivery", announced_identity)
                     associated_node = RNS.Destination.hash_from_name_and_identity("nomadnetwork.node", announced_identity)
