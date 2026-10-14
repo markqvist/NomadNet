@@ -6,7 +6,7 @@ from ._termlib import is_kitty_supported
 from .widget import ImageWidget
 
 # A raw display screen subclass with Kitty TGP side-channel support
-class ImageScreen(urwid.raw_display.Screen):
+class ImageScreen(urwid.display.raw.Screen):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._ti_images = {}
