@@ -36,6 +36,8 @@ class NomadNetworkApp:
 
     START_ANNOUNCE_DELAY = 3
 
+    REQUIRED_DESTINATION_TYPES = ["nomadnetwork.node", "lxmf.delivery", "lxmf.propagation", "rrc.hub"]
+
     def exit_handler(self):
         self.should_run_jobs = False
 
@@ -103,6 +105,9 @@ class NomadNetworkApp:
             NomadNetworkApp._shared_instance = self
 
         self.rns = RNS.Reticulum(configdir = rnsconfigdir)
+        # self.rns.required_announces_only(True)
+        for full_name in self.REQUIRED_DESTINATION_TYPES:
+            self.rns.wants_destination_type(full_name)
 
         self.configpath        = self.configdir+"/config"
         self.ignoredpath       = self.configdir+"/ignored"

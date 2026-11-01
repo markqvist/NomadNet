@@ -223,6 +223,9 @@ class RRCHub:
         self.dest_name = dest_name or DEFAULT_DEST_NAME
         self.name      = name or RNS.prettyhexrep(hub_hash)
 
+        if not self.dest_name == DEFAULT_DEST_NAME:
+            RNS.Reticulum.get_instance().wants_destination_type(self.dest_name)
+
         self.link        = None
         self.status      = RRCHub.STATUS_DISCONNECTED
         self.status_text = "Disconnected"

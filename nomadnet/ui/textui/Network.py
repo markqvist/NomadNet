@@ -626,6 +626,8 @@ class KnownNodeInfo(urwid.WidgetWrap):
 
         source_hash  = node_hash
         node_ident   = RNS.Identity.recall(node_hash)
+        dst_value    = RNS.Identity.recall_stamp_value(node_hash)
+        link_cost    = RNS.Identity.recall_link_cost(node_hash)
         time_format  = self.app.time_format
         trust_level  = self.app.directory.trust_level(source_hash)
         trust_str    = ""
@@ -641,7 +643,9 @@ class KnownNodeInfo(urwid.WidgetWrap):
         else:
             display_str = strip_modifiers(node_entry.display_name)
 
-        addr_str     = "<"+RNS.hexrep(source_hash, delimit=False)+">"
+        addr_str      = "<"+RNS.hexrep(source_hash, delimit=False)+">"
+        dst_val_str   = f"{RNS.prettycost(dst_value)}" if dst_value else "None"
+        link_cost_str = f"{RNS.prettycost(link_cost)}" if link_cost else "None"
 
         if display_str == None:
             display_str = addr_str
@@ -791,6 +795,8 @@ class KnownNodeInfo(urwid.WidgetWrap):
             urwid.Text("Type      : "+type_string, align=urwid.LEFT),
             e_name,
             urwid.Text("Node Addr : "+addr_str, align=urwid.LEFT),
+            urwid.Text("Link Cost : "+link_cost_str, align=urwid.LEFT),
+            urwid.Text("Dst Value : "+dst_val_str, align=urwid.LEFT),
             e_sort,
             urwid.Divider(g["divider1"]),
             urwid.Text(lxmf_addr_str, align=urwid.CENTER),
