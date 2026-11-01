@@ -36,7 +36,7 @@ class NomadNetworkApp:
 
     START_ANNOUNCE_DELAY = 3
 
-    REQUIRED_DESTINATION_TYPES = ["nomadnetwork.node", "lxmf.delivery", "lxmf.propagation", "rrc.hub"]
+    REQUIRED_DESTINATION_TYPES = ["nomadnetwork.node", "rrc.hub"]
 
     def exit_handler(self):
         self.should_run_jobs = False
