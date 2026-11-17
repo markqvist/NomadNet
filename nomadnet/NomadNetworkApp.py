@@ -37,6 +37,7 @@ class NomadNetworkApp:
     START_ANNOUNCE_DELAY = 3
 
     REQUIRED_DESTINATION_TYPES = ["nomadnetwork.node", "rrc.hub"]
+    DEFAULT_LINK_COST          = 17.8
 
     def exit_handler(self):
         self.should_run_jobs = False
@@ -153,6 +154,8 @@ class NomadNetworkApp:
         self.lxmf_max_sync_size        = None
         self.lxmf_max_incoming_size    = None
         self.node_propagation_cost     = LXMF.LXMRouter.PROPAGATION_COST
+        self.node_link_cost            = self.DEFAULT_LINK_COST
+        self.node_stamp_value          = None
 
         self.periodic_lxmf_sync = True
         self.lxmf_sync_interval = 360*60
@@ -1144,6 +1147,16 @@ class NomadNetworkApp:
                     self.node_name = None
                 else:
                     self.node_name = self.config["node"]["node_name"]
+
+            if "link_cost" in self.config["node"]:
+                value = self.config["node"].as_float("link_cost")
+                if value < 1: value = 1
+                self.node_link_cost = RNS.Stamps.quantize_cost(value)
+
+            if "stamp_value" in self.config["node"]:
+                value = self.config["node"].as_float("stamp_value")
+                if value < 1: value = 1
+                self.node_stamp_value = RNS.Stamps.quantize_cost(value)
 
             if not "disable_propagation" in self.config["node"]:
                 self.disable_propagation = True

@@ -21,6 +21,8 @@ class Node:
         self.app = app
         self.identity = self.app.identity
         self.destination = RNS.Destination(self.identity, RNS.Destination.IN, RNS.Destination.SINGLE, "nomadnetwork", "node")
+        self.destination.set_link_cost(self.app.node_link_cost)
+        if self.app.node_stamp_value: self.destination.set_value(self.app.node_stamp_value)
         self.last_announce = time.time()
         self.last_file_refresh = time.time()
         self.last_page_refresh = time.time()
