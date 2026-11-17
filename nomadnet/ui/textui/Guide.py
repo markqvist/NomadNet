@@ -1019,6 +1019,12 @@ On low-bandwidth networks, it can be useful to limit the amount of messages down
 <
 
 >>>
+`!stamp_value = 25.0`!
+>>>>
+The target stamp value for your LXMF destination can be configured with this option. Defaults to 25.0. Each increase of 1.0 doubles the generation difficulty. Destination stamps are one-time generations, so it can be worth targeting a high value here, to ensure that other transport nodes will accept your announces. The default should be sufficient for most cases, though.
+<
+
+>>>
 `!required_stamp_cost = None`!
 >>>>
 You can specify a required stamp cost for inbound messages to be accepted. Specifying a stamp cost will require untrusted senders that message you to include a cryptographic stamp in their messages. Performing this operation takes the sender an amount of time proportional to the stamp cost. As a rough estimate, a stamp cost of 8 will take less than a second to compute, and a stamp cost of 20 could take several minutes, even on a fast computer.
@@ -1213,6 +1219,18 @@ Determines whether the node server should be started on launch. Must be a boolea
 `!node_name = DisplayName's Node`!
 >>>>
 Defines what the announced name of the node should be.
+<
+
+>>>
+`!stamp_value = 25.0`!
+>>>>
+The target stamp value for your node destination can be configured with this option. Defaults to 25.0. Each increase of 1.0 doubles the generation difficulty. Destination stamps are one-time generations, so it can be worth targeting a high value here, to ensure that other transport nodes will accept your announces. The default should be sufficient for most cases, though.
+<
+
+>>>
+`!link_cost = 17.8`!
+>>>>
+The link stamp cost required for other peers to connect to your node. The default is a relatively high value, that should deter most automated scraping and misuse, but you can set it even higher, if you wish, or lower it to allow connecting more easily.
 <
 
 >>>

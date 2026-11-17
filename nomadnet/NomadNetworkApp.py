@@ -150,6 +150,7 @@ class NomadNetworkApp:
         self.notify_on_new_message   = True
         self.compose_markdown        = True
 
+        self.lxmf_stamp_value          = None
         self.lxmf_max_propagation_size = None
         self.lxmf_max_sync_size        = None
         self.lxmf_max_incoming_size    = None
@@ -389,7 +390,7 @@ class NomadNetworkApp:
         for destination_hash in self.ignored_list:
             self.message_router.ignore_destination(destination_hash)
 
-        self.lxmf_destination = self.message_router.register_delivery_identity(self.identity, display_name=self.peer_settings["display_name"], stamp_cost=self.required_stamp_cost)
+        self.lxmf_destination = self.message_router.register_delivery_identity(self.identity, display_name=self.peer_settings["display_name"], stamp_cost=self.required_stamp_cost, stamp_value=self.lxmf_stamp_value)
         if not self.accept_invalid_stamps:
             self.message_router.enforce_stamps()
 
@@ -869,6 +870,11 @@ class NomadNetworkApp:
                 if option == "enable_client":
                     value = self.config["client"].as_bool(option)
                     self.enable_client = value
+
+                if option == "stamp_value":
+                    value = self.config["client"].as_float("stamp_value")
+                    if value < 1: value = 1
+                    self.lxmf_stamp_value = RNS.Stamps.quantize_cost(value)
 
                 if option == "downloads_path":
                     value = self.config["client"]["downloads_path"]
