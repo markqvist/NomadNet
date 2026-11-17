@@ -8,6 +8,7 @@ from nomadnet.Directory import DirectoryEntry
 from nomadnet.vendor.additional_urwid_widgets import IndicativeListBox, MODIFIER_KEY
 from nomadnet.util import strip_modifiers
 from nomadnet.util import sanitize_name
+from LXMF import pn_stamp_cost_from_app_data
 
 from .Browser import Browser
 from .ReadlineEdit import ReadlineEdit
@@ -241,13 +242,25 @@ class AnnounceInfo(urwid.WidgetWrap):
                 type_button,
             ])
 
-        pile_widgets = []
+        dst_value     = RNS.Identity.recall_stamp_value(source_hash)
+        link_cost     = RNS.Identity.recall_link_cost(source_hash)
+        dst_val_str   = f"{RNS.prettycost(dst_value)}" if dst_value else "None"
+        link_cost_str = f"{RNS.prettycost(link_cost)}" if link_cost else "None"
+
+        pile_widgets  = []
 
         if is_pn:
+            pn_app_data = RNS.Identity.recall_app_data(source_hash)
+            prop_cost   = pn_stamp_cost_from_app_data(pn_app_data)
+
+            prop_cost_str = f"{RNS.prettycost(prop_cost)}" if prop_cost else "None"
             pile_widgets = [
                 urwid.Text("Time  : "+ts_string, align=urwid.LEFT),
                 urwid.Text("Addr  : "+addr_str, align=urwid.LEFT),
                 urwid.Text("Type  : "+type_string, align=urwid.LEFT),
+                urwid.Text("D.Val : "+dst_val_str, align=urwid.LEFT),
+                urwid.Text("L.Cst : "+link_cost_str, align=urwid.LEFT),
+                urwid.Text("P.Cst : "+prop_cost_str, align=urwid.LEFT),
                 urwid.Divider(g["divider1"]),
                 button_columns
             ]
@@ -258,6 +271,8 @@ class AnnounceInfo(urwid.WidgetWrap):
                 urwid.Text("Addr  : "+addr_str, align=urwid.LEFT),
                 urwid.Text("Type  : "+type_string, align=urwid.LEFT),
                 urwid.Text("Name  : "+display_str, align=urwid.LEFT),
+                urwid.Text("D.Val : "+dst_val_str, align=urwid.LEFT),
+                urwid.Text("L.Cst : "+link_cost_str, align=urwid.LEFT),
                 urwid.Text(["Trust : ", (style, trust_str)], align=urwid.LEFT),
                 urwid.Divider(g["divider1"]),
                 urwid.Text(["Announce Data: \n", (data_style, data_str)], align=urwid.LEFT),
@@ -795,8 +810,8 @@ class KnownNodeInfo(urwid.WidgetWrap):
             urwid.Text("Type      : "+type_string, align=urwid.LEFT),
             e_name,
             urwid.Text("Node Addr : "+addr_str, align=urwid.LEFT),
-            urwid.Text("Link Cost : "+link_cost_str, align=urwid.LEFT),
             urwid.Text("Dst Value : "+dst_val_str, align=urwid.LEFT),
+            urwid.Text("Link Cost : "+link_cost_str, align=urwid.LEFT),
             e_sort,
             urwid.Divider(g["divider1"]),
             urwid.Text(lxmf_addr_str, align=urwid.CENTER),
