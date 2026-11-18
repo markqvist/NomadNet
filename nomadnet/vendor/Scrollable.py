@@ -146,7 +146,7 @@ class Scrollable(urwid.WidgetDecoration):
                                     ow.focus = pwi
 
                                     st = None
-                                    nf = ow.get_focus()
+                                    nf = ow.focus
                                     if hasattr(nf, "key_timeout"):
                                         st = nf
                                     elif hasattr(nf, "original_widget"):
